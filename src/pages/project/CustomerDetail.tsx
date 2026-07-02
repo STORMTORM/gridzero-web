@@ -92,9 +92,9 @@ export default function CustomerDetail() {
 					project_type: formValues.projectType,
 					mounting_type: formValues.mountingType,
 					capex_opex: formValues.capexOpex,
-					sanctioned_load: formValues.sanctionedLoad ? Number(formValues.sanctionedLoad) : null,
-					avg_bill: formValues.avgBill ? Number(formValues.avgBill) : null,
-					unit_price: formValues.unitPrice ? Number(formValues.unitPrice) : null,
+					sanctioned_load: formValues.sanctionedLoad,
+					avg_bill: formValues.avgBill,
+					unit_price: formValues.unitPrice,
 				});
 				console.log("Customer Intake auto-saved to backend successfully");
 			} catch (e) {
@@ -182,9 +182,9 @@ export default function CustomerDetail() {
 				project_type: formValues.projectType,
 				mounting_type: formValues.mountingType,
 				capex_opex: formValues.capexOpex,
-				sanctioned_load: formValues.sanctionedLoad ? Number(formValues.sanctionedLoad) : null,
-				avg_bill: formValues.avgBill ? Number(formValues.avgBill) : null,
-				unit_price: formValues.unitPrice ? Number(formValues.unitPrice) : null,
+				sanctioned_load: formValues.sanctionedLoad,
+				avg_bill: formValues.avgBill,
+				unit_price: formValues.unitPrice,
 				finalize: true,
 			});
 

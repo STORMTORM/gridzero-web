@@ -383,7 +383,7 @@ export default function NewProjectModal({
 						{/* Google Map Area Wrapper */}
 						<div className="w-full aspect-square bg-black rounded-3xl relative overflow-hidden border border-white/10 shadow-lg">
 							<div ref={mapElementRef} className="absolute inset-0">
-								<APIProvider apiKey="AIzaSyCYXGomZFJDmTKzz7GEElAQ_UeapHzDX7Q" libraries={["places"]}>
+								<APIProvider apiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY || ""} libraries={["places"]}>
 									<Map
 										key={`${mapCenter.lat}-${mapCenter.lng}`}
 										defaultCenter={mapCenter}
