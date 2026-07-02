@@ -9,7 +9,6 @@ import {
 	SlidersHorizontal,
 	Download,
 	Phone,
-	MessageSquare,
 	Pencil,
 	Trash2,
 	ChevronLeft,
@@ -25,7 +24,6 @@ interface Project {
 	customer: string;
 	address: string;
 	phone: string;
-	email: string;
 	capacity: string;
 	panels: number;
 	status: string;
@@ -79,7 +77,6 @@ export default function Dashboard({ onNewProjectClick, onOpenProject }: Dashboar
 					customer: `${addr.first_name || ""} ${addr.last_name || ""}`.trim() || addr.name || `Customer ${item.sitevisit_id}`,
 					address: addr.line1 || "Captured Map Location",
 					phone: addr.phone ? String(addr.phone) : "",
-					email: addr.email || "",
 					capacity,
 					panels,
 					status,
@@ -337,13 +334,7 @@ export default function Dashboard({ onNewProjectClick, onOpenProject }: Dashboar
 														>
 															<Phone className="w-3.5 h-3.5" />
 														</a>
-														<a
-															href={`mailto:${project.email || ""}`}
-															className="text-neutral-500 hover:text-white transition-colors"
-															title="Email Customer"
-														>
-															<MessageSquare className="w-3.5 h-3.5" />
-														</a>
+
 														<button
 															onClick={() => onOpenProject?.(project)}
 															className="text-neutral-500 hover:text-white transition-colors cursor-pointer focus:outline-none"

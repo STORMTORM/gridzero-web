@@ -195,6 +195,13 @@ export default function NewProjectModal({
 				skipFonts: true,
 				width: size,
 				height: size,
+				style: {
+					left: "0",
+					top: "0",
+					width: `${size}px`,
+					height: `${size}px`,
+					transform: "none",
+				}
 			});
 
 			// Restore the original map zoom level in the DOM immediately
@@ -375,8 +382,6 @@ export default function NewProjectModal({
 						
 						{/* Google Map Area Wrapper */}
 						<div className="w-full aspect-square bg-black rounded-3xl relative overflow-hidden border border-white/10 shadow-lg">
-							
-							{/* Large Google Map Element (100% size, fills the visible frame fully) */}
 							<div ref={mapElementRef} className="absolute inset-0">
 								<APIProvider apiKey="AIzaSyCYXGomZFJDmTKzz7GEElAQ_UeapHzDX7Q" libraries={["places"]}>
 									<Map

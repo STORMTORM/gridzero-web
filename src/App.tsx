@@ -18,7 +18,7 @@ export default function App() {
 				{/* Public Login Page */}
 				<Route path="/login" element={<Login />} />
 
-				{/* Protected Routes Layout Wrapper */}
+				{/* Protected Routes WITH Sidebar */}
 				<Route
 					element={
 						<ProtectedRoute>
@@ -46,7 +46,20 @@ export default function App() {
 							/>
 						}
 					/>
+				</Route>
 
+				{/* Protected Routes WITHOUT Sidebar */}
+				<Route
+					element={
+						<ProtectedRoute>
+							<div className="flex h-screen w-screen overflow-hidden bg-black">
+								<main className="flex-1 flex flex-col overflow-hidden mx-auto w-full">
+									<Outlet />
+								</main>
+							</div>
+						</ProtectedRoute>
+					}
+				>
 					<Route path="/project/:id/details" element={<CustomerDetail />} />
 				</Route>
 			</Routes>

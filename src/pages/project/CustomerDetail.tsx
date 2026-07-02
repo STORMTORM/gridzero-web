@@ -1,12 +1,10 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
-	Search,
 	ChevronRight,
 	Zap,
 	Briefcase,
 	Home as HomeIcon,
-	MapPin,
 	RefreshCw,
 } from "lucide-react";
 import api from "../../api/client";
@@ -34,10 +32,9 @@ export default function CustomerDetail() {
 	const [loadingData, setLoadingData] = useState(true);
 	const [saving, setSaving] = useState(false);
 
-	const searchInputRef = useRef<HTMLInputElement>(null);
-
-	const [currentAddress, setCurrentAddress] = useState("Captured Map Location");
-	const [imageLink, setImageLink] = useState<string | null>(null);
+	const [imageLink, setImageLink] = useState<string>("");
+	const [irradiance, setIrradiance] = useState<number | null>(null);
+	const [peakHours, setPeakHours] = useState<number | null>(null);
 
 	// Customer details form values state
 	const [formValues, setFormValues] = useState({
@@ -45,7 +42,6 @@ export default function CustomerDetail() {
 		firstName: "",
 		lastName: "",
 		phone: "",
-		email: "",
 		line1: "",
 		line2: "",
 		state: "",
@@ -100,23 +96,6 @@ export default function CustomerDetail() {
 					avg_bill: formValues.avgBill ? Number(formValues.avgBill) : null,
 					unit_price: formValues.unitPrice ? Number(formValues.unitPrice) : null,
 				});
-
-				// Also sync back with dashboard list if local mock entries exist
-				const storedProjects = localStorage.getItem("mock_projects");
-				if (storedProjects) {
-					const list = JSON.parse(storedProjects);
-					const idx = list.findIndex((p: any) => p.id === id);
-					if (idx !== -1) {
-						list[idx].name = formValues.projectName;
-						list[idx].customer = `${formValues.firstName} ${formValues.lastName}`.trim();
-						list[idx].address = formValues.line1;
-						if (formValues.sanctionedLoad) {
-							list[idx].capacity = `${parseFloat(formValues.sanctionedLoad).toFixed(1)} kWp`;
-							list[idx].panels = Math.round(parseFloat(formValues.sanctionedLoad) * 2);
-						}
-						localStorage.setItem("mock_projects", JSON.stringify(list));
-					}
-				}
 				console.log("Customer Intake auto-saved to backend successfully");
 			} catch (e) {
 				console.error("Auto-save failed", e);
@@ -144,7 +123,6 @@ export default function CustomerDetail() {
 					firstName: addr.first_name || "",
 					lastName: addr.last_name || "",
 					phone: addr.phone ? String(addr.phone) : "",
-					email: addr.email || "",
 					line1: addr.line1 || "",
 					line2: addr.line2 || "",
 					state: addr.state || "",
@@ -163,7 +141,18 @@ export default function CustomerDetail() {
 				if (data.image_link) {
 					setImageLink(data.image_link);
 				}
-				setCurrentAddress(addr.line1 || "Captured Map Location");
+
+				if (data.map_details?.irradiance != null) {
+					setIrradiance(Number(data.map_details.irradiance));
+				} else if (data.irradiance != null) {
+					setIrradiance(Number(data.irradiance));
+				}
+
+				if (data.map_details?.peak_hours != null) {
+					setPeakHours(Number(data.map_details.peak_hours));
+				} else if (data.peak_hours != null) {
+					setPeakHours(Number(data.peak_hours));
+				}
 			} catch (e) {
 				console.error("Failed to load project details from backend", e);
 			} finally {
@@ -199,16 +188,6 @@ export default function CustomerDetail() {
 				finalize: true,
 			});
 
-			// Sync final row status on dashboard table list
-			const storedProjects = localStorage.getItem("mock_projects");
-			if (storedProjects) {
-				const list = JSON.parse(storedProjects);
-				const idx = list.findIndex((p: any) => p.id === id);
-				if (idx !== -1) {
-					list[idx].status = "Proposal Draft";
-					localStorage.setItem("mock_projects", JSON.stringify(list));
-				}
-			}
 			navigate("/");
 		} catch (e) {
 			console.error("Failed to finalize details", e);
@@ -235,10 +214,10 @@ export default function CustomerDetail() {
 				<div className="flex items-center gap-2.5 text-xs font-semibold text-neutral-400">
 					<span className="text-neutral-500">Workspace</span>
 					<ChevronRight className="w-3 h-3 text-neutral-600" />
-					<span className="font-bold text-white">{formValues.projectName || "Solar Site Project"}</span>
+					<span className="font-bold text-white">{formValues.projectName || "New Project"}</span>
 					<ChevronRight className="w-3 h-3 text-neutral-600" />
 					<span className="text-white bg-white/10 px-2.5 py-0.5 rounded border border-white/10 font-bold uppercase tracking-wider">
-						Customer Intake
+						Customer Details
 					</span>
 				</div>
 				<div className="text-xs text-neutral-500 font-semibold italic flex items-center gap-1.5">
@@ -252,80 +231,42 @@ export default function CustomerDetail() {
 				
 				{/* LEFT PANE: High-Fidelity Capture View (Renders actual snapshot if uploaded) */}
 				<div className="w-full lg:w-[45%] bg-black flex-shrink-0 border-r border-white/10 p-6 flex flex-col gap-4 relative overflow-hidden">
-					
-					{/* Search Box mock overlay */}
-					<div className="z-10 flex gap-2">
-						<div className="flex-grow flex items-center gap-2 bg-white/5 border border-white/10 px-3.5 py-2.5 rounded-xl shadow-lg">
-							<Search className="w-3.5 h-3.5 text-neutral-500" />
-							<input
-								ref={searchInputRef}
-								type="text"
-								value={formValues.line1}
-								onChange={(e) => updateField("line1", e.target.value)}
-								placeholder="Building address location..."
-								className="w-full text-xs font-bold text-white placeholder-neutral-600 bg-transparent focus:outline-none"
-							/>
-						</div>
-					</div>
 
 					{/* Image or Mock Rooftop Panel projection visualizer */}
 					<div className="flex-grow flex items-center justify-center overflow-hidden py-2">
 						<div className="w-full aspect-square bg-black rounded-2xl relative overflow-hidden border border-white/10 shadow-inner flex items-center justify-center">
-							
-							{imageLink ? (
-								<img src={imageLink} alt="Captured Site View" className="w-full h-full object-cover" />
-							) : (
-								<>
-									{/* Grid pattern background */}
-									<div className="absolute inset-0 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:24px_24px] opacity-10" />
-
-									{/* Mock satellite image shape */}
-									<div className="w-[85%] aspect-square rounded-full bg-white/5 border border-white/10 flex items-center justify-center relative">
-										
-										{/* Roof schematic outline using SVG */}
-										<svg className="w-[70%] h-[70%] text-neutral-800 opacity-60" viewBox="0 0 100 100">
-											<polygon points="15,15 85,15 85,85 15,85" fill="none" stroke="currentColor" strokeWidth="1.5" />
-											<line x1="15" y1="15" x2="50" y2="50" stroke="currentColor" strokeWidth="1" />
-											<line x1="85" y1="15" x2="50" y2="50" stroke="currentColor" strokeWidth="1" />
-											<line x1="85" y1="85" x2="50" y2="50" stroke="currentColor" strokeWidth="1" />
-											<line x1="15" y1="85" x2="50" y2="50" stroke="currentColor" strokeWidth="1" />
-											
-											<rect x="25" y="25" width="20" height="15" rx="1" fill="#ffffff" fillOpacity="0.2" stroke="#ffffff" strokeWidth="1" />
-											<rect x="52" y="25" width="20" height="15" rx="1" fill="#ffffff" fillOpacity="0.2" stroke="#ffffff" strokeWidth="1" />
-											<rect x="25" y="55" width="20" height="15" rx="1" fill="#ffffff" fillOpacity="0.2" stroke="#ffffff" strokeWidth="1" />
-											<rect x="52" y="55" width="20" height="15" rx="1" fill="#ffffff" fillOpacity="0.2" stroke="#ffffff" strokeWidth="1" />
-										</svg>
-
-										{/* Blueprint overlay labels */}
-										<div className="absolute top-8 left-8 text-[9px] font-bold text-white bg-white/10 px-2 py-0.5 rounded border border-white/10 uppercase tracking-wider">
-											Area A: 24 modules
-										</div>
-										<div className="absolute bottom-8 right-8 text-[9px] font-bold text-white bg-white/10 px-2 py-0.5 rounded border border-white/10 uppercase tracking-wider">
-											Azimuth: 180° (S)
-										</div>
-									</div>
-								</>
-							)}
-
-							{/* Fixed Center Pin Target Crosshair */}
-							<div className="absolute top-1/2 left-1/2 pointer-events-none z-20 flex flex-col items-center justify-center">
-								<div className="w-1.5 h-1.5 bg-white rounded-full shadow shadow-white/85" />
-								<div className="w-10 h-[1px] bg-white/40 absolute" />
-								<div className="h-10 w-[1px] bg-white/40 absolute" />
-							</div>
-
-							{/* Bottom location readouts */}
-							<div className="absolute bottom-4 left-4 right-4 bg-white/10 border border-white/10 rounded-xl p-3 flex flex-col gap-1 shadow-2xl">
-								<span className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider">
-									Intake Site Coordinate Capture
-								</span>
-								<div className="flex items-center gap-1.5 text-white text-xs font-bold mt-0.5">
-									<MapPin className="w-3.5 h-3.5 text-white flex-shrink-0" />
-									<span className="truncate">{currentAddress}</span>
-								</div>
-							</div>
+							<img src={imageLink} alt="Captured Site View" className="w-full h-full object-cover" />
 						</div>
 					</div>
+
+					{/* Solar Irradiance & Peak Solar Hours Readout */}
+					{(irradiance !== null || peakHours !== null) && (
+						<div className="bg-white/5 border border-white/10 rounded-xl p-4 flex items-center justify-around flex-shrink-0 shadow-lg">
+							{irradiance !== null && (
+								<div className="flex flex-col items-center gap-1 text-center">
+									<span className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider">
+										Solar Irradiance
+									</span>
+									<span className="text-sm font-bold text-white">
+										{irradiance.toFixed(2)} kWh/m²/day
+									</span>
+								</div>
+							)}
+							{irradiance !== null && peakHours !== null && (
+								<div className="h-8 w-[1px] bg-white/10" />
+							)}
+							{peakHours !== null && (
+								<div className="flex flex-col items-center gap-1 text-center">
+									<span className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider">
+										Peak Sun Hours
+									</span>
+									<span className="text-sm font-bold text-white">
+										{peakHours.toFixed(2)} hrs/day
+									</span>
+								</div>
+							)}
+						</div>
+					)}
 				</div>
 
 				{/* RIGHT PANE: Intake Data Fields Form */}
@@ -340,14 +281,14 @@ export default function CustomerDetail() {
 								<div className="flex items-center gap-2 border-b border-white/10 pb-3 flex-shrink-0">
 									<Briefcase className="w-4 h-4 text-white" />
 									<h3 className="text-xs font-extrabold text-white uppercase tracking-wider">
-										Customer Profile
+										Customer Info
 									</h3>
 								</div>
 
 								<div className="flex flex-col gap-4">
 									{/* 1. Project Name */}
 									<div className="flex flex-col gap-1.5">
-										<label className="text-xs font-bold text-neutral-400">Project Reference Name <span className="text-rose-500">*</span></label>
+										<label className="text-xs font-bold text-neutral-400">Project Name <span className="text-rose-500">*</span></label>
 										<input
 											type="text"
 											value={formValues.projectName}
@@ -359,7 +300,7 @@ export default function CustomerDetail() {
 									{/* 2 & 3. First and Last Name side-by-side */}
 									<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 										<div className="flex flex-col gap-1.5">
-											<label className="text-xs font-bold text-neutral-400">Customer First Name <span className="text-rose-500">*</span></label>
+											<label className="text-xs font-bold text-neutral-400">Customer's First Name <span className="text-rose-500">*</span></label>
 											<input
 												type="text"
 												value={formValues.firstName}
@@ -368,7 +309,7 @@ export default function CustomerDetail() {
 											/>
 										</div>
 										<div className="flex flex-col gap-1.5">
-											<label className="text-xs font-bold text-neutral-400">Customer Last Name <span className="text-rose-500">*</span></label>
+											<label className="text-xs font-bold text-neutral-400">Customer's Last Name <span className="text-rose-500">*</span></label>
 											<input
 												type="text"
 												value={formValues.lastName}
@@ -378,26 +319,15 @@ export default function CustomerDetail() {
 										</div>
 									</div>
 
-									{/* 4 & 5. Phone and Email side-by-side */}
-									<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-										<div className="flex flex-col gap-1.5">
-											<label className="text-xs font-bold text-neutral-400">Phone Number <span className="text-rose-500">*</span></label>
-											<input
-												type="tel"
-												value={formValues.phone}
-												onChange={(e) => updateField("phone", e.target.value)}
-												className="w-full text-xs font-bold text-white bg-white/5 border border-white/10 p-3 rounded-xl focus:outline-none focus:border-white focus:ring-1 focus:ring-white/10 transition-all"
-											/>
-										</div>
-										<div className="flex flex-col gap-1.5">
-											<label className="text-xs font-bold text-neutral-400">Email Address <span className="text-rose-500">*</span></label>
-											<input
-												type="email"
-												value={formValues.email}
-												onChange={(e) => updateField("email", e.target.value)}
-												className="w-full text-xs font-bold text-white bg-white/5 border border-white/10 p-3 rounded-xl focus:outline-none focus:border-white focus:ring-1 focus:ring-white/10 transition-all"
-											/>
-										</div>
+									{/* Phone Number */}
+									<div className="flex flex-col gap-1.5">
+										<label className="text-xs font-bold text-neutral-400">Phone Number <span className="text-rose-500">*</span></label>
+										<input
+											type="tel"
+											value={formValues.phone}
+											onChange={(e) => updateField("phone", e.target.value)}
+											className="w-full text-xs font-bold text-white bg-white/5 border border-white/10 p-3 rounded-xl focus:outline-none focus:border-white focus:ring-1 focus:ring-white/10 transition-all"
+										/>
 									</div>
 								</div>
 							</div>
@@ -414,7 +344,7 @@ export default function CustomerDetail() {
 								<div className="flex flex-col gap-4">
 									{/* 1. Address Line 1 */}
 									<div className="flex flex-col gap-1.5">
-										<label className="text-xs font-bold text-neutral-400">Street Line 1 <span className="text-rose-500">*</span></label>
+										<label className="text-xs font-bold text-neutral-400">Address Line 1 <span className="text-rose-500">*</span></label>
 										<input
 											type="text"
 											value={formValues.line1}
@@ -425,7 +355,7 @@ export default function CustomerDetail() {
 
 									{/* 2. Address Line 2 */}
 									<div className="flex flex-col gap-1.5">
-										<label className="text-xs font-bold text-neutral-400">Street Line 2</label>
+										<label className="text-xs font-bold text-neutral-400">Address Line 2</label>
 										<input
 											type="text"
 											value={formValues.line2}
@@ -465,19 +395,19 @@ export default function CustomerDetail() {
 								</div>
 							</div>
 
-							{/* Component Section 3: Utility Tariff Info */}
+							{/* Component Section 3: Electrical Info */}
 							<div className="bg-white/5 rounded-2xl border border-white/10 p-6 flex flex-col gap-5 shadow">
 								<div className="flex items-center gap-2 border-b border-white/10 pb-3 flex-shrink-0">
 									<Zap className="w-4 h-4 text-white" />
 									<h3 className="text-xs font-extrabold text-white uppercase tracking-wider">
-										Utility & Tariff Details
+										Electrical Info
 									</h3>
 								</div>
 
 								<div className="flex flex-col gap-4">
 									{/* 1. DISCOM Utility Provider */}
 									<div className="flex flex-col gap-1.5">
-										<label className="text-xs font-bold text-neutral-400">Electricity Utility Provider (DISCOM) <span className="text-rose-500">*</span></label>
+										<label className="text-xs font-bold text-neutral-400">DISCOM <span className="text-rose-500">*</span></label>
 										<select
 											value={formValues.discom}
 											onChange={(e) => updateField("discom", e.target.value)}
@@ -493,70 +423,47 @@ export default function CustomerDetail() {
 										</select>
 									</div>
 
-									{/* 2 & 3. Connection and Project Type */}
+									{/* 2. Category & Location Type */}
 									<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 										<div className="flex flex-col gap-1.5">
-											<label className="text-xs font-bold text-neutral-400">Connection Category <span className="text-rose-500">*</span></label>
+											<label className="text-xs font-bold text-neutral-400">Connection Type <span className="text-rose-500">*</span></label>
 											<select
 												value={formValues.type}
 												onChange={(e) => updateField("type", e.target.value)}
 												className="w-full text-xs font-bold text-white bg-white/10 border border-white/10 p-3 rounded-xl focus:outline-none focus:border-white focus:ring-1 focus:ring-white/10 transition-all cursor-pointer"
 											>
-												<option value="" className="bg-black text-white">-- Choose Category --</option>
-												<option value="Residential" className="bg-black text-white">Residential</option>
-												<option value="Commercial" className="bg-black text-white">Commercial</option>
-												<option value="Industrial" className="bg-black text-white">Industrial</option>
-												<option value="Institutional" className="bg-black text-white">Institutional</option>
+												<option value="residential" className="bg-black text-white">Residential</option>
+												<option value="commercial" className="bg-black text-white">Commercial</option>
+												<option value="utility" className="bg-black text-white">Utility</option>
 											</select>
 										</div>
 										<div className="flex flex-col gap-1.5">
-											<label className="text-xs font-bold text-neutral-400">Connection Phase Configuration <span className="text-rose-500">*</span></label>
+											<label className="text-xs font-bold text-neutral-400">Location Type <span className="text-rose-500">*</span></label>
+											<select
+												value={formValues.projectType}
+												onChange={(e) => updateField("projectType", e.target.value)}
+												className="w-full text-xs font-bold text-white bg-white/10 border border-white/10 p-3 rounded-xl focus:outline-none focus:border-white focus:ring-1 focus:ring-white/10 transition-all cursor-pointer"
+											>
+												<option value="ongrid" className="bg-black text-white">OnGrid</option>
+												<option value="offgrid" className="bg-black text-white">OffGrid</option>
+												<option value="hybrid" className="bg-black text-white">Hybrid</option>
+											</select>
+										</div>
+									</div>
+
+									{/* 4. Phase & Sanctioned Load */}
+									<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+										<div className="flex flex-col gap-1.5">
+											<label className="text-xs font-bold text-neutral-400">Phase <span className="text-rose-500">*</span></label>
 											<select
 												value={formValues.connectionType}
 												onChange={(e) => updateField("connectionType", e.target.value)}
 												className="w-full text-xs font-bold text-white bg-white/10 border border-white/10 p-3 rounded-xl focus:outline-none focus:border-white focus:ring-1 focus:ring-white/10 transition-all cursor-pointer"
 											>
-												<option value="" className="bg-black text-white">-- Choose Phase --</option>
-												<option value="1-Phase" className="bg-black text-white">1-Phase Connection</option>
-												<option value="3-Phase" className="bg-black text-white">3-Phase Connection</option>
-												<option value="HT Connection" className="bg-black text-white">High Tension (HT)</option>
+												<option value="single_phase" className="bg-black text-white">Single phase</option>
+												<option value="three_phase" className="bg-black text-white">Three phase</option>
 											</select>
 										</div>
-									</div>
-
-									{/* 4. Mounting & Capex Options */}
-									<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-										<div className="flex flex-col gap-1.5">
-											<label className="text-xs font-bold text-neutral-400">Structure Mounting Type <span className="text-rose-500">*</span></label>
-											<select
-												value={formValues.mountingType}
-												onChange={(e) => updateField("mountingType", e.target.value)}
-												className="w-full text-xs font-bold text-white bg-white/10 border border-white/10 p-3 rounded-xl focus:outline-none focus:border-white focus:ring-1 focus:ring-white/10 transition-all cursor-pointer"
-											>
-												<option value="" className="bg-black text-white">-- Choose Mounting --</option>
-												<option value="Flush Mount" className="bg-black text-white">Flush Mount (Roof Parallel)</option>
-												<option value="Elevated Structure" className="bg-black text-white">Elevated Structure</option>
-												<option value="Ballasted Mount" className="bg-black text-white">Ballasted / Non-penetrative</option>
-												<option value="Ground Mount" className="bg-black text-white">Ground Mount</option>
-											</select>
-										</div>
-										<div className="flex flex-col gap-1.5">
-											<label className="text-xs font-bold text-neutral-400">Financial Model <span className="text-rose-500">*</span></label>
-											<select
-												value={formValues.capexOpex}
-												onChange={(e) => updateField("capexOpex", e.target.value)}
-												className="w-full text-xs font-bold text-white bg-white/10 border border-white/10 p-3 rounded-xl focus:outline-none focus:border-white focus:ring-1 focus:ring-white/10 transition-all cursor-pointer"
-											>
-												<option value="" className="bg-black text-white">-- Choose Model --</option>
-												<option value="CAPEX" className="bg-black text-white">CAPEX (Customer Owned)</option>
-												<option value="OPEX" className="bg-black text-white">RESCO / OPEX (Power Agreement)</option>
-												<option value="EMI" className="bg-black text-white">Solar Finance Loan (EMI)</option>
-											</select>
-										</div>
-									</div>
-
-									{/* 5 & 6. Sanctioned Load and Average Monthly Electricity Bill side-by-side */}
-									<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 										<div className="flex flex-col gap-1.5">
 											<label className="text-xs font-bold text-neutral-400">Sanctioned Load (kW) <span className="text-rose-500">*</span></label>
 											<input
@@ -566,13 +473,32 @@ export default function CustomerDetail() {
 												className="w-full text-xs font-bold text-white bg-white/5 border border-white/10 p-3 rounded-xl focus:outline-none focus:border-white focus:ring-1 focus:ring-white/10 transition-all"
 											/>
 										</div>
+									</div>
+
+									{/* 5. Avg Monthly Bill & Unit Price */}
+									<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 										<div className="flex flex-col gap-1.5">
-											<label className="text-xs font-bold text-neutral-400">Avg Monthly Bill (₹) <span className="text-rose-500">*</span></label>
+											<label className="text-xs font-bold text-neutral-400">Average Monthly Bill (₹) <span className="text-rose-500">*</span></label>
 											<input
 												type="number"
 												value={formValues.avgBill}
 												onChange={(e) => updateField("avgBill", e.target.value)}
 												className="w-full text-xs font-bold text-white bg-white/5 border border-white/10 p-3 rounded-xl focus:outline-none focus:border-white focus:ring-1 focus:ring-white/10 transition-all"
+											/>
+										</div>
+										<div className="flex flex-col gap-1.5 justify-center">
+											<div className="flex justify-between items-center">
+												<label className="text-xs font-bold text-neutral-400">Unit Price <span className="text-rose-500">*</span></label>
+												<span className="text-xs font-extrabold text-white">₹{formValues.unitPrice || "7.0"} / unit</span>
+											</div>
+											<input
+												type="range"
+												min="1"
+												max="15"
+												step="0.5"
+												value={formValues.unitPrice || "7"}
+												onChange={(e) => updateField("unitPrice", e.target.value)}
+												className="w-full h-1.5 bg-white/10 rounded-lg appearance-none cursor-pointer accent-white mt-3"
 											/>
 										</div>
 									</div>
@@ -586,23 +512,23 @@ export default function CustomerDetail() {
 					<div className="bg-black border-t border-white/10 px-8 py-4 flex-shrink-0 flex items-center justify-end gap-3.5 z-10">
 						<button
 							onClick={() => navigate("/")}
-							className="px-5 py-3 border border-white/20 hover:bg-white/10 text-neutral-450 hover:text-white font-bold text-xs rounded-xl transition-all cursor-pointer"
+							className="px-5 py-3 border border-white/20 hover:bg-white/10 text-neutral-450 hover:text-white font-bold text-sm rounded-xl transition-all cursor-pointer"
 						>
 							Cancel
 						</button>
 						<button
 							onClick={handleNextStep}
 							disabled={saving}
-							className="px-8 py-3 bg-white hover:bg-neutral-200 text-black text-xs font-bold rounded-xl shadow transition-all cursor-pointer flex items-center gap-2 border border-transparent"
+							className="px-8 py-3 bg-white hover:bg-neutral-200 text-black text-sm font-bold rounded-xl shadow transition-all cursor-pointer flex items-center gap-2 border border-transparent"
 						>
 							{saving ? (
 								<>
 									<RefreshCw className="w-3.5 h-3.5 animate-spin" />
-									<span>Finalizing...</span>
+									<span>Confirming...</span>
 								</>
 							) : (
 								<>
-									<span>Finalize & Proceed</span>
+									<span>Confirm & Proceed</span>
 									<ChevronRight className="w-4 h-4 text-black" />
 								</>
 							)}
