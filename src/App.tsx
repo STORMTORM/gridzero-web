@@ -1,0 +1,61 @@
+import { useState } from "react";
+import { Routes, Route, Outlet, useNavigate } from "react-router-dom";
+import Sidebar from "./components/Sidebar";
+import Dashboard from "./pages/Dashboard";
+import CustomerDetail from "./pages/project/CustomerDetail";
+import Login from "./pages/Login";
+import ProtectedRoute from "./components/ProtectedRoute";
+import NewProjectModal from "./components/NewProjectModal";
+
+export default function App() {
+	const navigate = useNavigate();
+	const [activeTab, setActiveTab] = useState("dashboard");
+	const [isNewProjectModalOpen, setIsNewProjectModalOpen] = useState(false);
+
+	return (
+		<div className="h-screen w-screen bg-black text-neutral-200 font-sans relative flex flex-col overflow-hidden">
+			<Routes>
+				{/* Public Login Page */}
+				<Route path="/login" element={<Login />} />
+
+				{/* Protected Routes Layout Wrapper */}
+				<Route
+					element={
+						<ProtectedRoute>
+							<div className="flex h-screen w-screen overflow-hidden bg-black">
+								<Sidebar
+									activeTab={activeTab}
+									onTabChange={setActiveTab}
+									onNewProjectClick={() => setIsNewProjectModalOpen(true)}
+								/>
+
+								<main className="flex-grow flex flex-col overflow-hidden max-w-7xl mx-auto w-full">
+									<Outlet />
+								</main>
+							</div>
+						</ProtectedRoute>
+					}
+				>
+					{/* Protected Dashboard */}
+					<Route
+						path="/"
+						element={
+							<Dashboard
+								onNewProjectClick={() => setIsNewProjectModalOpen(true)}
+								onOpenProject={(project) => navigate(`/project/${project.id}/details`)}
+							/>
+						}
+					/>
+
+					<Route path="/project/:id/details" element={<CustomerDetail />} />
+				</Route>
+			</Routes>
+
+			{/* Workflow Selection Modal */}
+			<NewProjectModal
+				isOpen={isNewProjectModalOpen}
+				onClose={() => setIsNewProjectModalOpen(false)}
+			/>
+		</div>
+	);
+}
