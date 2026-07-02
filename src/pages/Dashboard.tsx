@@ -6,9 +6,6 @@ import {
 	Layers,
 	RefreshCw,
 	Search,
-	SlidersHorizontal,
-	Download,
-	Phone,
 	Pencil,
 	Trash2,
 	ChevronLeft,
@@ -51,7 +48,7 @@ export default function Dashboard({ onNewProjectClick, onOpenProject }: Dashboar
 	const [loading, setLoading] = useState(true);
 	const [search, setSearch] = useState("");
 	const [currentPage, setCurrentPage] = useState(1);
-	const PAGE_SIZE = 6;
+	const PAGE_SIZE = 8;
 
 	// Fetch dynamic projects list from live server /visit/all
 	const fetchProjects = async () => {
@@ -171,9 +168,6 @@ export default function Dashboard({ onNewProjectClick, onOpenProject }: Dashboar
 			<div className="flex flex-col md:flex-row md:items-center justify-between gap-4 flex-shrink-0">
 				<div className="flex flex-col gap-0.5">
 					<h1 className="text-2xl font-bold text-white tracking-tight">Project Dashboard</h1>
-					<p className="text-xs text-neutral-500">
-						Manage, model, and dispatch premium solar proposals.
-					</p>
 				</div>
 				<button
 					onClick={onNewProjectClick}
@@ -204,7 +198,7 @@ export default function Dashboard({ onNewProjectClick, onOpenProject }: Dashboar
 					</div>
 					<div className="flex flex-col">
 						<span className="text-xl font-bold text-white">{totalCapacity} kWp</span>
-						<span className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider mt-0.5">Designed Capacity</span>
+						<span className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider mt-0.5">Total Capacity</span>
 					</div>
 				</div>
 
@@ -241,7 +235,7 @@ export default function Dashboard({ onNewProjectClick, onOpenProject }: Dashboar
 					</div>
 
 					{/* Header Actions Buttons */}
-					<div className="w-full sm:w-auto flex items-center gap-3 justify-end">
+					{/* <div className="w-full sm:w-auto flex items-center gap-3 justify-end">
 						<button className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 text-xs font-bold text-neutral-300 border border-white/10 rounded-xl transition-all cursor-pointer">
 							<SlidersHorizontal className="w-3.5 h-3.5 text-neutral-400" />
 							<span>Filters</span>
@@ -250,11 +244,11 @@ export default function Dashboard({ onNewProjectClick, onOpenProject }: Dashboar
 							<Download className="w-3.5 h-3.5 text-black" />
 							<span>Export</span>
 						</button>
-					</div>
+					</div> */}
 				</div>
 
 				{/* Table Area wrapper */}
-				<div className="flex-grow overflow-y-auto min-h-0 py-2">
+				<div className="flex-grow overflow-hidden min-h-0 py-2 flex flex-col justify-stretch">
 					{paginatedProjects.length === 0 ? (
 						<div className="py-12 flex flex-col items-center justify-center text-center">
 							<Layers className="w-12 h-12 text-neutral-700 mb-4 animate-pulse" />
@@ -264,98 +258,94 @@ export default function Dashboard({ onNewProjectClick, onOpenProject }: Dashboar
 							</p>
 						</div>
 					) : (
-						<div className="overflow-x-auto w-full">
-							<table className="w-full border-collapse">
-								<thead>
-									<tr className="border-b border-white/10 text-[10px] font-bold uppercase tracking-wider text-neutral-400 text-left">
-										<th className="pb-4 pt-3 px-5 font-semibold">Project Name</th>
-										<th className="pb-4 pt-3 px-5 font-semibold">Customer Name</th>
-										<th className="pb-4 pt-3 px-5 font-semibold">Phone</th>
-										<th className="pb-4 pt-3 px-5 font-semibold">Address</th>
-										<th className="pb-4 pt-3 px-5 font-semibold">Created</th>
-										<th className="pb-4 pt-3 px-5 font-semibold">Status</th>
-										<th className="pb-4 pt-3 px-5 font-semibold text-right">Actions</th>
-									</tr>
-								</thead>
-								<tbody>
-									{paginatedProjects.map((project) => {
-										const isReady = project.status === "PROPOSAL" || project.status === "COMPLIANCE";
-										const isPending = project.status === "FORM PENDING";
+						<div className="w-full flex-grow flex flex-col justify-stretch min-h-0">
+							{/* Header Row */}
+							<div className="flex-shrink-0 flex items-center border-b border-white/10 text-[10px] font-bold uppercase tracking-wider text-neutral-400 pb-4 pt-3 px-5">
+								<div className="w-[20%] font-semibold">Project Name</div>
+								<div className="w-[15%] font-semibold">Customer Name</div>
+								<div className="w-[15%] font-semibold">Phone</div>
+								<div className="w-[22%] font-semibold">Address</div>
+								<div className="w-[12%] font-semibold">Created</div>
+								<div className="w-[11%] font-semibold">Status</div>
+								<div className="w-[5%] font-semibold text-right">Actions</div>
+							</div>
 
-										return (
-											<tr
-												key={project.id}
-												className="border-b border-white/5 hover:bg-white/5 transition-colors text-xs text-neutral-300"
-											>
-												{/* 1. Project Name */}
-												<td className="py-[18px] px-5 font-bold text-white">
-													<button
-														onClick={() => onOpenProject?.(project)}
-														className="hover:underline cursor-pointer text-left focus:outline-none"
-													>
-														{project.name}
-													</button>
-												</td>
+							{/* Data Rows Container */}
+							<div className="flex-grow flex flex-col justify-stretch min-h-0">
+								{paginatedProjects.map((project) => {
+									const isReady = project.status === "PROPOSAL" || project.status === "COMPLIANCE";
+									const isPending = project.status === "FORM PENDING";
 
-												{/* 2. Customer Name */}
-												<td className="py-[18px] px-5 font-medium text-neutral-200">{project.customer}</td>
+									return (
+										<div
+											key={project.id}
+											className="flex-1 flex items-center border-b border-white/5 hover:bg-white/5 transition-colors text-xs text-neutral-300 px-5"
+										>
+											{/* 1. Project Name */}
+											<div className="w-[20%] font-bold text-white truncate pr-2">
+												<button
+													onClick={() => onOpenProject?.(project)}
+													className="hover:underline cursor-pointer text-left focus:outline-none"
+												>
+													{project.name}
+												</button>
+											</div>
 
-												{/* 3. Phone */}
-												<td className="py-[18px] px-5 text-neutral-400">{formatPhone(project.phone)}</td>
+											{/* 2. Customer Name */}
+											<div className="w-[15%] font-medium text-neutral-250 truncate pr-2">
+												{project.customer}
+											</div>
 
-												{/* 4. Address */}
-												<td className="py-[18px] px-5 text-neutral-400 truncate max-w-[200px]" title={project.address}>
-													{project.address}
-												</td>
+											{/* 3. Phone */}
+											<div className="w-[15%] text-neutral-400 truncate pr-2">
+												{formatPhone(project.phone)}
+											</div>
 
-												{/* 5. Created Date */}
-												<td className="py-[18px] px-5 text-neutral-400">{formatDate(project.date)}</td>
+											{/* 4. Address */}
+											<div className="w-[22%] text-neutral-400 truncate pr-2" title={project.address}>
+												{project.address}
+											</div>
 
-												{/* 6. Status tag */}
-												<td className="py-[18px] px-5">
-													<span className={`border text-[9px] font-extrabold px-2.5 py-0.5 rounded tracking-wide uppercase ${
-														isReady
-															? "bg-white/20 text-white border-white/25"
-															: isPending
-															? "bg-neutral-900 text-neutral-400 border-neutral-850"
-															: "bg-white/10 text-white border-white/15"
-													}`}>
-														{project.status.replace("_", " ")}
-													</span>
-												</td>
+											{/* 5. Created Date */}
+											<div className="w-[12%] text-neutral-400 truncate">
+												{formatDate(project.date)}
+											</div>
 
-												{/* 7. Action Icons */}
-												<td className="py-[18px] px-5 text-right">
-													<div className="flex items-center justify-end gap-3.5">
-														<a
-															href={`tel:${project.phone}`}
-															className="text-neutral-500 hover:text-white transition-colors"
-															title="Call Customer"
-														>
-															<Phone className="w-3.5 h-3.5" />
-														</a>
+											{/* 6. Status tag */}
+											<div className="w-[11%]">
+												<span className={`border text-[9px] font-extrabold px-2.5 py-0.5 rounded tracking-wide uppercase ${
+													isReady
+														? "bg-white/20 text-white border-white/25"
+														: isPending
+														? "bg-neutral-900 text-neutral-400 border-neutral-850"
+														: "bg-white/10 text-white border-white/15"
+												}`}>
+													{project.status.replace("_", " ")}
+												</span>
+											</div>
 
-														<button
-															onClick={() => onOpenProject?.(project)}
-															className="text-neutral-500 hover:text-white transition-colors cursor-pointer focus:outline-none"
-															title="Open Workspace"
-														>
-															<Pencil className="w-3.5 h-3.5" />
-														</button>
-														<button
-															onClick={() => handleDeleteProject(project.id)}
-															className="text-neutral-500 hover:text-rose-400 transition-colors cursor-pointer focus:outline-none"
-															title="Delete Project"
-														>
-															<Trash2 className="w-3.5 h-3.5" />
-														</button>
-													</div>
-												</td>
-											</tr>
-										);
-									})}
-								</tbody>
-							</table>
+											{/* 7. Action Icons */}
+											<div className="w-[5%] text-right flex items-center justify-end gap-3.5">
+
+												<button
+													onClick={() => onOpenProject?.(project)}
+													className="text-neutral-500 hover:text-white transition-colors cursor-pointer focus:outline-none"
+													title="Open Workspace"
+												>
+													<Pencil className="w-3.5 h-3.5" />
+												</button>
+												<button
+													onClick={() => handleDeleteProject(project.id)}
+													className="text-neutral-500 hover:text-rose-400 transition-colors cursor-pointer focus:outline-none"
+													title="Delete Project"
+												>
+													<Trash2 className="w-3.5 h-3.5" />
+												</button>
+											</div>
+										</div>
+									);
+								})}
+							</div>
 						</div>
 					)}
 				</div>
