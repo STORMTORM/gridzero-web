@@ -29,8 +29,6 @@ export default function DesignWorkspace() {
 	const [heightMeters, setHeightMeters] = useState(50);
 	const [initialRoofs, setInitialRoofs] = useState<RoofData[]>([]);
 
-	// Tabs: "2d" (Drawing Canvas) vs "3d" (IFrame Simulation)
-	const [activeWorkspaceTab, setActiveWorkspaceTab] = useState<"2d" | "3d">("2d");
 	const [sceneData, setSceneData] = useState<SceneData | null>(null);
 
 	// UI State Indicators
@@ -144,8 +142,6 @@ export default function DesignWorkspace() {
 			<ProjectTopbar
 				projectName={projectName}
 				currentStage={2}
-				activeWorkspaceTab={activeWorkspaceTab}
-				onWorkspaceTabChange={setActiveWorkspaceTab}
 			/>
 
 			{/* Main Split Layout Panel */}

@@ -618,6 +618,34 @@ export default function Viewer({ data: propData, sitevisitId: propSitevisitId, r
     return `${h % 12 || 12}:${m.toString().padStart(2, "0")} ${h >= 12 ? "PM" : "AM"}`;
   };
 
+  const handleZoomIn = () => {
+    const camera = cameraRef.current;
+    const controls = controlsRef.current;
+    if (!camera || !controls) return;
+
+    const offset = new THREE.Vector3().subVectors(camera.position, controls.target);
+    offset.multiplyScalar(0.85); // zoom in by 15%
+    if (offset.length() < controls.minDistance) {
+      offset.setLength(controls.minDistance);
+    }
+    camera.position.copy(controls.target).add(offset);
+    controls.update();
+  };
+
+  const handleZoomOut = () => {
+    const camera = cameraRef.current;
+    const controls = controlsRef.current;
+    if (!camera || !controls) return;
+
+    const offset = new THREE.Vector3().subVectors(camera.position, controls.target);
+    offset.multiplyScalar(1.15); // zoom out by 15%
+    if (offset.length() > controls.maxDistance) {
+      offset.setLength(controls.maxDistance);
+    }
+    camera.position.copy(controls.target).add(offset);
+    controls.update();
+  };
+
   if (loading) return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", width: "100%", background: "#0a0a0a", color: "#fff" }}>
       <div style={{ textAlign: "center" }}>
@@ -642,6 +670,54 @@ export default function Viewer({ data: propData, sitevisitId: propSitevisitId, r
       />
       {!noUI && (
         <Compass angle={cameraAngle} sunAzimuth={sunAzimuth} angleSouth={data?.angle_south_vertical_deg || 0} />
+      )}
+      {!noUI && (
+        <div style={{
+          position: "absolute",
+          right: 28,
+          top: 120,
+          display: "flex",
+          flexDirection: "column",
+          gap: 6,
+          zIndex: 25,
+        }}>
+          <button
+            onClick={handleZoomIn}
+            style={{
+              width: 40, height: 40, borderRadius: 20,
+              background: "rgba(28,28,30,0.87)",
+              border: "1px solid rgba(255,255,255,0.08)",
+              color: "#ccc",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              cursor: "pointer", boxShadow: "0 2px 6px rgba(0,0,0,0.3)",
+              transition: "background 0.2s, transform 0.1s",
+              outline: "none",
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(44,44,46,0.95)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(28,28,30,0.87)"; }}
+            title="Zoom In"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+          </button>
+          <button
+            onClick={handleZoomOut}
+            style={{
+              width: 40, height: 40, borderRadius: 20,
+              background: "rgba(28,28,30,0.87)",
+              border: "1px solid rgba(255,255,255,0.08)",
+              color: "#ccc",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              cursor: "pointer", boxShadow: "0 2px 6px rgba(0,0,0,0.3)",
+              transition: "background 0.2s, transform 0.1s",
+              outline: "none",
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(44,44,46,0.95)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(28,28,30,0.87)"; }}
+            title="Zoom Out"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+          </button>
+        </div>
       )}
       {!noUI && (
         <div style={{

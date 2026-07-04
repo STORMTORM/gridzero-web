@@ -5,8 +5,6 @@ interface ProjectTopbarProps {
 	projectName: string;
 	currentStage: number; // 1 to 8
 	savingStatus?: string;
-	activeWorkspaceTab?: "2d" | "3d";
-	onWorkspaceTabChange?: (tab: "2d" | "3d") => void;
 }
 
 const STAGE_BREADCRUMBS: Record<number, string> = {
@@ -23,8 +21,6 @@ const STAGE_BREADCRUMBS: Record<number, string> = {
 export default function ProjectTopbar({
 	projectName,
 	currentStage,
-	activeWorkspaceTab,
-	onWorkspaceTabChange,
 }: ProjectTopbarProps) {
 	const navigate = useNavigate();
 
@@ -69,28 +65,6 @@ export default function ProjectTopbar({
 					})}
 				</div>
 			</div>
-
-			{/* Tab Selector (Renders only if in design mode and handler is provided) */}
-			{currentStage >= 2 && currentStage <= 7 && activeWorkspaceTab && onWorkspaceTabChange && (
-				<div className="flex bg-neutral-900 border border-white/10 rounded-xl p-0.5 flex-shrink-0 self-start xl:self-auto">
-					<button
-						onClick={() => onWorkspaceTabChange("2d")}
-						className={`px-4 py-1.5 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${
-							activeWorkspaceTab === "2d" ? "bg-white text-black" : "text-neutral-400 hover:text-white"
-						}`}
-					>
-						2D Drawing Canvas
-					</button>
-					<button
-						onClick={() => onWorkspaceTabChange("3d")}
-						className={`px-4 py-1.5 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${
-							activeWorkspaceTab === "3d" ? "bg-white text-black" : "text-neutral-400 hover:text-white"
-						}`}
-					>
-						3D Live Preview
-					</button>
-				</div>
-			)}
 		</div>
 	);
 }

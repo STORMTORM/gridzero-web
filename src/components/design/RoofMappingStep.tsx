@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from "react";
-import { PenTool } from "lucide-react";
+import { PenTool, Plus, Minus } from "lucide-react";
 import api from "../../api/client";
 import DesignSidebar from "./DesignSidebar";
 import Viewer from "./3d/Viewer";
@@ -353,6 +353,14 @@ export default function RoofMappingStep({
 		setIsDirty(true);
 	};
 
+	const zoomIn2D = () => {
+		setScale((prev) => Math.min(prev + 0.15, 6));
+	};
+
+	const zoomOut2D = () => {
+		setScale((prev) => Math.max(prev - 0.15, 0.4));
+	};
+
 
 	return (
 		<div className="flex-grow w-full flex flex-col md:flex-row overflow-hidden">
@@ -494,6 +502,24 @@ export default function RoofMappingStep({
 							</g>
 						)}
 					</svg>
+				</div>
+
+				{/* 2D Zoom Control buttons overlay */}
+				<div className="absolute bottom-6 right-6 flex flex-col gap-1.5 z-25">
+					<button
+						onClick={zoomIn2D}
+						className="w-10 h-10 bg-black/75 hover:bg-neutral-800 text-white rounded-xl border border-white/10 flex items-center justify-center transition-all cursor-pointer shadow-lg active:scale-95"
+						title="Zoom In"
+					>
+						<Plus className="w-4.5 h-4.5" />
+					</button>
+					<button
+						onClick={zoomOut2D}
+						className="w-10 h-10 bg-black/75 hover:bg-neutral-800 text-white rounded-xl border border-white/10 flex items-center justify-center transition-all cursor-pointer shadow-lg active:scale-95"
+						title="Zoom Out"
+					>
+						<Minus className="w-4.5 h-4.5" />
+					</button>
 				</div>
 			</div>
 
