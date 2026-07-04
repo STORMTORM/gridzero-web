@@ -1,13 +1,14 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
-	ChevronRight,
 	Zap,
 	Briefcase,
 	Home as HomeIcon,
 	RefreshCw,
+	ChevronRight,
 } from "lucide-react";
 import api from "../../api/client";
+import ProjectTopbar from "../../components/ProjectTopbar";
 
 const STATE_DISCOM_MAP: Record<string, string[]> = {
 	"Andhra Pradesh": ["APEPDCL (Eastern Power Distribution Company of AP)", "APSPDCL (Southern Power Distribution Company of AP)"],
@@ -188,7 +189,7 @@ export default function CustomerDetail() {
 				finalize: true,
 			});
 
-			navigate("/");
+			navigate(`/project/${id}/design`);
 		} catch (e) {
 			console.error("Failed to finalize details", e);
 		} finally {
@@ -209,22 +210,12 @@ export default function CustomerDetail() {
 
 	return (
 		<div className="flex flex-col h-full bg-black overflow-hidden animate-in fade-in duration-300 w-full text-neutral-100">
-			{/* Page Onboarding Title header */}
-			<div className="bg-black border-b border-white/10 px-6 py-4 flex-shrink-0 flex items-center justify-between">
-				<div className="flex items-center gap-2.5 text-xs font-semibold text-neutral-400">
-					<span className="text-neutral-500">Workspace</span>
-					<ChevronRight className="w-3 h-3 text-neutral-600" />
-					<span className="font-bold text-white">{formValues.projectName || "New Project"}</span>
-					<ChevronRight className="w-3 h-3 text-neutral-600" />
-					<span className="text-white bg-white/10 px-2.5 py-0.5 rounded border border-white/10 font-bold uppercase tracking-wider">
-						Customer Details
-					</span>
-				</div>
-				<div className="text-xs text-neutral-500 font-semibold italic flex items-center gap-1.5">
-					<div className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />
-					<span>Auto-saving changes</span>
-				</div>
-			</div>
+			{/* Project Workspace header */}
+			<ProjectTopbar
+				projectName={formValues.projectName}
+				currentStage={1}
+				savingStatus="Auto-saving changes"
+			/>
 
 			{/* Main Split Layout Pane */}
 			<div className="flex-grow flex flex-col lg:flex-row overflow-hidden">

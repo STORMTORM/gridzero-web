@@ -3,6 +3,7 @@ import { Routes, Route, Outlet, useNavigate } from "react-router-dom";
 import Sidebar from "./components/Sidebar";
 import Dashboard from "./pages/Dashboard";
 import CustomerDetail from "./pages/project/CustomerDetail";
+import DesignWorkspace from "./pages/project/DesignWorkspace";
 import Login from "./pages/Login";
 import ProtectedRoute from "./components/ProtectedRoute";
 import NewProjectModal from "./components/NewProjectModal";
@@ -61,6 +62,7 @@ export default function App() {
 					}
 				>
 					<Route path="/project/:id/details" element={<CustomerDetail />} />
+					<Route path="/project/:id/design" element={<DesignWorkspace />} />
 				</Route>
 			</Routes>
 

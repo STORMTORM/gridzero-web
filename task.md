@@ -1,0 +1,14 @@
+- `[x]` Install `three` and `@types/three` dependencies.
+- `[x]` Port utility files to `src/utils/design/`.
+  - `[x]` `types.ts`
+  - `[x]` `sunEngine.ts`
+  - `[x]` `shadowAnalysis.ts`
+  - `[x]` `sceneBuilder.ts`
+  - `[x]` `api.ts` (using shared axios client)
+- `[x]` Port component files to `src/components/design/3d/`.
+  - `[x]` `Compass.tsx`
+  - `[x]` `ControlPanel.tsx`
+  - `[x]` `Icon.tsx`
+  - `[x]` `Viewer.tsx` (updating imports)
+- `[x]` Mount `<Viewer />` in `DesignWorkspace.tsx`.
+- `[x]` Verify build compiles cleanly.
