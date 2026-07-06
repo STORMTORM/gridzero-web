@@ -1,25 +1,15 @@
 import { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { RefreshCw } from "lucide-react";
 import api from "../../api/client";
 import ProjectTopbar from "../../components/ProjectTopbar";
-import RoofMappingStep from "../../components/design/RoofMappingStep";
-import type { SceneData } from "../../utils/design/types";
-
-interface RoofData {
-	id: string;
-	name: string;
-	height: number;
-	points: [number, number][]; // in meters [x, y]
-	area: number;
-	parapetEnabled: boolean;
-	parapetHeight: number;
-	parapetThickness: number;
-	parapetSetback: number;
-}
+import UnifiedDesignStep from "../../components/design/UnifiedDesignStep";
+import type { RoofData } from "../../components/design/UnifiedDesignStep";
+import type { SceneData, LocalObject } from "../../utils/design/types";
 
 export default function DesignWorkspace() {
 	const { id } = useParams<{ id: string }>();
+	const navigate = useNavigate();
 
 	// Project & Map Metadata
 	const [projectName, setProjectName] = useState("");
@@ -28,6 +18,8 @@ export default function DesignWorkspace() {
 	const [widthMeters, setWidthMeters] = useState(50);
 	const [heightMeters, setHeightMeters] = useState(50);
 	const [initialRoofs, setInitialRoofs] = useState<RoofData[]>([]);
+	const [initialObjects, setInitialObjects] = useState<LocalObject[]>([]);
+	const [stage, setStage] = useState<number>(2);
 
 	const [sceneData, setSceneData] = useState<SceneData | null>(null);
 
@@ -89,8 +81,11 @@ export default function DesignWorkspace() {
 									return [cx, cy];
 								});
 
-								const walls = data.walls || {};
-								const relatedWalls = Object.values(walls).filter((w: any) => w.roof_id === roofId);
+								const apiWalls = {
+									...(data.walls || {}),
+									...(data.objects?.wall || {})
+								};
+								const relatedWalls = Object.values(apiWalls).filter((w: any) => w.roof_id === roofId);
 								const hasParapet = relatedWalls.length > 0;
 								const firstWall = relatedWalls[0] as any;
 
@@ -101,13 +96,85 @@ export default function DesignWorkspace() {
 									points,
 									area: roofInfo.area || 0,
 									parapetEnabled: hasParapet,
-									parapetHeight: hasParapet ? (firstWall.z_end - firstWall.z_init) : 1,
+									parapetHeight: hasParapet ? Math.max(0, (firstWall.z_end || 0) - (firstWall.z_init || 0)) : 1,
 									parapetThickness: hasParapet ? (firstWall.thickness || 0.23) : 0.23,
 									parapetSetback: hasParapet ? (firstWall.setback || 0) : 0,
 								};
 							});
 							setInitialRoofs(parsedRoofs);
 						}
+
+						// Parse objects
+						const parsedObjects: LocalObject[] = [];
+						if (data.objects) {
+							const categories: ("cuboid" | "cylinder" | "wall" | "polygon" | "tree")[] = ["cuboid", "cylinder", "wall", "polygon", "tree"];
+							categories.forEach((cat) => {
+								const catDict = data.objects[cat] || {};
+								Object.entries(catDict).forEach(([key, val]: [string, any]) => {
+									// Exclude parapet walls from draggable objects list
+									if (cat === "wall" && val.roof_id) {
+										const parentRoof = data.roofs?.[val.roof_id];
+										if (parentRoof) {
+											const pts = parentRoof.roof || [];
+											const wp1 = val.p1;
+											const wp2 = val.p2;
+											if (wp1 && wp2 && pts.length > 0) {
+												let isParapetEdge = false;
+												for (let i = 0; i < pts.length; i++) {
+													const nextIdx = (i + 1) % pts.length;
+													const edgeStart = pts[i];
+													const edgeEnd = pts[nextIdx];
+													
+													const matchesForward =
+														Math.abs(edgeStart[0] - wp1[0]) <= 0.05 &&
+														Math.abs(edgeStart[1] - wp1[1]) <= 0.05 &&
+														Math.abs(edgeEnd[0] - wp2[0]) <= 0.05 &&
+														Math.abs(edgeEnd[1] - wp2[1]) <= 0.05;
+														
+													const matchesReverse =
+														Math.abs(edgeStart[0] - wp2[0]) <= 0.05 &&
+														Math.abs(edgeStart[1] - wp2[1]) <= 0.05 &&
+														Math.abs(edgeEnd[0] - wp1[0]) <= 0.05 &&
+														Math.abs(edgeEnd[1] - wp1[1]) <= 0.05;
+														
+													if (matchesForward || matchesReverse) {
+														isParapetEdge = true;
+														break;
+													}
+												}
+												if (isParapetEdge) {
+													return; // Skip parapet wall objects
+												}
+											}
+										}
+									}
+
+									parsedObjects.push({
+										id: key,
+										name: val.name || `${cat.toUpperCase()} ${key}`,
+										type: cat,
+										tag: val.tag || undefined,
+										roof_id: val.roof_id || undefined,
+										on_roof: val.on_roof || false,
+										cast_shadow: val.cast_shadow !== false,
+										center_x: val.center_x ?? 0,
+										center_y: val.center_y ?? 0,
+										z_init: val.z_init ?? 0,
+										z_end: val.z_end ?? 3,
+										length: val.length ?? 2,
+										width: val.width ?? 2,
+										angle: val.angle ?? 0,
+										radius: val.radius ?? 1,
+										p1: val.p1 || undefined,
+										p2: val.p2 || undefined,
+										thickness: val.thickness ?? 0.23,
+										polygon: val.polygon || undefined,
+									});
+								});
+							});
+						}
+						setInitialObjects(parsedObjects);
+
 						setLoading(false);
 					};
 					img.onerror = () => {
@@ -141,20 +208,29 @@ export default function DesignWorkspace() {
 			{/* Project Workspace header */}
 			<ProjectTopbar
 				projectName={projectName}
-				currentStage={2}
+				currentStage={stage}
 			/>
 
 			{/* Main Split Layout Panel */}
 			<div className="flex-grow w-full flex flex-col md:flex-row overflow-hidden relative">
 				
-				<RoofMappingStep
+				<UnifiedDesignStep
 					sitevisitId={id || ""}
 					widthMeters={widthMeters}
 					heightMeters={heightMeters}
 					imageUrl={imageUrl}
 					initialRoofs={initialRoofs}
+					initialObjects={initialObjects}
+					stage={stage}
 					onSaveStatusChange={setSaving}
 					sceneData={sceneData}
+					onContinue={() => {
+						if (stage === 2) {
+							setStage(3);
+						} else {
+							navigate("/");
+						}
+					}}
 				/>
 
 			</div>

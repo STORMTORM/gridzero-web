@@ -126,3 +126,8 @@ export interface SceneData {
 }
 
 export type QualityLevel = "low" | "medium" | "high";
+
+export interface LocalObject extends ObjectData {
+  id: string;
+  type: "cuboid" | "cylinder" | "wall" | "polygon" | "tree";
+}
