@@ -36,25 +36,20 @@ export default function ObstructionMappingStep({
 	const onRoofCategories = [
 		{ key: "ac_unit", label: "AC Unit" },
 		{ key: "water_tanker", label: "Water Tank" },
-		{ key: "elevated", label: "Elevated Struct" },
-		{ key: "cuboid", label: "Cuboid" },
-		{ key: "cylinder", label: "Cylinder" },
+		{ key: "elevated", label: "Elevated" },
+		{ key: "dish", label: "Dish" },
 		{ key: "chimney", label: "Chimney" },
-		{ key: "dish", label: "Dish Antenna" },
-		{ key: "skylight", label: "Skylight Window" },
-		{ key: "mumtee", label: "Mumtee (Stair Cabin)" },
-		{ key: "wall", label: "Wall Line" },
-		{ key: "polygon", label: "Area Outline" },
+		{ key: "skylight", label: "Skylight" },
+		{ key: "mumtee", label: "Mumtee" },
 	];
 
 	const offRoofCategories = [
-		{ key: "tree", label: "Tree (Ground)" },
-		{ key: "building", label: "Adjacent Bldg" },
-		{ key: "cuboid_ground", label: "Ground Cuboid" },
-		{ key: "cylinder_ground", label: "Ground Cylinder" },
-		{ key: "tanker", label: "Overhead Tank" },
-		{ key: "tower", label: "Utility Tower" },
-		{ key: "polygon", label: "Area Outline" },
+		{ key: "tree", label: "Tree" },
+		{ key: "building", label: "Building" },
+		{ key: "cuboid_ground", label: "Cuboid" },
+		{ key: "tanker", label: "Overhead Water Tank" },
+		{ key: "tower", label: "Tower" },
+		{ key: "cylinder_ground", label: "Cylinder" },
 	];
 
 	const activeCategories = activeTab === "on_roof" ? onRoofCategories : offRoofCategories;
