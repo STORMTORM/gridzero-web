@@ -91,9 +91,9 @@ export default function UnifiedDesignStep({
 	const innerContainerRef = useRef<HTMLDivElement>(null);
 
 	// Debounce and auto-save state controllers
-	const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+	const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 	const latestRoofsRef = useRef(roofs);
-	const saveObjectsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+	const saveObjectsTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 	const latestObjectsRef = useRef(objects);
 	
 	useEffect(() => {
