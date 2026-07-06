@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Check, Trash2 } from "lucide-react";
 import type { LocalObject } from "../../utils/design/types";
 import type { RoofData } from "./RoofMappingStep";
@@ -7,8 +8,8 @@ interface ObstructionMappingStepProps {
 	objects: LocalObject[];
 	selectedObjectId: string | null;
 	setSelectedObjectId: (id: string | null) => void;
-	objectDrawingMode: "none" | "ac_unit" | "mumtee" | "water_tank" | "tree" | "wall" | "polygon";
-	setObjectDrawingMode: (mode: "none" | "ac_unit" | "mumtee" | "water_tank" | "tree" | "wall" | "polygon") => void;
+	objectDrawingMode: string;
+	setObjectDrawingMode: (mode: string) => void;
 	deleteSelectedObject: () => void;
 	updateSelectedObject: (fields: Partial<LocalObject>) => void;
 	onContinue: () => void;
@@ -29,14 +30,34 @@ export default function ObstructionMappingStep({
 	const selectedObject = objects.find((o) => o.id === selectedObjectId);
 	const objHeight = selectedObject ? (selectedObject.z_end - selectedObject.z_init) : 0;
 
-	const objectCategories = [
-		{ key: "mumtee", label: "Stair Cabin" },
+	// Tabs: "on_roof" (snapped to roof height) and "off_roof" (on ground)
+	const [activeTab, setActiveTab] = useState<"on_roof" | "off_roof">("on_roof");
+
+	const onRoofCategories = [
 		{ key: "ac_unit", label: "AC Unit" },
-		{ key: "water_tank", label: "Water Tank" },
-		{ key: "tree", label: "Tree" },
-		{ key: "wall", label: "Boundary Wall" },
-		{ key: "polygon", label: "Custom Shape" },
+		{ key: "water_tanker", label: "Water Tank" },
+		{ key: "elevated", label: "Elevated Struct" },
+		{ key: "cuboid", label: "Cuboid" },
+		{ key: "cylinder", label: "Cylinder" },
+		{ key: "chimney", label: "Chimney" },
+		{ key: "dish", label: "Dish Antenna" },
+		{ key: "skylight", label: "Skylight Window" },
+		{ key: "mumtee", label: "Mumtee (Stair Cabin)" },
+		{ key: "wall", label: "Wall Line" },
+		{ key: "polygon", label: "Area Outline" },
 	];
+
+	const offRoofCategories = [
+		{ key: "tree", label: "Tree (Ground)" },
+		{ key: "building", label: "Adjacent Bldg" },
+		{ key: "cuboid_ground", label: "Ground Cuboid" },
+		{ key: "cylinder_ground", label: "Ground Cylinder" },
+		{ key: "tanker", label: "Overhead Tank" },
+		{ key: "tower", label: "Utility Tower" },
+		{ key: "polygon", label: "Area Outline" },
+	];
+
+	const activeCategories = activeTab === "on_roof" ? onRoofCategories : offRoofCategories;
 
 	return (
 		<div className="h-full flex flex-col justify-between">
@@ -52,7 +73,7 @@ export default function ObstructionMappingStep({
 				</div>
 
 				{/* Object Drawing buttons */}
-				<div className="flex flex-col gap-2">
+				<div className="flex flex-col gap-3">
 					<span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Add Obstruction</span>
 					
 					{roofs.length === 0 ? (
@@ -66,8 +87,39 @@ export default function ObstructionMappingStep({
 						</div>
 					) : (
 						<>
-							<div className="grid grid-cols-2 gap-2">
-								{objectCategories.map((cat, idx) => {
+							{/* Tab Selectors */}
+							<div className="flex bg-white/5 p-1 rounded-xl border border-white/5">
+								<button
+									onClick={() => {
+										setActiveTab("on_roof");
+										setObjectDrawingMode("none");
+									}}
+									className={`flex-1 py-1 text-center text-[10px] font-bold rounded-lg transition-all cursor-pointer ${
+										activeTab === "on_roof"
+											? "bg-white text-black shadow-sm"
+											: "text-neutral-400 hover:text-white"
+									}`}
+								>
+									On Roof
+								</button>
+								<button
+									onClick={() => {
+										setActiveTab("off_roof");
+										setObjectDrawingMode("none");
+									}}
+									className={`flex-1 py-1 text-center text-[10px] font-bold rounded-lg transition-all cursor-pointer ${
+										activeTab === "off_roof"
+											? "bg-white text-black shadow-sm"
+											: "text-neutral-400 hover:text-white"
+									}`}
+								>
+									Off Roof (Ground)
+								</button>
+							</div>
+
+							{/* Buttons Grid */}
+							<div className="grid grid-cols-2 gap-1.5 max-h-[160px] overflow-y-auto pr-1">
+								{activeCategories.map((cat, idx) => {
 									const isActive = objectDrawingMode === cat.key;
 									
 									return (
@@ -77,11 +129,11 @@ export default function ObstructionMappingStep({
 												if (isActive) {
 													setObjectDrawingMode("none");
 												} else {
-													setObjectDrawingMode(cat.key as any);
+													setObjectDrawingMode(cat.key);
 													setSelectedObjectId(null);
 												}
 											}}
-											className={`py-2 px-3 rounded-xl border text-left text-[11px] font-bold transition-all cursor-pointer ${
+											className={`py-1.5 px-2.5 rounded-xl border text-left text-[10px] font-bold transition-all cursor-pointer ${
 												isActive
 													? "bg-white border-white text-black"
 													: "bg-white/5 border-white/5 text-neutral-350 hover:bg-white/10 hover:border-white/10"
@@ -92,10 +144,11 @@ export default function ObstructionMappingStep({
 									);
 								})}
 							</div>
+
 							{objectDrawingMode !== "none" && (
 								<button
 									onClick={() => setObjectDrawingMode("none")}
-									className="w-full mt-1 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-450 text-[10px] font-bold rounded-lg border border-rose-500/10 transition-all cursor-pointer"
+									className="w-full py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-450 text-[10px] font-bold rounded-lg border border-rose-500/10 transition-all cursor-pointer"
 								>
 									Cancel Placement (ESC)
 								</button>
@@ -149,287 +202,222 @@ export default function ObstructionMappingStep({
 							<span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Object Parameters</span>
 							<button
 								onClick={deleteSelectedObject}
-								className="p-1 hover:bg-rose-500/10 text-neutral-500 hover:text-rose-455 rounded-lg transition-colors cursor-pointer"
-								title="Delete Selected Object"
+								className="p-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-450 border border-rose-500/10 transition-colors cursor-pointer"
+								title="Delete selected object"
 							>
-								<Trash2 className="w-4 h-4" />
+								<Trash2 size={13} />
 							</button>
 						</div>
 
-						{/* Name field */}
-						<div className="flex flex-col gap-1.5">
-							<label className="text-[11px] font-semibold text-neutral-400">Object Name</label>
-							<input
-								type="text"
-								value={selectedObject.name}
-								onChange={(e) => updateSelectedObject({ name: e.target.value })}
-								className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs font-bold text-white focus:outline-none focus:border-white transition-colors"
-							/>
-						</div>
-
-						{/* Snap to Roof setting */}
-						<div className="border border-white/5 bg-white/5 p-3 rounded-xl flex flex-col gap-3">
-							<div className="flex justify-between items-center">
-								<div className="flex flex-col gap-0.5">
-									<span className="text-[11px] font-bold">Snap onto a Roof</span>
-									<span className="text-[9px] text-neutral-500">Elevate object to sit directly on a roof</span>
-								</div>
-								<label className="relative inline-flex items-center cursor-pointer select-none">
-									<input
-										type="checkbox"
-										checked={selectedObject.on_roof}
-										onChange={(e) => {
-											const checked = e.target.checked;
-											let firstRoofId = selectedObject.roof_id;
-											let baseElevation = selectedObject.z_init;
-
-											if (checked && roofs.length > 0) {
-												firstRoofId = roofs[0].id;
-												baseElevation = roofs[0].height;
-											} else if (!checked) {
-												baseElevation = 0;
-											}
-
-											updateSelectedObject({
-												on_roof: checked,
-												roof_id: checked ? firstRoofId : undefined,
-												z_init: baseElevation,
-												z_end: baseElevation + objHeight,
-											});
-										}}
-										className="sr-only peer"
-									/>
-									<div className="w-8 h-4.5 bg-neutral-800 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-neutral-500 after:rounded-full after:h-3.5 after:w-3.5 after:transition-all peer-checked:after:bg-white peer-checked:bg-white/20 border border-white/10"></div>
-								</label>
-							</div>
-
-							{selectedObject.on_roof && roofs.length > 0 && (
-								<div className="flex flex-col gap-1.5">
-									<label className="text-[9px] font-bold text-neutral-500 uppercase">Select Target Roof</label>
-									<select
-										value={selectedObject.roof_id || ""}
-										onChange={(e) => {
-											const roof = roofs.find((r) => r.id === e.target.value);
-											if (roof) {
-												updateSelectedObject({
-													roof_id: roof.id,
-													z_init: roof.height,
-													z_end: roof.height + objHeight,
-												});
-											}
-										}}
-										className="w-full bg-neutral-900 border border-white/10 rounded-xl px-2.5 py-1.5 text-xs text-white focus:outline-none"
-									>
-										{roofs.map((r) => (
-											<option key={r.id} value={r.id}>{r.name} ({r.height}m)</option>
-										))}
-									</select>
-								</div>
-							)}
-						</div>
-
-						{/* Base elevation (Z Init) */}
-						{!selectedObject.on_roof && (
+						{/* Height parameters */}
+						<div className="flex flex-col gap-4">
+							{/* Object Height */}
 							<div className="flex flex-col gap-1.5">
 								<div className="flex justify-between items-center text-[11px] font-semibold text-neutral-400">
-									<span>Base Elevation (z-start)</span>
-									<span className="text-white font-bold">{selectedObject.z_init.toFixed(1)}m</span>
+									<span>Height</span>
+									<span className="text-white font-bold">{objHeight.toFixed(1)}m</span>
 								</div>
 								<input
 									type="range"
-									min="0"
+									min="0.2"
 									max="15"
-									step="0.5"
-									value={selectedObject.z_init}
+									step="0.1"
+									value={objHeight}
 									onChange={(e) => {
-										const zi = parseFloat(e.target.value);
+										const h = parseFloat(e.target.value);
 										updateSelectedObject({
-											z_init: zi,
-											z_end: zi + objHeight,
+											z_end: selectedObject.z_init + h,
 										});
 									}}
 									className="w-full accent-white cursor-pointer"
 								/>
 							</div>
-						)}
 
-						{/* Height slider */}
-						<div className="flex flex-col gap-1.5">
-							<div className="flex justify-between items-center text-[11px] font-semibold text-neutral-400">
-								<span>Object Height</span>
-								<span className="text-white font-bold">{objHeight.toFixed(1)}m</span>
+							{/* Base Elevation (editable only for wall/polygon or objects not locked to on_roof) */}
+							<div className="flex flex-col gap-1.5">
+								<div className="flex justify-between items-center text-[11px] font-semibold text-neutral-400">
+									<span>Base Elevation (z_init)</span>
+									<span className="text-white font-bold">{selectedObject.z_init.toFixed(1)}m</span>
+								</div>
+								<input
+									type="range"
+									min="0"
+									max="30"
+									step="0.1"
+									value={selectedObject.z_init}
+									disabled={selectedObject.on_roof || selectedObject.type === "tree" || selectedObject.tag === "building"}
+									onChange={(e) => {
+										const z = parseFloat(e.target.value);
+										const prevH = selectedObject.z_end - selectedObject.z_init;
+										updateSelectedObject({
+											z_init: z,
+											z_end: z + prevH,
+										});
+									}}
+									className="w-full accent-white cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+								/>
 							</div>
-							<input
-								type="range"
-								min="0.2"
-								max="10"
-								step="0.1"
-								value={objHeight}
-								onChange={(e) => {
-									const h = parseFloat(e.target.value);
-									updateSelectedObject({
-										z_end: selectedObject.z_init + h,
-									});
-								}}
-								className="w-full accent-white cursor-pointer"
-							/>
-						</div>
 
-						{/* Dimensions based on object type */}
-						{selectedObject.type === "cuboid" && (
-							<div className="flex flex-col gap-4 border-t border-white/5 pt-3">
-								{/* Model type selection */}
-								<div className="flex flex-col gap-1.5">
-									<label className="text-[11px] font-semibold text-neutral-400">Object Model Type</label>
-									<select
-										value={selectedObject.tag || ""}
-										onChange={(e) => updateSelectedObject({ tag: e.target.value || undefined })}
-										className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs font-bold text-white focus:outline-none focus:border-white transition-colors"
-									>
-										<option value="">Basic Cuboid Block</option>
-										<option value="mumtee">Stair Cabin (Mumtee)</option>
-										<option value="rectangular_tank">Rectangular Water Tank</option>
-										<option value="chimney_box">Chimney Box</option>
-										<option value="skylight">Skylight Window</option>
-									</select>
-								</div>
-
-								{/* Length */}
-								<div className="flex flex-col gap-1.5">
-									<div className="flex justify-between items-center text-[11px] font-semibold text-neutral-400">
-										<span>Length (x-axis)</span>
-										<span className="text-white font-bold">{selectedObject.length?.toFixed(1)}m</span>
-									</div>
-									<input
-										type="range"
-										min="0.5"
-										max="10"
-										step="0.1"
-										value={selectedObject.length || 2}
-										onChange={(e) => updateSelectedObject({ length: parseFloat(e.target.value) })}
-										className="w-full accent-white cursor-pointer"
-									/>
-								</div>
-
-								{/* Width */}
-								<div className="flex flex-col gap-1.5">
-									<div className="flex justify-between items-center text-[11px] font-semibold text-neutral-400">
-										<span>Width (y-axis)</span>
-										<span className="text-white font-bold">{selectedObject.width?.toFixed(1)}m</span>
-									</div>
-									<input
-										type="range"
-										min="0.5"
-										max="10"
-										step="0.1"
-										value={selectedObject.width || 2}
-										onChange={(e) => updateSelectedObject({ width: parseFloat(e.target.value) })}
-										className="w-full accent-white cursor-pointer"
-									/>
-								</div>
-
-								{/* Rotation Angle */}
-								<div className="flex flex-col gap-1.5">
-									<div className="flex justify-between items-center text-[11px] font-semibold text-neutral-400">
-										<span>Rotation Angle</span>
-										<span className="text-white font-bold">{selectedObject.angle || 0}°</span>
-									</div>
-									<input
-										type="range"
-										min="0"
-										max="360"
-										step="5"
-										value={selectedObject.angle || 0}
-										onChange={(e) => updateSelectedObject({ angle: parseInt(e.target.value) })}
-										className="w-full accent-white cursor-pointer"
-									/>
-								</div>
-							</div>
-						)}
-
-						{(selectedObject.type === "cylinder" || selectedObject.type === "tree") && (
-							<div className="flex flex-col gap-4 border-t border-white/5 pt-3">
-								<div className="flex flex-col gap-1.5">
-									<div className="flex justify-between items-center text-[11px] font-semibold text-neutral-400">
-										<span>Radius</span>
-										<span className="text-white font-bold">{selectedObject.radius?.toFixed(1)}m</span>
-									</div>
-									<input
-										type="range"
-										min="0.3"
-										max="8"
-										step="0.1"
-										value={selectedObject.radius || 1}
-										onChange={(e) => updateSelectedObject({ radius: parseFloat(e.target.value) })}
-										className="w-full accent-white cursor-pointer"
-									/>
-								</div>
-
-								{selectedObject.type === "cylinder" && (
+							{/* Dimensions based on object type */}
+							{selectedObject.type === "cuboid" && (
+								<div className="flex flex-col gap-4 border-t border-white/5 pt-3">
+									{/* Model type selection */}
 									<div className="flex flex-col gap-1.5">
-										<label className="text-[11px] font-semibold text-neutral-400">Cylinder Model Type</label>
+										<label className="text-[11px] font-semibold text-neutral-400">Object Model Type</label>
 										<select
 											value={selectedObject.tag || ""}
 											onChange={(e) => updateSelectedObject({ tag: e.target.value || undefined })}
 											className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs font-bold text-white focus:outline-none focus:border-white transition-colors"
 										>
-											<option value="">Basic Cylinder Block</option>
-											<option value="chimney">Circular Chimney</option>
-											<option value="cylinder_tank">Vertical Cylinder Tank</option>
-											<option value="overhead_tank">Overhead Water Tank</option>
-											<option value="horizontal_tank">Horizontal Tank</option>
+											<option value="">Basic Cuboid Block</option>
+											<option value="mumtee">Stair Cabin (Mumtee)</option>
+											<option value="rectangular_tank">Rectangular Water Tank</option>
+											<option value="chimney_box">Chimney Box</option>
+											<option value="skylight">Skylight Window</option>
+											<option value="elevated">Elevated Structure</option>
+											<option value="building">Adjacent Building</option>
+											<option value="tower">Utility Tower</option>
 										</select>
 									</div>
-								)}
 
-								{selectedObject.type === "tree" && (
+									{/* Length */}
 									<div className="flex flex-col gap-1.5">
-										<label className="text-[11px] font-semibold text-neutral-400">Tree Species Model</label>
-										<select
-											value={selectedObject.tag || "mango"}
-											onChange={(e) => updateSelectedObject({ tag: e.target.value })}
-											className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs font-bold text-white focus:outline-none"
-										>
-											<option value="mango">Mango Tree</option>
-											<option value="coconut">Coconut Palm</option>
-											<option value="neem">Neem Tree</option>
-											<option value="pine">Pine Tree</option>
-										</select>
+										<div className="flex justify-between items-center text-[11px] font-semibold text-neutral-400">
+											<span>Length</span>
+											<span className="text-white font-bold">{selectedObject.length?.toFixed(1)}m</span>
+										</div>
+										<input
+											type="range"
+											min="0.5"
+											max="20"
+											step="0.1"
+											value={selectedObject.length || 2}
+											onChange={(e) => updateSelectedObject({ length: parseFloat(e.target.value) })}
+											className="w-full accent-white cursor-pointer"
+										/>
 									</div>
-								)}
-							</div>
-						)}
 
-						{selectedObject.type === "wall" && (
-							<div className="flex flex-col gap-4 border-t border-white/5 pt-3">
-								<div className="flex flex-col gap-1.5">
-									<div className="flex justify-between items-center text-[11px] font-semibold text-neutral-450">
-										<span>Wall Thickness</span>
-										<span className="text-white font-bold">{selectedObject.thickness?.toFixed(2)}m</span>
+									{/* Width */}
+									<div className="flex flex-col gap-1.5">
+										<div className="flex justify-between items-center text-[11px] font-semibold text-neutral-400">
+											<span>Width</span>
+											<span className="text-white font-bold">{selectedObject.width?.toFixed(1)}m</span>
+										</div>
+										<input
+											type="range"
+											min="0.5"
+											max="20"
+											step="0.1"
+											value={selectedObject.width || 2}
+											onChange={(e) => updateSelectedObject({ width: parseFloat(e.target.value) })}
+											className="w-full accent-white cursor-pointer"
+										/>
 									</div>
-									<input
-										type="range"
-										min="0.1"
-										max="1"
-										step="0.01"
-										value={selectedObject.thickness || 0.23}
-										onChange={(e) => updateSelectedObject({ thickness: parseFloat(e.target.value) })}
-										className="w-full accent-white cursor-pointer"
-									/>
+
+									{/* Angle */}
+									<div className="flex flex-col gap-1.5">
+										<div className="flex justify-between items-center text-[11px] font-semibold text-neutral-400">
+											<span>Rotation Angle</span>
+											<span className="text-white font-bold">{selectedObject.angle || 0}°</span>
+										</div>
+										<input
+											type="range"
+											min="-180"
+											max="180"
+											step="1"
+											value={selectedObject.angle || 0}
+											onChange={(e) => updateSelectedObject({ angle: parseInt(e.target.value) })}
+											className="w-full accent-white cursor-pointer"
+										/>
+									</div>
 								</div>
-							</div>
-						)}
+							)}
+
+							{(selectedObject.type === "cylinder" || selectedObject.type === "tree") && (
+								<div className="flex flex-col gap-4 border-t border-white/5 pt-3">
+									<div className="flex flex-col gap-1.5">
+										<div className="flex justify-between items-center text-[11px] font-semibold text-neutral-400">
+											<span>Radius</span>
+											<span className="text-white font-bold">{selectedObject.radius?.toFixed(1)}m</span>
+										</div>
+										<input
+											type="range"
+											min="0.3"
+											max="8"
+											step="0.1"
+											value={selectedObject.radius || 1}
+											onChange={(e) => updateSelectedObject({ radius: parseFloat(e.target.value) })}
+											className="w-full accent-white cursor-pointer"
+										/>
+									</div>
+
+									{selectedObject.type === "cylinder" && (
+										<div className="flex flex-col gap-1.5">
+											<label className="text-[11px] font-semibold text-neutral-400">Cylinder Model Type</label>
+											<select
+												value={selectedObject.tag || ""}
+												onChange={(e) => updateSelectedObject({ tag: e.target.value || undefined })}
+												className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs font-bold text-white focus:outline-none focus:border-white transition-colors"
+											>
+												<option value="">Basic Cylinder Block</option>
+												<option value="chimney">Circular Chimney</option>
+												<option value="cylinder_tank">Vertical Cylinder Tank</option>
+												<option value="overhead_tank">Overhead Water Tank</option>
+												<option value="horizontal_tank">Horizontal Tank</option>
+												<option value="dish">Dish Antenna</option>
+											</select>
+										</div>
+									)}
+
+									{selectedObject.type === "tree" && (
+										<div className="flex flex-col gap-1.5">
+											<label className="text-[11px] font-semibold text-neutral-400">Tree Species Model</label>
+											<select
+												value={selectedObject.tag || "mango"}
+												onChange={(e) => updateSelectedObject({ tag: e.target.value })}
+												className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs font-bold text-white focus:outline-none"
+											>
+												<option value="mango">Mango Tree</option>
+												<option value="coconut">Coconut Palm</option>
+												<option value="neem">Neem Tree</option>
+												<option value="pine">Pine Tree</option>
+											</select>
+										</div>
+									)}
+								</div>
+							)}
+
+							{selectedObject.type === "wall" && (
+								<div className="flex flex-col gap-4 border-t border-white/5 pt-3">
+									<div className="flex flex-col gap-1.5">
+										<div className="flex justify-between items-center text-[11px] font-semibold text-neutral-450">
+											<span>Wall Thickness</span>
+											<span className="text-white font-bold">{selectedObject.thickness?.toFixed(2)}m</span>
+										</div>
+										<input
+											type="range"
+											min="0.1"
+											max="1"
+											step="0.01"
+											value={selectedObject.thickness || 0.23}
+											onChange={(e) => updateSelectedObject({ thickness: parseFloat(e.target.value) })}
+											className="w-full accent-white cursor-pointer"
+										/>
+									</div>
+								</div>
+							)}
+						</div>
 					</div>
 				)}
 			</div>
 
-			{/* Continue Button */}
-			<div className="border-t border-white/10 pt-4">
+			{/* Bottom Action bar */}
+			<div className="border-t border-white/10 pt-4 flex gap-3">
 				<button
 					onClick={onContinue}
-					className="w-full py-3 bg-white hover:bg-neutral-200 text-black text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5"
+					className="flex-grow py-3 bg-white text-black font-bold text-xs rounded-xl shadow-lg hover:bg-neutral-100 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
 				>
-					<Check className="w-4 h-4" />
+					<Check size={14} />
 					<span>Save & Continue</span>
 				</button>
 			</div>

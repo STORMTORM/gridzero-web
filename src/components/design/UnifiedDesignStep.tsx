@@ -24,6 +24,36 @@ export interface RoofData {
 	parapetSetback: number;
 }
 
+interface CategoryConfig {
+	type: "cuboid" | "cylinder" | "wall" | "polygon" | "tree";
+	tag?: string;
+	name: string;
+	on_roof: boolean;
+	length?: number;
+	width?: number;
+	radius?: number;
+	z_end?: number;
+}
+
+const CATEGORY_DEFAULTS: Record<string, CategoryConfig> = {
+	ac_unit: { type: "cuboid", tag: "ac_unit", name: "AC Unit", on_roof: true, length: 1.2, width: 0.8, z_end: 1.0 },
+	water_tanker: { type: "cuboid", tag: "rectangular_tank", name: "Water Tank", on_roof: true, length: 2.0, width: 2.0, z_end: 2.0 },
+	elevated: { type: "cuboid", tag: "elevated", name: "Elevated Struct", on_roof: true, length: 3.0, width: 3.0, z_end: 2.5 },
+	cuboid: { type: "cuboid", tag: undefined, name: "Cuboid", on_roof: true, length: 2.0, width: 2.0, z_end: 2.0 },
+	dish: { type: "cylinder", tag: "dish", name: "Dish Antenna", on_roof: true, radius: 0.6, z_end: 1.2 },
+	chimney: { type: "cylinder", tag: "chimney", name: "Circular Chimney", on_roof: true, radius: 0.4, z_end: 2.0 },
+	cylinder: { type: "cylinder", tag: undefined, name: "Cylinder", on_roof: true, radius: 1.0, z_end: 2.0 },
+	skylight: { type: "cuboid", tag: "skylight", name: "Skylight Window", on_roof: true, length: 1.5, width: 1.0, z_end: 0.2 },
+	mumtee: { type: "cuboid", tag: "mumtee", name: "Mumtee", on_roof: true, length: 4.0, width: 3.5, z_end: 2.8 },
+	
+	tree: { type: "tree", tag: "mango", name: "Tree", on_roof: false, radius: 2.5, z_end: 8.0 },
+	building: { type: "cuboid", tag: "building", name: "Adjacent Bldg", on_roof: false, length: 8.0, width: 6.0, z_end: 9.0 },
+	cuboid_ground: { type: "cuboid", tag: undefined, name: "Ground Cuboid", on_roof: false, length: 3.0, width: 3.0, z_end: 3.0 },
+	cylinder_ground: { type: "cylinder", tag: undefined, name: "Ground Cylinder", on_roof: false, radius: 1.5, z_end: 3.0 },
+	tanker: { type: "cylinder", tag: "overhead_tank", name: "Overhead Tank", on_roof: false, radius: 2.0, z_end: 6.0 },
+	tower: { type: "cuboid", tag: "tower", name: "Utility Tower", on_roof: false, length: 2.0, width: 2.0, z_end: 15.0 },
+};
+
 interface UnifiedDesignStepProps {
 	sitevisitId: string;
 	widthMeters: number;
@@ -62,7 +92,7 @@ export default function UnifiedDesignStep({
 
 	// Drawing States
 	const [isDrawingRoofs, setIsDrawingRoofs] = useState(false);
-	const [objectDrawingMode, setObjectDrawingMode] = useState<"none" | "ac_unit" | "mumtee" | "water_tank" | "tree" | "wall" | "polygon">("none");
+	const [objectDrawingMode, setObjectDrawingMode] = useState<string>("none");
 
 	const [currentPoints, setCurrentPoints] = useState<[number, number][]>([]);
 	const [mousePosMeters, setMousePosMeters] = useState<[number, number] | null>(null);
@@ -470,27 +500,54 @@ export default function UnifiedDesignStep({
 				saveRoofDesign(roofs);
 			} else if (activeDrag.type === "object") {
 				const obj = objects.find((o) => o.id === activeDrag.targetId);
-				const isStrictlyOnRoof = obj && ["ac_unit", "mumtee", "water_tank"].includes(obj.tag || obj.type);
-				if (obj && isStrictlyOnRoof && !obj.on_roof) {
-					const restored = objects.map((o) => {
-						if (o.id === obj.id) {
-							return {
-								...o,
-								center_x: activeDrag.originalState.center_x,
-								center_y: activeDrag.originalState.center_y,
-								on_roof: activeDrag.originalState.on_roof,
-								roof_id: activeDrag.originalState.roof_id,
-								z_init: activeDrag.originalState.z_init,
-								z_end: activeDrag.originalState.z_end,
-							};
-						}
-						return o;
-					});
-					setObjects(restored);
-					saveObjectsDesign(restored);
-					setActiveDrag(null);
-					alert("This object (AC unit, tank, or stair cabin) must remain inside a mapped roof boundary.");
-					return;
+				if (obj && obj.type !== "wall" && obj.type !== "polygon") {
+					const expectedOnRoof = activeDrag.originalState.on_roof;
+
+					if (expectedOnRoof && !obj.on_roof) {
+						// Revert back onto roof
+						const restored = objects.map((o) => {
+							if (o.id === obj.id) {
+								return {
+									...o,
+									center_x: activeDrag.originalState.center_x,
+									center_y: activeDrag.originalState.center_y,
+									on_roof: activeDrag.originalState.on_roof,
+									roof_id: activeDrag.originalState.roof_id,
+									z_init: activeDrag.originalState.z_init,
+									z_end: activeDrag.originalState.z_end,
+								};
+							}
+							return o;
+						});
+						setObjects(restored);
+						saveObjectsDesign(restored);
+						setActiveDrag(null);
+						alert(`This object (${obj.name}) must remain inside a mapped roof boundary.`);
+						return;
+					}
+
+					if (!expectedOnRoof && obj.on_roof) {
+						// Revert back onto ground
+						const restored = objects.map((o) => {
+							if (o.id === obj.id) {
+								return {
+									...o,
+									center_x: activeDrag.originalState.center_x,
+									center_y: activeDrag.originalState.center_y,
+									on_roof: activeDrag.originalState.on_roof,
+									roof_id: activeDrag.originalState.roof_id,
+									z_init: activeDrag.originalState.z_init,
+									z_end: activeDrag.originalState.z_end,
+								};
+							}
+							return o;
+						});
+						setObjects(restored);
+						saveObjectsDesign(restored);
+						setActiveDrag(null);
+						alert(`This object (${obj.name}) must remain on the ground (outside all roof boundaries).`);
+						return;
+					}
 				}
 				saveObjectsDesign(objects);
 			} else {
@@ -606,69 +663,38 @@ export default function UnifiedDesignStep({
 				return;
 			}
 
-			if (objectDrawingMode === "ac_unit" || objectDrawingMode === "mumtee" || objectDrawingMode === "water_tank" || objectDrawingMode === "tree") {
-				let type: "cuboid" | "cylinder" | "tree" = "cuboid";
-				let tag: string | undefined = undefined;
-				let name = "";
-				let length = 2, width = 2, radius = 1;
-
-				if (objectDrawingMode === "ac_unit") {
-					type = "cuboid";
-					tag = undefined;
-					const count = objects.filter((o) => o.type === "cuboid" && o.tag !== "mumtee").length + 1;
-					name = `AC Unit ${count}`;
-					length = 1.2;
-					width = 0.8;
-				} else if (objectDrawingMode === "mumtee") {
-					type = "cuboid";
-					tag = "mumtee";
-					const count = objects.filter((o) => o.tag === "mumtee").length + 1;
-					name = `Mumtee ${count}`;
-					length = 4;
-					width = 3.5;
-				} else if (objectDrawingMode === "water_tank") {
-					type = "cylinder";
-					tag = "cylinder_tank";
-					const count = objects.filter((o) => o.tag === "cylinder_tank").length + 1;
-					name = `Cylinder Tank ${count}`;
-					radius = 0.8;
-				} else if (objectDrawingMode === "tree") {
-					type = "tree";
-					tag = "mango";
-					const count = objects.filter((o) => o.type === "tree").length + 1;
-					name = `Generic Tree ${count}`;
-					radius = 2.5;
-				}
-
+			const config = CATEGORY_DEFAULTS[objectDrawingMode];
+			if (config) {
 				const snapRoof = roofs.find((r) => isPointInPolygon([mx, my], r.points));
-				const isStrictlyOnRoof = ["ac_unit", "mumtee", "water_tank"].includes(objectDrawingMode);
-				if (isStrictlyOnRoof && !snapRoof) {
-					alert("This object (AC unit, tank, or stair cabin) must be placed inside a mapped roof boundary.");
+				
+				if (config.on_roof && !snapRoof) {
+					alert(`This object (${config.name}) must be placed inside a mapped roof boundary.`);
+					return;
+				}
+				if (!config.on_roof && snapRoof) {
+					alert(`This object (${config.name}) must be placed on the ground (outside all roof boundaries).`);
 					return;
 				}
 
-				const isStrictlyOffRoof = objectDrawingMode === "tree";
-				const onRoof = isStrictlyOffRoof ? false : !!snapRoof;
-				const roofId = onRoof ? snapRoof?.id : undefined;
-				const zInit = onRoof ? (snapRoof?.height || 0) : 0;
-				const defaultHeight = type === "tree" ? 5 : 2.5;
+				const zInit = config.on_roof ? snapRoof!.height : 0;
+				const count = objects.filter((o) => o.tag === config.tag || (o.type === config.type && !o.tag)).length + 1;
 
 				const newObj: LocalObject = {
-					id: generateUUID("obj"),
-					name,
-					type,
-					tag,
-					roof_id: roofId,
-					on_roof: onRoof,
+					id: generateUUID(),
+					name: `${config.name} ${count}`,
+					type: config.type,
+					tag: config.tag,
+					roof_id: config.on_roof ? snapRoof!.id : undefined,
+					on_roof: config.on_roof,
 					cast_shadow: true,
 					center_x: mx,
 					center_y: my,
 					z_init: zInit,
-					z_end: zInit + defaultHeight,
-					length,
-					width,
+					z_end: zInit + (config.z_end ?? 2.0),
+					length: config.length,
+					width: config.width,
 					angle: 0,
-					radius,
+					radius: config.radius,
 					p1: undefined,
 					p2: undefined,
 					thickness: 0.23,
