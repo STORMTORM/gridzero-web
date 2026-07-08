@@ -38,6 +38,16 @@ export function buildLiveSceneData(
 			for (let i = 0; i < r.points.length; i++) {
 				const p1 = r.points[i];
 				const p2 = r.points[(i + 1) % r.points.length];
+				
+				const same = r.parapetSameDimensions ?? true;
+				const edge = r.parapetEdges?.[i];
+				
+				const isEdgeEnabled = same ? true : (edge?.enabled ?? true);
+				if (!isEdgeEnabled) continue;
+
+				const wHeight = same ? r.parapetHeight : (edge?.height ?? r.parapetHeight);
+				const wThickness = same ? r.parapetThickness : (edge?.thickness ?? r.parapetThickness);
+
 				const wallId = `parapet_${r.id}_edge_${i}`;
 				wallCounter++;
 
@@ -46,10 +56,10 @@ export function buildLiveSceneData(
 					roof_id: r.id,
 					on_roof: true,
 					z_init: r.height,
-					z_end: r.height + r.parapetHeight,
+					z_end: r.height + wHeight,
 					p1,
 					p2,
-					thickness: r.parapetThickness,
+					thickness: wThickness,
 				};
 			}
 		}

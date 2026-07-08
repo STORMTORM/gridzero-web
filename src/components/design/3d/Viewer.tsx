@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import { Hand, RotateCw } from "lucide-react";
 import { fetch3DData } from "../../../utils/design/api";
 import type { SceneData, QualityLevel } from "../../../utils/design/types";
 import { sunDirectionENU, sunToScene, updateSunLight, getSunAzimuthDeg } from "../../../utils/design/sunEngine";
@@ -252,6 +253,35 @@ export default function Viewer({ data: propData, sitevisitId: propSitevisitId, r
       isInitializedRef.current = false;
     };
   }, [data === null, quality]);
+  
+  const [isPanMode, setIsPanMode] = useState(false);
+
+  useEffect(() => {
+    const controls = controlsRef.current;
+    if (!controls) return;
+    if (isPanMode) {
+      controls.mouseButtons = {
+        LEFT: THREE.MOUSE.PAN,
+        MIDDLE: THREE.MOUSE.DOLLY,
+        RIGHT: THREE.MOUSE.ROTATE
+      };
+      (controls as any).touches = {
+        ONE: (THREE as any).TOUCH ? (THREE as any).TOUCH.PAN : 1,
+        TWO: (THREE as any).TOUCH ? (THREE as any).TOUCH.DOLLY_PAN : 2,
+      };
+    } else {
+      controls.mouseButtons = {
+        LEFT: THREE.MOUSE.ROTATE,
+        MIDDLE: THREE.MOUSE.DOLLY,
+        RIGHT: THREE.MOUSE.PAN
+      };
+      (controls as any).touches = {
+        ONE: (THREE as any).TOUCH ? (THREE as any).TOUCH.ROTATE : 0,
+        TWO: (THREE as any).TOUCH ? (THREE as any).TOUCH.DOLLY_PAN : 2,
+      };
+    }
+    controls.update();
+  }, [isPanMode]);
 
   // 2. Populate and Update Dynamic Objects in the Scene
   useEffect(() => {
@@ -681,6 +711,28 @@ export default function Viewer({ data: propData, sitevisitId: propSitevisitId, r
           gap: 6,
           zIndex: 25,
         }}>
+          <button
+            onClick={() => setIsPanMode(!isPanMode)}
+            style={{
+              width: 40, height: 40, borderRadius: 20,
+              background: isPanMode ? "rgba(167,206,56,0.95)" : "rgba(28,28,30,0.87)",
+              border: "1px solid rgba(255,255,255,0.08)",
+              color: isPanMode ? "#fff" : "#ccc",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              cursor: "pointer", boxShadow: "0 2px 6px rgba(0,0,0,0.3)",
+              transition: "background 0.2s, transform 0.1s",
+              outline: "none",
+            }}
+            onMouseEnter={(e) => { if (!isPanMode) e.currentTarget.style.background = "rgba(44,44,46,0.95)"; }}
+            onMouseLeave={(e) => { if (!isPanMode) e.currentTarget.style.background = "rgba(28,28,30,0.87)"; }}
+            title={isPanMode ? "Switch to Orbit Mode" : "Switch to Pan Mode"}
+          >
+            {isPanMode ? (
+              <Hand size={18} />
+            ) : (
+              <RotateCw size={18} />
+            )}
+          </button>
           <button
             onClick={handleZoomIn}
             style={{

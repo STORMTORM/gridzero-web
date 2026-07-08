@@ -22,6 +22,13 @@ export interface RoofData {
 	parapetHeight: number;
 	parapetThickness: number;
 	parapetSetback: number;
+	parapetSameDimensions?: boolean;
+	parapetEdges?: {
+		enabled: boolean;
+		height: number;
+		thickness: number;
+		setback: number;
+	}[];
 }
 
 interface CategoryConfig {
@@ -89,6 +96,14 @@ export default function UnifiedDesignStep({
 	// Selection & Mode States
 	const [selectedRoofId, setSelectedRoofId] = useState<string | null>(null);
 	const [selectedObjectId, setSelectedObjectId] = useState<string | null>(null);
+	const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+	useEffect(() => {
+		if (toastMessage) {
+			const timer = setTimeout(() => setToastMessage(null), 5000);
+			return () => clearTimeout(timer);
+		}
+	}, [toastMessage]);
 
 	// Drawing States
 	const [isDrawingRoofs, setIsDrawingRoofs] = useState(false);
@@ -203,18 +218,29 @@ export default function UnifiedDesignStep({
 					for (let i = 0; i < r.points.length; i++) {
 						const p1 = r.points[i];
 						const p2 = r.points[(i + 1) % r.points.length];
+						
+						const same = r.parapetSameDimensions ?? true;
+						const edge = r.parapetEdges?.[i];
+						
+						const isEdgeEnabled = same ? true : (edge?.enabled ?? true);
+						if (!isEdgeEnabled) continue;
+
+						const wHeight = same ? r.parapetHeight : (edge?.height ?? r.parapetHeight);
+						const wThickness = same ? r.parapetThickness : (edge?.thickness ?? r.parapetThickness);
+						const wSetback = same ? r.parapetSetback : (edge?.setback ?? r.parapetSetback);
+
 						const wallId = generateUUID();
 						wallCounter++;
 
 						payloadWalls[wallId] = {
 							name: `Wall ${wallCounter}`,
 							z_init: r.height,
-							z_end: r.height + r.parapetHeight,
+							z_end: r.height + wHeight,
 							roof_id: r.id,
 							p1,
 							p2,
-							thickness: r.parapetThickness,
-							setback: r.parapetSetback,
+							thickness: wThickness,
+							setback: wSetback,
 						};
 					}
 				}
@@ -374,6 +400,17 @@ export default function UnifiedDesignStep({
 						const nextY = orig.center_y + dy;
 						
 						const snapRoof = roofs.find((r) => isPointInPolygon([nextX, nextY], r.points));
+
+						// Enforce dragging boundary constraints:
+						if (orig.on_roof && !snapRoof) {
+							const current = objects.find(o => o.id === obj.id);
+							return current || obj;
+						}
+						if (!orig.on_roof && snapRoof) {
+							const current = objects.find(o => o.id === obj.id);
+							return current || obj;
+						}
+
 						const onRoof = !!snapRoof;
 						const roofId = snapRoof ? snapRoof.id : undefined;
 						const zInit = snapRoof ? snapRoof.height : 0;
@@ -522,7 +559,7 @@ export default function UnifiedDesignStep({
 						setObjects(restored);
 						saveObjectsDesign(restored);
 						setActiveDrag(null);
-						alert(`This object (${obj.name}) must remain inside a mapped roof boundary.`);
+						setToastMessage(`This object (${obj.name}) must remain inside a mapped roof boundary.`);
 						return;
 					}
 
@@ -545,7 +582,7 @@ export default function UnifiedDesignStep({
 						setObjects(restored);
 						saveObjectsDesign(restored);
 						setActiveDrag(null);
-						alert(`This object (${obj.name}) must remain on the ground (outside all roof boundaries).`);
+						setToastMessage(`This object (${obj.name}) must remain on the ground (outside all roof boundaries).`);
 						return;
 					}
 				}
@@ -636,10 +673,17 @@ export default function UnifiedDesignStep({
 					height: 3.5,
 					points: currentPoints,
 					area: calculateArea(currentPoints),
-					parapetEnabled: false,
+					parapetEnabled: true,
 					parapetHeight: 1.0,
-					parapetThickness: 0.23,
+					parapetThickness: 0.3,
 					parapetSetback: 0.0,
+					parapetSameDimensions: true,
+					parapetEdges: currentPoints.map(() => ({
+						enabled: true,
+						height: 1.0,
+						thickness: 0.3,
+						setback: 0.0,
+					})),
 				};
 				const updated = [...roofs, newRoof];
 				setRoofs(updated);
@@ -668,11 +712,11 @@ export default function UnifiedDesignStep({
 				const snapRoof = roofs.find((r) => isPointInPolygon([mx, my], r.points));
 				
 				if (config.on_roof && !snapRoof) {
-					alert(`This object (${config.name}) must be placed inside a mapped roof boundary.`);
+					setToastMessage(`This object (${config.name}) must be placed inside a mapped roof boundary.`);
 					return;
 				}
 				if (!config.on_roof && snapRoof) {
-					alert(`This object (${config.name}) must be placed on the ground (outside all roof boundaries).`);
+					setToastMessage(`This object (${config.name}) must be placed on the ground (outside all roof boundaries).`);
 					return;
 				}
 
@@ -983,6 +1027,14 @@ export default function UnifiedDesignStep({
 					/>
 				)}
 			</div>
+
+			{toastMessage && (
+				<div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-neutral-900 border border-white/10 rounded-2xl px-5 py-3 text-xs font-bold text-white shadow-2xl z-50 animate-in fade-in slide-in-from-bottom-4 duration-300 flex items-center gap-2 select-none">
+					<span className="text-amber-500">⚠️</span>
+					<span>{toastMessage}</span>
+					<button onClick={() => setToastMessage(null)} className="text-neutral-500 hover:text-white ml-2">✕</button>
+				</div>
+			)}
 
 		</div>
 	);

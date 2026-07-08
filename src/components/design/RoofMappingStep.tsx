@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { PenTool, Check, Trash2, Undo } from "lucide-react";
 
 export interface RoofData {
@@ -10,6 +11,13 @@ export interface RoofData {
 	parapetHeight: number;
 	parapetThickness: number;
 	parapetSetback: number;
+	parapetSameDimensions?: boolean;
+	parapetEdges?: {
+		enabled: boolean;
+		height: number;
+		thickness: number;
+		setback: number;
+	}[];
 }
 
 interface RoofMappingStepProps {
@@ -41,6 +49,14 @@ export default function RoofMappingStep({
 }: RoofMappingStepProps) {
 
 	const selectedRoof = roofs.find((r) => r.id === selectedRoofId);
+	const [expandedEdgeIdx, setExpandedEdgeIdx] = useState<number | null>(null);
+
+	const edges = selectedRoof?.parapetEdges || selectedRoof?.points.map(() => ({
+		enabled: true,
+		height: selectedRoof.parapetHeight,
+		thickness: selectedRoof.parapetThickness,
+		setback: selectedRoof.parapetSetback,
+	})) || [];
 
 	return (
 		<div className="h-full flex flex-col justify-between">
@@ -184,59 +200,214 @@ export default function RoofMappingStep({
 
 							{selectedRoof.parapetEnabled && (
 								<div className="flex flex-col gap-4 pt-2">
-									{/* Wall height */}
-									<div className="flex flex-col gap-1.5">
-										<div className="flex justify-between items-center text-[11px] font-semibold text-neutral-400">
-											<span>Wall Height</span>
-											<span className="text-white font-bold">{selectedRoof.parapetHeight}m</span>
+									{/* Same dimensions toggle */}
+									<div className="flex justify-between items-center bg-white/5 p-3 rounded-xl border border-white/5">
+										<div className="flex flex-col gap-0.5">
+											<span className="text-xs font-bold">Same dimensions for all walls</span>
+											<span className="text-[10px] text-neutral-500">Apply uniform settings to all edges</span>
 										</div>
-										<input
-											type="range"
-											min="0.3"
-											max="2.5"
-											step="0.1"
-											value={selectedRoof.parapetHeight}
-											onChange={(e) => updateSelectedRoof({ parapetHeight: parseFloat(e.target.value) })}
-											className="w-full accent-white cursor-pointer"
-										/>
+										<label className="relative inline-flex items-center cursor-pointer select-none">
+											<input
+												type="checkbox"
+												checked={selectedRoof.parapetSameDimensions ?? true}
+												onChange={(e) => {
+													const same = e.target.checked;
+													const newEdges = edges.map(edge => ({
+														...edge,
+														enabled: same ? true : edge.enabled,
+													}));
+													updateSelectedRoof({
+														parapetSameDimensions: same,
+														parapetEdges: newEdges,
+													});
+												}}
+												className="sr-only peer"
+											/>
+											<div className="w-9 h-5 bg-neutral-800 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-neutral-500 after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:bg-white peer-checked:bg-white/20 border border-white/10"></div>
+										</label>
 									</div>
 
-									{/* Wall thickness */}
-									<div className="flex flex-col gap-1.5">
-										<div className="flex justify-between items-center text-[11px] font-semibold text-neutral-400">
-											<span>Wall Thickness</span>
-											<span className="text-white font-bold">{selectedRoof.parapetThickness}m</span>
-										</div>
-										<input
-											type="range"
-											min="0.1"
-											max="0.6"
-											step="0.01"
-											value={selectedRoof.parapetThickness}
-											onChange={(e) => updateSelectedRoof({ parapetThickness: parseFloat(e.target.value) })}
-											className="w-full accent-white cursor-pointer"
-										/>
-									</div>
+									{(selectedRoof.parapetSameDimensions ?? true) ? (
+										<div className="flex flex-col gap-4">
+											{/* Wall height */}
+											<div className="flex flex-col gap-1.5">
+												<div className="flex justify-between items-center text-[11px] font-semibold text-neutral-400">
+													<span>Wall Height</span>
+													<span className="text-white font-bold">{selectedRoof.parapetHeight}m</span>
+												</div>
+												<input
+													type="range"
+													min="0.1"
+													max="3.0"
+													step="0.1"
+													value={selectedRoof.parapetHeight}
+													onChange={(e) => {
+														const h = parseFloat(e.target.value);
+														const newEdges = edges.map(edge => ({ ...edge, height: h }));
+														updateSelectedRoof({
+															parapetHeight: h,
+															parapetEdges: newEdges,
+														});
+													}}
+													className="w-full accent-white cursor-pointer"
+												/>
+											</div>
 
-									{/* Wall setback */}
-									<div className="flex flex-col gap-1.5">
-										<div className="flex justify-between items-center text-[11px] font-semibold text-neutral-400">
-											<span>Setback (inside edge)</span>
-											<span className="text-white font-bold">{selectedRoof.parapetSetback}m</span>
+											{/* Wall thickness */}
+											<div className="flex flex-col gap-1.5">
+												<div className="flex justify-between items-center text-[11px] font-semibold text-neutral-400">
+													<span>Wall Thickness</span>
+													<span className="text-white font-bold">{selectedRoof.parapetThickness}m</span>
+												</div>
+												<input
+													type="range"
+													min="0.05"
+													max="1.0"
+													step="0.01"
+													value={selectedRoof.parapetThickness}
+													onChange={(e) => {
+														const t = parseFloat(e.target.value);
+														const newEdges = edges.map(edge => ({ ...edge, thickness: t }));
+														updateSelectedRoof({
+															parapetThickness: t,
+															parapetEdges: newEdges,
+														});
+													}}
+													className="w-full accent-white cursor-pointer"
+												/>
+											</div>
+
+											{/* Wall setback */}
+											<div className="flex flex-col gap-1.5">
+												<div className="flex justify-between items-center text-[11px] font-semibold text-neutral-400">
+													<span>Setback (inside edge)</span>
+													<span className="text-white font-bold">{selectedRoof.parapetSetback}m</span>
+												</div>
+												<p className="text-[9px] text-neutral-500 leading-normal">
+													Setback defines a safety buffer boundary distance inside the roof edge where solar panel layouts are restricted.
+												</p>
+												<input
+													type="range"
+													min="0"
+													max="5.0"
+													step="0.1"
+													value={selectedRoof.parapetSetback}
+													onChange={(e) => {
+														const s = parseFloat(e.target.value);
+														const newEdges = edges.map(edge => ({ ...edge, setback: s }));
+														updateSelectedRoof({
+															parapetSetback: s,
+															parapetEdges: newEdges,
+														});
+													}}
+													className="w-full accent-white cursor-pointer"
+												/>
+											</div>
 										</div>
-										<p className="text-[9px] text-neutral-500 leading-normal">
-											Setback defines a safety buffer boundary distance inside the roof edge where solar panel layouts are restricted.
-										</p>
-										<input
-											type="range"
-											min="0"
-											max="2"
-											step="0.1"
-											value={selectedRoof.parapetSetback}
-											onChange={(e) => updateSelectedRoof({ parapetSetback: parseFloat(e.target.value) })}
-											className="w-full accent-white cursor-pointer"
-										/>
-									</div>
+									) : (
+										<div className="flex flex-col gap-2 max-h-[250px] overflow-y-auto pr-1">
+											<span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Edge Overrides</span>
+											{edges.map((edge, edgeIdx) => {
+												const expanded = expandedEdgeIdx === edgeIdx;
+												return (
+													<div key={edgeIdx} className={`p-3 rounded-xl border transition-all ${edge.enabled ? "bg-white/5 border-white/10 text-white" : "bg-white/0 border-white/5 opacity-55 text-neutral-450"}`}>
+														{/* Edge Header */}
+														<div className="flex items-center justify-between">
+															<div className="flex items-center gap-3">
+																<input
+																	type="checkbox"
+																	checked={edge.enabled}
+																	onChange={(e) => {
+																		const newEdges = [...edges];
+																		newEdges[edgeIdx] = { ...edge, enabled: e.target.checked };
+																		updateSelectedRoof({ parapetEdges: newEdges });
+																	}}
+																	className="w-3.5 h-3.5 accent-white cursor-pointer"
+																/>
+																<span className="text-xs font-bold">Edge {edgeIdx + 1}</span>
+															</div>
+															{edge.enabled && (
+																<button
+																	onClick={() => setExpandedEdgeIdx(expanded ? null : edgeIdx)}
+																	className="text-[10px] text-neutral-400 hover:text-white font-bold cursor-pointer"
+																>
+																	{expanded ? "Collapse" : "Edit"}
+																</button>
+															)}
+														</div>
+
+														{/* Edge Parameters Panel */}
+														{expanded && edge.enabled && (
+															<div className="flex flex-col gap-3 mt-3 pt-3 border-t border-white/5 animate-in slide-in-from-top-1 duration-150">
+																{/* Height Slider */}
+																<div className="flex flex-col gap-1">
+																	<div className="flex justify-between items-center text-[10px] font-semibold text-neutral-400">
+																		<span>Height</span>
+																		<span className="text-white font-bold">{edge.height}m</span>
+																	</div>
+																	<input
+																		type="range"
+																		min="0.1"
+																		max="3.0"
+																		step="0.1"
+																		value={edge.height}
+																		onChange={(e) => {
+																			const newEdges = [...edges];
+																			newEdges[edgeIdx] = { ...edge, height: parseFloat(e.target.value) };
+																			updateSelectedRoof({ parapetEdges: newEdges });
+																		}}
+																		className="w-full accent-white cursor-pointer"
+																	/>
+																</div>
+
+																{/* Thickness Slider */}
+																<div className="flex flex-col gap-1">
+																	<div className="flex justify-between items-center text-[10px] font-semibold text-neutral-400">
+																		<span>Thickness</span>
+																		<span className="text-white font-bold">{edge.thickness}m</span>
+																	</div>
+																	<input
+																		type="range"
+																		min="0.05"
+																		max="1.0"
+         																step="0.01"
+																		value={edge.thickness}
+																		onChange={(e) => {
+																			const newEdges = [...edges];
+																			newEdges[edgeIdx] = { ...edge, thickness: parseFloat(e.target.value) };
+																			updateSelectedRoof({ parapetEdges: newEdges });
+																		}}
+																		className="w-full accent-white cursor-pointer"
+																	/>
+																</div>
+
+																{/* Setback Slider */}
+																<div className="flex flex-col gap-1">
+																	<div className="flex justify-between items-center text-[10px] font-semibold text-neutral-400">
+																		<span>Setback</span>
+																		<span className="text-white font-bold">{edge.setback}m</span>
+																	</div>
+																	<input
+																		type="range"
+																		min="0"
+																		max="5.0"
+																		step="0.1"
+																		value={edge.setback}
+																		onChange={(e) => {
+																			const newEdges = [...edges];
+																			newEdges[edgeIdx] = { ...edge, setback: parseFloat(e.target.value) };
+																			updateSelectedRoof({ parapetEdges: newEdges });
+																		}}
+																		className="w-full accent-white cursor-pointer"
+																	/>
+																</div>
+															</div>
+														)}
+													</div>
+												);
+											})}
+										</div>
+									)}
 								</div>
 							)}
 						</div>

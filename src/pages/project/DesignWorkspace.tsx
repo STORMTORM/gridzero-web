@@ -86,8 +86,52 @@ export default function DesignWorkspace() {
 									...(data.objects?.wall || {})
 								};
 								const relatedWalls = Object.values(apiWalls).filter((w: any) => w.roof_id === roofId);
-								const hasParapet = relatedWalls.length > 0;
-								const firstWall = relatedWalls[0] as any;
+								
+								const parapetEdges = points.map((p1: any, i: number) => {
+									const p2 = points[(i + 1) % points.length];
+									const matchedWall = relatedWalls.find((w: any) => {
+										const wp1 = w.p1;
+										const wp2 = w.p2;
+										if (!wp1 || !wp2) return false;
+										
+										const matchesForward =
+											Math.abs(p1[0] - wp1[0]) <= 0.05 &&
+											Math.abs(p1[1] - wp1[1]) <= 0.05 &&
+											Math.abs(p2[0] - wp2[0]) <= 0.05 &&
+											Math.abs(p2[1] - wp2[1]) <= 0.05;
+											
+										const matchesReverse =
+											Math.abs(p1[0] - wp2[0]) <= 0.05 &&
+											Math.abs(p1[1] - wp2[1]) <= 0.05 &&
+											Math.abs(p2[0] - wp1[0]) <= 0.05 &&
+											Math.abs(p2[1] - wp1[1]) <= 0.05;
+											
+										return matchesForward || matchesReverse;
+									});
+									
+									const wall = matchedWall as any;
+									return {
+										enabled: !!matchedWall,
+										height: matchedWall ? Math.max(0, (wall.z_end || 0) - (wall.z_init || 0)) : 1.0,
+										thickness: matchedWall ? (wall.thickness || 0.3) : 0.3,
+										setback: matchedWall ? (wall.setback || 0) : 0,
+									};
+								});
+
+								const enabledEdges = parapetEdges.filter(e => e.enabled);
+								const hasParapet = enabledEdges.length > 0;
+								
+								let parapetSameDimensions = true;
+								if (enabledEdges.length > 1) {
+									const first = enabledEdges[0];
+									parapetSameDimensions = enabledEdges.every(e => 
+										Math.abs(e.height - first.height) < 0.01 &&
+										Math.abs(e.thickness - first.thickness) < 0.01 &&
+										Math.abs(e.setback - first.setback) < 0.01
+									);
+								}
+
+								const firstWall = enabledEdges[0] || { height: 1.0, thickness: 0.3, setback: 0.0 };
 
 								return {
 									id: roofId,
@@ -96,9 +140,11 @@ export default function DesignWorkspace() {
 									points,
 									area: roofInfo.area || 0,
 									parapetEnabled: hasParapet,
-									parapetHeight: hasParapet ? Math.max(0, (firstWall.z_end || 0) - (firstWall.z_init || 0)) : 1,
-									parapetThickness: hasParapet ? (firstWall.thickness || 0.23) : 0.23,
-									parapetSetback: hasParapet ? (firstWall.setback || 0) : 0,
+									parapetHeight: firstWall.height,
+									parapetThickness: firstWall.thickness,
+									parapetSetback: firstWall.setback,
+									parapetSameDimensions,
+									parapetEdges,
 								};
 							});
 							setInitialRoofs(parsedRoofs);
