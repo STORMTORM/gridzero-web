@@ -28,6 +28,14 @@ const TARGETS: TargetConfig[] = [
 	{ key: "snapshot_5pm", label: "5:00 PM Shadow Analysis", hour: 17, cam: "center", height: "roof+50", zoom: 0.75, orient: "ns" },
 ];
 
+const SHADOW_HOURS = TARGETS
+	.filter((target) => target.key !== "corner_snapshot")
+	.map((target) => ({
+		column: target.key,
+		label: target.label,
+		hour: target.hour,
+	}));
+
 type StepType = "cover" | "shadows";
 
 function dataURLtoFile(dataurl: string, filename: string): File {

@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
 	Zap,
@@ -7,8 +7,8 @@ import {
 	RefreshCw,
 	ChevronRight,
 } from "lucide-react";
-import api from "../../api/client";
 import ProjectTopbar from "../../components/ProjectTopbar";
+import { useProjectForm } from "../../features/project/hooks/useProjectForm";
 
 const STATE_DISCOM_MAP: Record<string, string[]> = {
 	"Andhra Pradesh": ["APEPDCL (Eastern Power Distribution Company of AP)", "APSPDCL (Southern Power Distribution Company of AP)"],
@@ -30,174 +30,31 @@ const STATE_DISCOM_MAP: Record<string, string[]> = {
 export default function CustomerDetail() {
 	const navigate = useNavigate();
 	const { id } = useParams<{ id: string }>();
-	const [loadingData, setLoadingData] = useState(true);
-	const [saving, setSaving] = useState(false);
 
-	const [imageLink, setImageLink] = useState<string>("");
-	const [irradiance, setIrradiance] = useState<number | null>(null);
-	const [peakHours, setPeakHours] = useState<number | null>(null);
-
-	// Customer details form values state
-	const [formValues, setFormValues] = useState({
-		projectName: "",
-		firstName: "",
-		lastName: "",
-		phone: "",
-		line1: "",
-		line2: "",
-		state: "",
-		pin: "",
-		discom: "",
-		type: "",
-		connectionType: "",
-		projectType: "",
-		mountingType: "",
-		capexOpex: "",
-		sanctionedLoad: "",
-		avgBill: "",
-		unitPrice: "",
-	});
+	const {
+		formValues,
+		metadata,
+		updateField,
+		loading,
+		saving,
+		submitForm,
+	} = useProjectForm(id);
 
 	// Dynamic DISCOM choices based on state selection
 	const discomOptions = useMemo(() => {
 		return STATE_DISCOM_MAP[formValues.state] ?? [];
 	}, [formValues.state]);
 
-	const updateField = (field: keyof typeof formValues, value: string) => {
-		setFormValues((prev) => ({ ...prev, [field]: value }));
-	};
-
-	// Debounced Auto-save Form Updates to Live Backend
-	const isFirstRender = useRef(true);
-	useEffect(() => {
-		if (isFirstRender.current || !id) {
-			isFirstRender.current = false;
-			return;
-		}
-
-		const delayDebounceFn = setTimeout(async () => {
-			try {
-				await api.post("/visit/map/save", {
-					sitevisit_id: id,
-					project_name: formValues.projectName,
-					first_name: formValues.firstName,
-					last_name: formValues.lastName,
-					phone_number: formValues.phone,
-					line1: formValues.line1,
-					line2: formValues.line2,
-					pin: formValues.pin,
-					state: formValues.state,
-					discom: formValues.discom,
-					type: formValues.type,
-					connection_type: formValues.connectionType,
-					project_type: formValues.projectType,
-					mounting_type: formValues.mountingType,
-					capex_opex: formValues.capexOpex,
-					sanctioned_load: formValues.sanctionedLoad,
-					avg_bill: formValues.avgBill,
-					unit_price: formValues.unitPrice,
-				});
-				console.log("Customer Intake auto-saved to backend successfully");
-			} catch (e) {
-				console.error("Auto-save failed", e);
-			}
-		}, 1500);
-
-		return () => clearTimeout(delayDebounceFn);
-	}, [formValues, id]);
-
-	// Fetch existing project details on mount from Live Backend
-	useEffect(() => {
-		if (!id) return;
-
-		const loadProjectDetails = async () => {
-			try {
-				setLoadingData(true);
-				const res = await api.get(`/visit/map/${id}`);
-				const data = res.data;
-				
-				const addr = data.address || {};
-				const d = data.map_details || {};
-
-				setFormValues({
-					projectName: d.project_name || "",
-					firstName: addr.first_name || "",
-					lastName: addr.last_name || "",
-					phone: addr.phone ? String(addr.phone) : "",
-					line1: addr.line1 || "",
-					line2: addr.line2 || "",
-					state: addr.state || "",
-					pin: addr.pin ? String(addr.pin) : "",
-					discom: d.discom || "",
-					type: d.type || "",
-					connectionType: d.connection_type || "",
-					projectType: d.project_type || "",
-					mountingType: d.mounting_type || "",
-					capexOpex: d.capex_opex || "",
-					sanctionedLoad: d.sanctioned_load != null ? String(d.sanctioned_load) : "",
-					avgBill: d.avg_bill != null ? String(d.avg_bill) : "",
-					unitPrice: d.unit_price != null ? String(d.unit_price) : "",
-				});
-
-				if (data.image_link) {
-					setImageLink(data.image_link);
-				}
-
-				if (data.map_details?.irradiance != null) {
-					setIrradiance(Number(data.map_details.irradiance));
-				} else if (data.irradiance != null) {
-					setIrradiance(Number(data.irradiance));
-				}
-
-				if (data.map_details?.peak_hours != null) {
-					setPeakHours(Number(data.map_details.peak_hours));
-				} else if (data.peak_hours != null) {
-					setPeakHours(Number(data.peak_hours));
-				}
-			} catch (e) {
-				console.error("Failed to load project details from backend", e);
-			} finally {
-				setLoadingData(false);
-			}
-		};
-
-		loadProjectDetails();
-	}, [id]);
-
 	const handleNextStep = async () => {
-		setSaving(true);
 		try {
-			await api.post("/visit/map/save", {
-				sitevisit_id: id,
-				project_name: formValues.projectName,
-				first_name: formValues.firstName,
-				last_name: formValues.lastName,
-				phone_number: formValues.phone,
-				line1: formValues.line1,
-				line2: formValues.line2,
-				pin: formValues.pin,
-				state: formValues.state,
-				discom: formValues.discom,
-				type: formValues.type,
-				connection_type: formValues.connectionType,
-				project_type: formValues.projectType,
-				mounting_type: formValues.mountingType,
-				capex_opex: formValues.capexOpex,
-				sanctioned_load: formValues.sanctionedLoad,
-				avg_bill: formValues.avgBill,
-				unit_price: formValues.unitPrice,
-				finalize: true,
-			});
-
+			await submitForm(true);
 			navigate(`/project/${id}/design`);
 		} catch (e) {
 			console.error("Failed to finalize details", e);
-		} finally {
-			setSaving(false);
 		}
 	};
 
-	if (loadingData) {
+	if (loading) {
 		return (
 			<div className="flex-grow flex items-center justify-center bg-black h-[calc(100vh-4rem)]">
 				<div className="flex flex-col items-center gap-3">
@@ -226,33 +83,33 @@ export default function CustomerDetail() {
 					{/* Image or Mock Rooftop Panel projection visualizer */}
 					<div className="flex-grow flex items-center justify-center overflow-hidden py-2">
 						<div className="w-full aspect-square bg-black rounded-2xl relative overflow-hidden border border-white/10 shadow-inner flex items-center justify-center">
-							<img src={imageLink} alt="Captured Site View" className="w-full h-full object-cover" />
+							<img src={metadata.imageLink} alt="Captured Site View" className="w-full h-full object-cover" />
 						</div>
 					</div>
 
 					{/* Solar Irradiance & Peak Solar Hours Readout */}
-					{(irradiance !== null || peakHours !== null) && (
+					{(metadata.irradiance !== null || metadata.peakHours !== null) && (
 						<div className="bg-white/5 border border-white/10 rounded-xl p-4 flex items-center justify-around flex-shrink-0 shadow-lg">
-							{irradiance !== null && (
+							{metadata.irradiance !== null && (
 								<div className="flex flex-col items-center gap-1 text-center">
 									<span className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider">
 										Solar Irradiance
 									</span>
 									<span className="text-sm font-bold text-white">
-										{irradiance.toFixed(2)} kWh/m²/day
+										{metadata.irradiance.toFixed(2)} kWh/m²/day
 									</span>
 								</div>
 							)}
-							{irradiance !== null && peakHours !== null && (
+							{metadata.irradiance !== null && metadata.peakHours !== null && (
 								<div className="h-8 w-[1px] bg-white/10" />
 							)}
-							{peakHours !== null && (
+							{metadata.peakHours !== null && (
 								<div className="flex flex-col items-center gap-1 text-center">
 									<span className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider">
 										Peak Sun Hours
 									</span>
 									<span className="text-sm font-bold text-white">
-										{peakHours.toFixed(2)} hrs/day
+										{metadata.peakHours.toFixed(2)} hrs/day
 									</span>
 								</div>
 							)}

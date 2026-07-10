@@ -375,6 +375,12 @@ export default function Pricing() {
 					{/* Scrollable form area */}
 					<div className="flex-grow overflow-y-auto p-8">
 						<div className="max-w-2xl mx-auto flex flex-col gap-6">
+							{error && (
+								<div className="bg-red-500/10 border border-red-500/15 rounded-xl p-3 flex items-start gap-2 text-[10px] font-bold text-red-400 leading-relaxed">
+									<AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
+									<span>{error}</span>
+								</div>
+							)}
 
 							{/* Segment 1: Base Costs Configuration */}
 							<div className="bg-white/5 rounded-2xl border border-white/10 p-6 flex flex-col gap-5 shadow">

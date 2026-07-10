@@ -255,16 +255,19 @@ export default function UnifiedDesignStep({
 	const [targetPanelCount, setTargetPanelCount] = useState(0);
 	const [placementConfig, setPlacementConfig] = useState<PlacementConfig>(DEFAULT_PLACEMENT_CONFIG);
 	const [showConfigModal, setShowConfigModal] = useState(false);
+	const [configModalMode, setConfigModalMode] = useState<"add" | "edit">("add");
 	const [activeCaptureTarget, setActiveCaptureTarget] = useState<string | null>(null);
 	const panelSpec: PanelSpec | null = useMemo(() => sceneData?.panel_spec || null, [sceneData]);
 
 	const handleConfigConfirm = (config: any) => {
-		if (selectedGroupId) {
+		if (configModalMode === "edit" && selectedGroupId) {
 			// Edit mode
 			updateSelectedGroup({
 				orientation: config.orientation,
 				grid_rows: config.grid_rows,
 				grid_cols: config.grid_cols,
+				table_angle: config.table_angle,
+				tilt_angle: config.tilt_angle,
 				pillar_count: config.pillar_count,
 				cells: config.cells,
 				pillars_per_structure_ew: config.pillars_per_structure_ew,
@@ -320,6 +323,11 @@ export default function UnifiedDesignStep({
 	const selectedGroup = useMemo(() => {
 		return panelGroups.find((g) => g.id === selectedGroupId) || null;
 	}, [panelGroups, selectedGroupId]);
+
+	const selectedGroupPanelCount = selectedGroup ? groupPanelCount(selectedGroup) : 0;
+	const configModalRemainingSlots = configModalMode === "edit"
+		? (remainingPanelSlots === Infinity ? Infinity : remainingPanelSlots + selectedGroupPanelCount)
+		: remainingPanelSlots;
 
 	const validatePanelGroup = (group: PlacedPanelGroup, allGroups = panelGroups): string | null => {
 		if (!panelSpec) return "Select equipment before placing panels.";
@@ -1572,7 +1580,15 @@ export default function UnifiedDesignStep({
 						selectedGroup={selectedGroup}
 						isPlacingGroup={isPlacingGroup}
 						setIsPlacingGroup={setIsPlacingGroup}
-						openConfigModal={() => setShowConfigModal(true)}
+						openAddConfigModal={() => {
+							setConfigModalMode("add");
+							setSelectedGroupId(null);
+							setShowConfigModal(true);
+						}}
+						openEditConfigModal={() => {
+							setConfigModalMode("edit");
+							setShowConfigModal(true);
+						}}
 						deleteSelectedGroup={deleteSelectedGroup}
 						updateSelectedGroup={updateSelectedGroup}
 						onContinue={handlePlacementContinue}
@@ -1598,8 +1614,8 @@ export default function UnifiedDesignStep({
 			<TableConfigModal
 				visible={showConfigModal}
 				onClose={() => setShowConfigModal(false)}
-				remainingSlots={remainingPanelSlots}
-				initialConfig={selectedGroup as any}
+				remainingSlots={configModalRemainingSlots}
+				initialConfig={configModalMode === "edit" ? selectedGroup as any : placementConfig}
 				onConfirm={handleConfigConfirm}
 				panelSpec={panelSpec}
 			/>

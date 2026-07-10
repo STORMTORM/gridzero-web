@@ -9,7 +9,8 @@ interface PanelPlacementStepProps {
 	selectedGroup: PanelGroup | null;
 	isPlacingGroup: boolean;
 	setIsPlacingGroup: (placing: boolean) => void;
-	openConfigModal: () => void;
+	openAddConfigModal: () => void;
+	openEditConfigModal: () => void;
 	deleteSelectedGroup: () => void;
 	updateSelectedGroup: (updates: Partial<PanelGroup>) => void;
 	onContinue: () => void;
@@ -23,7 +24,8 @@ export default function PanelPlacementStep({
 	selectedGroup,
 	isPlacingGroup,
 	setIsPlacingGroup,
-	openConfigModal,
+	openAddConfigModal,
+	openEditConfigModal,
 	deleteSelectedGroup,
 	updateSelectedGroup,
 	onContinue,
@@ -96,7 +98,7 @@ export default function PanelPlacementStep({
 					<span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Add Structure Table</span>
 					{!isPlacingGroup ? (
 						<button
-							onClick={openConfigModal}
+							onClick={openAddConfigModal}
 							disabled={limitReached}
 							className="w-full py-2.5 bg-white hover:bg-neutral-200 disabled:opacity-30 disabled:cursor-not-allowed text-black text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow"
 						>
@@ -126,7 +128,7 @@ export default function PanelPlacementStep({
 						{/* Edit layout grid */}
 						<button
 							type="button"
-							onClick={openConfigModal}
+							onClick={openEditConfigModal}
 							className="w-full py-2 bg-teal-500/10 hover:bg-teal-500/20 text-teal-400 border border-teal-500/15 text-[11px] font-bold rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5"
 						>
 							<Layers className="w-3.5 h-3.5" />

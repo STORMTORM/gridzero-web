@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useMemo } from "react";
 import {
 	Zap,
 	FileText,
@@ -14,115 +14,81 @@ import {
 	ChevronsRight,
 } from "lucide-react";
 import api from "../api/client";
-
-interface Project {
-	id: string;
-	name: string;
-	customer: string;
-	address: string;
-	phone: string;
-	capacity: string;
-	panels: number;
-	status: string;
-	date: string;
-}
+import { useProjects } from "../features/dashboard/hooks/useProjects";
+import type { Project } from "../features/dashboard/types";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface DashboardProps {
 	onNewProjectClick?: () => void;
 	onOpenProject?: (project: Project) => void;
 }
 
-const STAGE_LABELS: Record<number, string> = {
-	1: "FORM PENDING",
-	2: "ROOF MAPPING",
-	3: "OBSTRUCTIONS",
-	4: "PANEL SELECTION",
-	5: "PANEL PLACEMENT",
-	6: "WIRING",
-	7: "COMPLIANCE",
-	8: "PROPOSAL",
-};
-
-export default function Dashboard({ onNewProjectClick, onOpenProject }: DashboardProps) {
-	const [projects, setProjects] = useState<Project[]>([]);
-	const [loading, setLoading] = useState(true);
+export default function Dashboard({
+	onNewProjectClick,
+	onOpenProject,
+}: DashboardProps) {
+	const queryClient = useQueryClient();
 	const [search, setSearch] = useState("");
 	const [currentPage, setCurrentPage] = useState(1);
 	const PAGE_SIZE = 8;
 
-	// Fetch dynamic projects list from live server /visit/all
-	const fetchProjects = async () => {
-		try {
-			setLoading(true);
-			const res = await api.get("/visit/all", { params: { limit: "100", sort: "-created_at" } });
-			const serverData = res.data?.data || [];
-			
-			const mapped: Project[] = serverData.map((item: any) => {
-				const addr = item.address || {};
-				const md = item.map_details || {};
-				const loadVal = md.sanctioned_load || item.sanctioned_load;
-				
-				const capacity = loadVal ? `${parseFloat(loadVal).toFixed(1)} kWp` : "10.0 kWp";
-				const panels = loadVal ? Math.round(parseFloat(loadVal) * 2) : 20;
-				
-				const stageNum = Number(item.stage) || 1;
-				const status = STAGE_LABELS[stageNum] || "FORM PENDING";
-
-				return {
-					id: String(item.sitevisit_id),
-					name: item.project_name || `Project ${item.sitevisit_id}`,
-					customer: `${addr.first_name || ""} ${addr.last_name || ""}`.trim() || addr.name || `Customer ${item.sitevisit_id}`,
-					address: addr.line1 || "Captured Map Location",
-					phone: addr.phone ? String(addr.phone) : "",
-					capacity,
-					panels,
-					status,
-					date: item.created_at || "",
-				};
-			});
-
-			setProjects(mapped);
-		} catch (e) {
-			console.error("Failed to fetch projects from backend", e);
-		} finally {
-			setLoading(false);
-		}
-	};
-
-	useEffect(() => {
-		fetchProjects();
-	}, []);
+	const { data, isLoading: loading, error } = useProjects();
+	const projects: Project[] = data ?? [];
 
 	// Delete site visit
 	const handleDeleteProject = async (id: string) => {
 		if (!confirm("Are you sure you want to delete this project?")) return;
+
 		try {
 			await api.delete(`/visit/${id}`);
-			setProjects((prev) => prev.filter((p) => p.id !== id));
+
+			await queryClient.invalidateQueries({
+				queryKey: ["projects"],
+			});
 		} catch (err) {
 			console.error("Failed to delete project", err);
 			alert("Failed to delete project. Please try again.");
 		}
 	};
 
-	// Recalculate stats based on active projects
-	const activeDesigns = projects.filter((p) => p.status !== "PROPOSAL").length;
-	const draftProposals = projects.filter((p) => p.status === "PROPOSAL").length;
-	
-	const totalCapacity = projects.reduce((acc, p) => {
-		const parsed = parseFloat(p.capacity.replace(/[^\d.]/g, ""));
-		return acc + (isNaN(parsed) ? 0 : parsed);
-	}, 0).toFixed(1);
+	const activeDesigns = useMemo(() => {
+		return projects.filter((p) => p.stage < 8).length;
+	}, [projects]);
 
-	// Filter project list based on search criteria
-	const filteredProjects = projects.filter((p) => {
-		const query = search.toLowerCase();
-		return (
-			p.name.toLowerCase().includes(query) ||
-			p.customer.toLowerCase().includes(query) ||
-			p.address.toLowerCase().includes(query)
-		);
-	});
+	const draftProposals = useMemo(() => {
+		return projects.filter((p) => p.stage >= 8 || p.status === "PROPOSAL")
+			.length;
+	}, [projects]);
+
+	const totalCapacity = useMemo(() => {
+		const total = projects.reduce((acc, project) => {
+			return acc + (project.capacityKwp ?? 0);
+		}, 0);
+
+		return total.toFixed(1);
+	}, [projects]);
+
+	const filteredProjects = useMemo(() => {
+		const query = search.trim().toLowerCase();
+
+		if (!query) return projects;
+
+		return projects.filter((project) => {
+			return [
+				project.id,
+				project.name,
+				project.customer,
+				project.address,
+				project.phone,
+				project.status,
+				project.capacity,
+				project.panels != null ? String(project.panels) : "",
+			]
+				.join(" ")
+				.toLowerCase()
+				.includes(query);
+		});
+	}, [projects, search]);
 
 	// Pagination variables
 	const totalResults = filteredProjects.length;
@@ -146,7 +112,11 @@ export default function Dashboard({ onNewProjectClick, onOpenProject }: Dashboar
 		if (!dateStr) return "--";
 		const d = new Date(dateStr);
 		if (isNaN(d.getTime())) return dateStr;
-		const options: Intl.DateTimeFormatOptions = { month: "short", day: "numeric", year: "numeric" };
+		const options: Intl.DateTimeFormatOptions = {
+			month: "short",
+			day: "numeric",
+			year: "numeric",
+		};
 		return d.toLocaleDateString("en-US", options);
 	};
 
@@ -155,19 +125,30 @@ export default function Dashboard({ onNewProjectClick, onOpenProject }: Dashboar
 			<div className="flex-grow flex items-center justify-center bg-black min-h-[calc(100vh-4rem)]">
 				<div className="flex flex-col items-center gap-3">
 					<RefreshCw className="w-8 h-8 text-white animate-spin" />
-					<span className="text-sm font-semibold text-neutral-400 animate-pulse">Loading project cockpit...</span>
+					<span className="text-sm font-semibold text-neutral-400 animate-pulse">
+						Loading project cockpit...
+					</span>
 				</div>
+			</div>
+		);
+	}
+
+	if (error) {
+		return (
+			<div className="flex items-center justify-center h-full text-white">
+				Failed to load projects.
 			</div>
 		);
 	}
 
 	return (
 		<div className="flex flex-col gap-6 p-6 md:p-8 h-full bg-black text-neutral-100 overflow-hidden w-full">
-			
 			{/* Dashboard Title Header */}
 			<div className="flex flex-col md:flex-row md:items-center justify-between gap-4 flex-shrink-0">
 				<div className="flex flex-col gap-0.5">
-					<h1 className="text-2xl font-bold text-white tracking-tight">Project Dashboard</h1>
+					<h1 className="text-2xl font-bold text-white tracking-tight">
+						Project Dashboard
+					</h1>
 				</div>
 				<button
 					onClick={onNewProjectClick}
@@ -186,8 +167,12 @@ export default function Dashboard({ onNewProjectClick, onOpenProject }: Dashboar
 						<Layers className="w-4.5 h-4.5" />
 					</div>
 					<div className="flex flex-col">
-						<span className="text-xl font-bold text-white">{activeDesigns}</span>
-						<span className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider mt-0.5">Active Projects</span>
+						<span className="text-xl font-bold text-white">
+							{activeDesigns}
+						</span>
+						<span className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider mt-0.5">
+							Active Projects
+						</span>
 					</div>
 				</div>
 
@@ -197,8 +182,12 @@ export default function Dashboard({ onNewProjectClick, onOpenProject }: Dashboar
 						<Zap className="w-4.5 h-4.5" />
 					</div>
 					<div className="flex flex-col">
-						<span className="text-xl font-bold text-white">{totalCapacity} kWp</span>
-						<span className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider mt-0.5">Total Capacity</span>
+						<span className="text-xl font-bold text-white">
+							{totalCapacity} kWp
+						</span>
+						<span className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider mt-0.5">
+							Total Capacity
+						</span>
 					</div>
 				</div>
 
@@ -208,15 +197,18 @@ export default function Dashboard({ onNewProjectClick, onOpenProject }: Dashboar
 						<FileText className="w-4.5 h-4.5" />
 					</div>
 					<div className="flex flex-col">
-						<span className="text-xl font-bold text-white">{draftProposals}</span>
-						<span className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider mt-0.5">Draft Proposals</span>
+						<span className="text-xl font-bold text-white">
+							{draftProposals}
+						</span>
+						<span className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider mt-0.5">
+							Draft Proposals
+						</span>
 					</div>
 				</div>
 			</div>
 
 			{/* Project List Dark Card container */}
 			<div className="bg-white/5 rounded-3xl border border-white/10 shadow flex-grow flex flex-col justify-between p-6 overflow-hidden">
-				
 				{/* Top Search & Actions Bar */}
 				<div className="flex flex-col sm:flex-row justify-between items-center gap-4 border-b border-white/10 pb-4 flex-shrink-0">
 					{/* Search input */}
@@ -252,29 +244,35 @@ export default function Dashboard({ onNewProjectClick, onOpenProject }: Dashboar
 					{paginatedProjects.length === 0 ? (
 						<div className="py-12 flex flex-col items-center justify-center text-center">
 							<Layers className="w-12 h-12 text-neutral-700 mb-4 animate-pulse" />
-							<h3 className="text-sm font-bold text-neutral-400">No matching projects found</h3>
+							<h3 className="text-sm font-bold text-neutral-400">
+								No matching projects found
+							</h3>
 							<p className="text-xs text-neutral-500 mt-1 max-w-xs">
-								Refine your query or click "New Project" to register a new solar coordinate workspace.
+								Refine your query or click "New Project" to
+								register a new solar coordinate workspace.
 							</p>
 						</div>
 					) : (
 						<div className="w-full flex-grow flex flex-col justify-stretch min-h-0">
 							{/* Header Row */}
 							<div className="flex-shrink-0 flex items-center border-b border-white/10 text-[10px] font-bold uppercase tracking-wider text-neutral-400 pb-4 pt-3 px-5">
-								<div className="w-[20%] font-semibold">Project Name</div>
-								<div className="w-[15%] font-semibold">Customer Name</div>
-								<div className="w-[15%] font-semibold">Phone</div>
-								<div className="w-[22%] font-semibold">Address</div>
-								<div className="w-[12%] font-semibold">Created</div>
-								<div className="w-[11%] font-semibold">Status</div>
-								<div className="w-[5%] font-semibold text-right">Actions</div>
+								<div className="w-[19%] font-semibold">Project</div>
+								<div className="w-[14%] font-semibold">Customer</div>
+								<div className="w-[12%] font-semibold">Phone</div>
+								<div className="w-[21%] font-semibold">Address</div>
+								<div className="w-[11%] font-semibold">Created</div>
+								<div className="w-[19%] font-semibold">Status</div>
+								<div className="w-[4%] font-semibold text-right">Actions</div>
 							</div>
 
 							{/* Data Rows Container */}
 							<div className="flex-grow flex flex-col justify-stretch min-h-0">
 								{paginatedProjects.map((project) => {
-									const isReady = project.status === "PROPOSAL" || project.status === "COMPLIANCE";
-									const isPending = project.status === "FORM PENDING";
+									const isReady =
+										project.status === "PROPOSAL" ||
+										project.status === "COMPLIANCE";
+									const isPending =
+										project.status === "FORM PENDING";
 
 									return (
 										<div
@@ -282,9 +280,11 @@ export default function Dashboard({ onNewProjectClick, onOpenProject }: Dashboar
 											className="flex-1 flex items-center border-b border-white/5 hover:bg-white/5 transition-colors text-xs text-neutral-300 px-5"
 										>
 											{/* 1. Project Name */}
-											<div className="w-[20%] font-bold text-white truncate pr-2">
+											<div className="w-[19%] font-bold text-white truncate pr-2">
 												<button
-													onClick={() => onOpenProject?.(project)}
+													onClick={() =>
+														onOpenProject?.(project)
+													}
 													className="hover:underline cursor-pointer text-left focus:outline-none"
 												>
 													{project.name}
@@ -292,50 +292,59 @@ export default function Dashboard({ onNewProjectClick, onOpenProject }: Dashboar
 											</div>
 
 											{/* 2. Customer Name */}
-											<div className="w-[15%] font-medium text-neutral-250 truncate pr-2">
+											<div className="w-[14%] font-medium text-neutral-250 truncate pr-2">
 												{project.customer}
 											</div>
-
-											{/* 3. Phone */}
-											<div className="w-[15%] text-neutral-400 truncate pr-2">
+												
+											<div className="w-[12%] text-neutral-400 truncate pr-2">
 												{formatPhone(project.phone)}
 											</div>
-
+											
 											{/* 4. Address */}
-											<div className="w-[22%] text-neutral-400 truncate pr-2" title={project.address}>
+											<div
+												className="w-[21%] text-neutral-400 truncate pr-2"
+												title={project.address}
+											>
 												{project.address}
 											</div>
 
 											{/* 5. Created Date */}
-											<div className="w-[12%] text-neutral-400 truncate">
+											<div className="w-[11%] text-neutral-400 truncate">
 												{formatDate(project.date)}
 											</div>
 
 											{/* 6. Status tag */}
-											<div className="w-[11%]">
-												<span className={`border text-[9px] font-extrabold px-2.5 py-0.5 rounded tracking-wide uppercase ${
-													isReady
-														? "bg-white/20 text-white border-white/25"
-														: isPending
-														? "bg-neutral-900 text-neutral-400 border-neutral-850"
-														: "bg-white/10 text-white border-white/15"
-												}`}>
-													{project.status.replace("_", " ")}
+											<div className="w-[19%]">
+												<span
+													className={`border text-[9px] font-extrabold px-2.5 py-0.5 rounded tracking-wide uppercase ${
+														isReady
+															? "bg-white/20 text-white border-white/25"
+															: isPending
+																? "bg-neutral-900 text-neutral-400 border-neutral-850"
+																: "bg-white/10 text-white border-white/15"
+													}`}
+												>
+													{project.status.replaceAll("_", " ")}
 												</span>
 											</div>
 
 											{/* 7. Action Icons */}
-											<div className="w-[5%] text-right flex items-center justify-end gap-3.5">
-
+											<div className="w-[4%] text-right flex items-center justify-end gap-3">
 												<button
-													onClick={() => onOpenProject?.(project)}
+													onClick={() =>
+														onOpenProject?.(project)
+													}
 													className="text-neutral-500 hover:text-white transition-colors cursor-pointer focus:outline-none"
 													title="Open Workspace"
 												>
 													<Pencil className="w-3.5 h-3.5" />
 												</button>
 												<button
-													onClick={() => handleDeleteProject(project.id)}
+													onClick={() =>
+														handleDeleteProject(
+															project.id,
+														)
+													}
 													className="text-neutral-500 hover:text-rose-400 transition-colors cursor-pointer focus:outline-none"
 													title="Delete Project"
 												>
@@ -354,7 +363,8 @@ export default function Dashboard({ onNewProjectClick, onOpenProject }: Dashboar
 				{totalResults > 0 && (
 					<div className="flex flex-col sm:flex-row justify-between items-center gap-4 pt-4 border-t border-white/10 text-xs text-neutral-400 flex-shrink-0">
 						<span>
-							Showing {startIndex + 1}-{endIndex} of {totalResults} results
+							Showing {startIndex + 1}-{endIndex} of{" "}
+							{totalResults} results
 						</span>
 
 						{/* Paginated Navigation buttons */}
@@ -367,7 +377,9 @@ export default function Dashboard({ onNewProjectClick, onOpenProject }: Dashboar
 								<ChevronsLeft className="w-4 h-4" />
 							</button>
 							<button
-								onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+								onClick={() =>
+									setCurrentPage((p) => Math.max(1, p - 1))
+								}
 								disabled={activePage === 1}
 								className="p-1.5 hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-transparent rounded-lg text-neutral-400 hover:text-white transition-all cursor-pointer disabled:cursor-not-allowed"
 							>
@@ -375,27 +387,46 @@ export default function Dashboard({ onNewProjectClick, onOpenProject }: Dashboar
 							</button>
 
 							{/* Page Numbers */}
-							{Array.from({ length: totalPages }).map((_, index) => {
-								const pageNum = index + 1;
-								const isActive = pageNum === activePage;
+							{Array.from({ length: totalPages })
+								.map((_, index) => index + 1)
+								.filter((pageNum) => {
+									return (
+										pageNum === 1 ||
+										pageNum === totalPages ||
+										Math.abs(pageNum - activePage) <= 1
+									);
+								})
+								.map((pageNum, index, pages) => {
+									const previous = pages[index - 1];
+									const showGap = previous != null && pageNum - previous > 1;
+									const isActive = pageNum === activePage;
 
-								return (
-									<button
-										key={pageNum}
-										onClick={() => setCurrentPage(pageNum)}
-										className={`w-7 h-7 flex items-center justify-center font-bold text-xs rounded-lg transition-all cursor-pointer ${
-											isActive
-												? "bg-white text-black"
-												: "hover:bg-white/10 text-neutral-400 hover:text-white"
-										}`}
-									>
-										{pageNum}
-									</button>
-								);
+									return (
+										<div key={pageNum} className="flex items-center gap-1.5">
+											{showGap ? (
+												<span className="text-neutral-600 px-1">...</span>
+											) : null}
+
+											<button
+												onClick={() => setCurrentPage(pageNum)}
+												className={`w-7 h-7 flex items-center justify-center font-bold text-xs rounded-lg transition-all cursor-pointer ${
+													isActive
+														? "bg-white text-black"
+														: "hover:bg-white/10 text-neutral-400 hover:text-white"
+												}`}
+											>
+												{pageNum}
+											</button>
+										</div>
+									);
 							})}
 
 							<button
-								onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+								onClick={() =>
+									setCurrentPage((p) =>
+										Math.min(totalPages, p + 1),
+									)
+								}
 								disabled={activePage === totalPages}
 								className="p-1.5 hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-transparent rounded-lg text-neutral-400 hover:text-white transition-all cursor-pointer disabled:cursor-not-allowed"
 							>
@@ -411,7 +442,6 @@ export default function Dashboard({ onNewProjectClick, onOpenProject }: Dashboar
 						</div>
 					</div>
 				)}
-
 			</div>
 		</div>
 	);
