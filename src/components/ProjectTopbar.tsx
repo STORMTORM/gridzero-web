@@ -13,8 +13,8 @@ const STAGE_BREADCRUMBS: Record<number, string> = {
 	3: "Obstruction Mapping",
 	4: "Panel Selection",
 	5: "Panel Placement",
-	6: "Stringing",
-	7: "SLD",
+	6: "Snapshots",
+	7: "Pricing",
 	8: "Proposal",
 };
 

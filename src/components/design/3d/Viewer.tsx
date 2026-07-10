@@ -35,7 +35,7 @@ export default function Viewer({ data: propData, sitevisitId: propSitevisitId, r
   const zoomParam = parseFloat(searchParams.get("zoom") || "1") || 1;
   const heightParam = searchParams.get("height");            // "20" | "roof+10" | null
   const timeParam = searchParams.get("time");                // initial hour, e.g. "9"
-  const captureMode = searchParams.get("capture") === "1";
+  const captureMode = searchParams.get("capture") === "1" || searchParams.get("stage") === "snapshots";
   const noUI = searchParams.get("noUI") === "1";
   const orientParam = searchParams.get("orient");            // "ns" | null
   const containerRef = useRef<HTMLDivElement>(null);
@@ -616,6 +616,61 @@ export default function Viewer({ data: propData, sitevisitId: propSitevisitId, r
       }
     };
     w.__setSunTime = (t: number) => { setTimeOfDay(t); setDisplayTime(t); };
+    w.__setCamera = (cam: string, heightVal?: string | number, zoomVal?: number, orientVal?: string) => {
+      const controls = controlsRef.current, camera = cameraRef.current;
+      if (!controls || !camera || !data) return;
+      const W = data.width_meters;
+      const H = data.height_meters;
+      const diag = Math.sqrt(W * W + H * H);
+      const angleSouth = data.angle_south_vertical_deg || 90;
+      const zoom = zoomVal || 1;
+      const orient = orientVal || "";
+      let camY: number;
+      if (heightVal && typeof heightVal === "string" && heightVal.startsWith("roof+")) {
+        const add = parseFloat(heightVal.slice(5)) || 10;
+        let maxRoofH = 0;
+        try {
+          for (const r of Object.values(data.roofs as any)) {
+            const h = (r as any).height;
+            if (typeof h === "number" && h > maxRoofH) maxRoofH = h;
+          }
+        } catch { /* ignore */ }
+        camY = (maxRoofH || 5) + add;
+      } else {
+        camY = typeof heightVal === "number" ? heightVal : (parseFloat(String(heightVal || "20")) || 20);
+      }
+
+      const fovRad = (camera.fov * Math.PI) / 180;
+      const fitDist = (diag / 2) / Math.tan(fovRad / 2);
+      const dist = fitDist / Math.max(0.05, zoom);
+
+      if (cam === "sw") {
+        const inv = 1 / Math.SQRT2;
+        camera.position.set(W / 2 + dist * inv, camY, H / 2 + dist * inv);
+        controls.enableRotate = true;
+        controls.mouseButtons = {
+          LEFT: THREE.MOUSE.ROTATE,
+          MIDDLE: THREE.MOUSE.DOLLY,
+          RIGHT: THREE.MOUSE.PAN
+        };
+      } else if (cam === "center") {
+        camera.position.set(W / 2 + 0.001, camY, H / 2 + 0.001);
+        if (orient === "ns") {
+          const a = ((angleSouth || 0) * Math.PI) / 180;
+          camera.up.set(-Math.cos(a), 0, -Math.sin(a));
+          camera.lookAt(W / 2, 0, H / 2);
+          controls.enableRotate = false;
+          controls.mouseButtons = {
+            LEFT: THREE.MOUSE.PAN,
+            MIDDLE: THREE.MOUSE.DOLLY,
+            RIGHT: THREE.MOUSE.ROTATE
+          };
+        }
+      }
+      controls.target.set(W / 2, 0, H / 2);
+      controls.update();
+      rendererRef.current?.render(sceneRef.current!, camera);
+    };
     w.__captureSeries = async (hours: number[]) => {
       try {
         const out: { hour: number; data: string }[] = [];
@@ -640,6 +695,7 @@ export default function Viewer({ data: propData, sitevisitId: propSitevisitId, r
       delete w.__capture3D;
       delete w.__captureSeries;
       delete w.__setSunTime;
+      delete w.__setCamera;
     };
   }, [captureMode, data]);
 

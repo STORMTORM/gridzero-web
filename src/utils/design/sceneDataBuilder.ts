@@ -1,16 +1,18 @@
-import type { SceneData, LocalObject } from "./types";
+import type { SceneData, LocalObject, PanelGroup, PanelSpec, PanelPlacement } from "./types";
 import type { RoofData } from "../../components/design/UnifiedDesignStep";
+import { getPanelsInGroup, isPointInPolygon } from "./coords";
 
 /**
  * Builds the nested SceneData payload for the Three.js 3D Viewer.
- * Takes current flat state lists of roofs and objects and returns a compiled SceneData object,
- * ensuring that previous step elements (roofs) are visible in subsequent steps (objects).
+ * Takes current flat state lists of roofs, objects, and panel structures and returns a compiled SceneData object.
  */
 export function buildLiveSceneData(
 	sceneData: SceneData | null | undefined,
 	roofs: RoofData[],
 	objects: LocalObject[],
-	stage: number
+	stage: string,
+	panelGroups: (PanelGroup & { id: string; center_x: number; center_y: number })[] = [],
+	panelSpec: PanelSpec | null = null
 ): SceneData | null {
 	if (!sceneData) return null;
 
@@ -21,7 +23,7 @@ export function buildLiveSceneData(
 	const payloadPolygons: Record<string, any> = {};
 	const payloadTrees: Record<string, any> = {};
 
-	// 1. Roofs and Parapets are structural foundations and are visible in both Stage 2 and Stage 3
+	// 1. Roofs and Parapets are structural foundations and are visible in all design stages
 	roofs.forEach((r) => {
 		payloadRoofs[r.id] = {
 			name: r.name,
@@ -65,8 +67,8 @@ export function buildLiveSceneData(
 		}
 	});
 
-	// 2. Stage 3 (Obstruction Mapping): Renders objects (AC units, water tanks, trees, walls, custom polygons)
-	if (stage === 3) {
+	// 2. Obstructions are visible in both Stage obstruction and placement
+	if (stage === "obstruction" || stage === "placement") {
 		objects.forEach((obj) => {
 			const item = {
 				name: obj.name,
@@ -96,6 +98,64 @@ export function buildLiveSceneData(
 		});
 	}
 
+	// 3. Panels calculations
+	const placements: PanelPlacement[] = [];
+	const groupsRecord: Record<string, PanelGroup> = {};
+
+	if (stage === "placement") {
+		panelGroups.forEach((g) => {
+			groupsRecord[g.id] = {
+				type: g.type || "table",
+				orientation: g.orientation || "portrait",
+				grid_rows: g.grid_rows || 1,
+				grid_cols: g.grid_cols || 1,
+				table_angle: g.table_angle || 0,
+				tilt_angle: g.tilt_angle || 15,
+				cells: g.cells || undefined,
+				pillar_count: g.pillar_count || 2,
+				front_pillar_height: g.front_pillar_height,
+				back_pillar_height: g.back_pillar_height,
+				module_to_module_ns: g.module_to_module_ns,
+				module_to_module_ew: g.module_to_module_ew,
+				row_gap: g.row_gap,
+				col_gap: g.col_gap,
+				overhang_module_length: g.overhang_module_length,
+				overhang_module_width: g.overhang_module_width,
+				pillar_to_pillar_ns: g.pillar_to_pillar_ns,
+				pillar_to_pillar_ew: g.pillar_to_pillar_ew,
+				rafter_overhang: g.rafter_overhang,
+				purlin_overhang: g.purlin_overhang,
+				base_height: g.base_height,
+				base_length: g.base_length,
+				base_width: g.base_width,
+			};
+
+			const panels = getPanelsInGroup(g, panelSpec);
+			panels.forEach((p) => {
+				const roofIdx = roofs.findIndex((r) => isPointInPolygon([p.x, p.y], r.points));
+				placements.push({
+					id: p.id,
+					center_x: p.x,
+					center_y: p.y,
+					angle: g.table_angle || 0,
+					roof_idx: roofIdx !== -1 ? roofIdx : 0,
+					group_id: g.id,
+					orientation: g.orientation || "portrait",
+					cell_r: p.r,
+					cell_c: p.c,
+					tilt_angle: g.tilt_angle || 15,
+					front_pillar_height: g.front_pillar_height,
+					back_pillar_height: g.back_pillar_height,
+					module_to_module_ns: g.module_to_module_ns,
+					module_to_module_ew: g.module_to_module_ew,
+					pillar_to_pillar_ns: g.pillar_to_pillar_ns,
+					pillar_to_pillar_ew: g.pillar_to_pillar_ew,
+					col_gap: g.col_gap,
+				});
+			});
+		});
+	}
+
 	return {
 		...sceneData,
 		roofs: payloadRoofs,
@@ -107,5 +167,7 @@ export function buildLiveSceneData(
 			polygon: payloadPolygons,
 			tree: payloadTrees,
 		},
+		panel_placements: stage === "placement" ? placements : (sceneData.panel_placements || []),
+		panel_groups: stage === "placement" ? groupsRecord : (sceneData.panel_groups || {}),
 	};
 }

@@ -4,6 +4,8 @@ import Sidebar from "./components/Sidebar";
 import Dashboard from "./pages/Dashboard";
 import CustomerDetail from "./pages/project/CustomerDetail";
 import DesignWorkspace from "./pages/project/DesignWorkspace";
+import EquipmentSelection from "./pages/project/EquipmentSelection";
+import Pricing from "./pages/project/Pricing";
 import Login from "./pages/Login";
 import ProtectedRoute from "./components/ProtectedRoute";
 import NewProjectModal from "./components/NewProjectModal";
@@ -63,6 +65,8 @@ export default function App() {
 				>
 					<Route path="/project/:id/details" element={<CustomerDetail />} />
 					<Route path="/project/:id/design" element={<DesignWorkspace />} />
+					<Route path="/project/:id/equipment" element={<EquipmentSelection />} />
+					<Route path="/project/:id/pricing" element={<Pricing />} />
 				</Route>
 			</Routes>
 

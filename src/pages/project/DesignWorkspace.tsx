@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { RefreshCw } from "lucide-react";
 import api from "../../api/client";
 import ProjectTopbar from "../../components/ProjectTopbar";
@@ -10,6 +10,8 @@ import type { SceneData, LocalObject } from "../../utils/design/types";
 export default function DesignWorkspace() {
 	const { id } = useParams<{ id: string }>();
 	const navigate = useNavigate();
+	const [searchParams, setSearchParams] = useSearchParams();
+	const stageParam = searchParams.get("stage") || "roof";
 
 	// Project & Map Metadata
 	const [projectName, setProjectName] = useState("");
@@ -19,7 +21,19 @@ export default function DesignWorkspace() {
 	const [heightMeters, setHeightMeters] = useState(50);
 	const [initialRoofs, setInitialRoofs] = useState<RoofData[]>([]);
 	const [initialObjects, setInitialObjects] = useState<LocalObject[]>([]);
-	const [stage, setStage] = useState<number>(2);
+	
+	const stage = (stageParam === "obstruction" || stageParam === "placement" || stageParam === "snapshots") ? stageParam : "roof";
+	const setStage = (s: "roof" | "obstruction" | "placement" | "snapshots") => {
+		setSearchParams({ stage: s });
+	};
+
+	const stageNumberMap: Record<string, number> = {
+		roof: 2,
+		obstruction: 3,
+		placement: 5,
+		snapshots: 6,
+	};
+	const currentStageNumber = stageNumberMap[stage] || 2;
 
 	const [sceneData, setSceneData] = useState<SceneData | null>(null);
 
@@ -254,7 +268,7 @@ export default function DesignWorkspace() {
 			{/* Project Workspace header */}
 			<ProjectTopbar
 				projectName={projectName}
-				currentStage={stage}
+				currentStage={currentStageNumber}
 			/>
 
 			{/* Main Split Layout Panel */}
@@ -271,10 +285,14 @@ export default function DesignWorkspace() {
 					onSaveStatusChange={setSaving}
 					sceneData={sceneData}
 					onContinue={() => {
-						if (stage === 2) {
-							setStage(3);
+						if (stage === "roof") {
+							setStage("obstruction");
+						} else if (stage === "obstruction") {
+							navigate(`/project/${id}/equipment`);
+						} else if (stage === "placement") {
+							navigate(`/project/${id}/design?stage=snapshots&capture=1`);
 						} else {
-							navigate("/");
+							navigate(`/project/${id}/pricing`);
 						}
 					}}
 				/>

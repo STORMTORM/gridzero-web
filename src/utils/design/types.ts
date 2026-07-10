@@ -60,6 +60,7 @@ export interface PanelPlacement {
   base_width?: number;
   cell_r?: number;
   cell_c?: number;
+  col_gap?: number;
 }
 
 export interface PanelGroup {
@@ -76,6 +77,7 @@ export interface PanelGroup {
   module_to_module_ns?: number;
   module_to_module_ew?: number;
   row_gap?: number;
+  col_gap?: number;
   overhang_module_length?: number;
   overhang_module_width?: number;
   pillar_to_pillar_ns?: number;
@@ -86,6 +88,8 @@ export interface PanelGroup {
   base_length?: number;
   base_width?: number;
   pillar_count?: number;
+  pillars_per_structure_ew?: number;
+  panels_per_structure?: number;
 }
 
 export interface PanelSpec {

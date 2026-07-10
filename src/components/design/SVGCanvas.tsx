@@ -1,6 +1,7 @@
 import React from "react";
 import type { RoofData } from "./UnifiedDesignStep";
-import type { LocalObject } from "../../utils/design/types";
+import type { LocalObject, PanelGroup, PanelSpec } from "../../utils/design/types";
+import { getPanelsInGroup } from "../../utils/design/coords";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // VISUAL STYLING VARIABLES (Tweak handles, lines, and thicknesses here!)
@@ -26,7 +27,7 @@ const DRAFT_VERTEX_STROKE_WIDTH = 0.3;       // Active drawing vertex handle str
 interface SVGCanvasProps {
 	widthMeters: number;
 	heightMeters: number;
-	stage: number;
+	stage: string;
 	roofs: RoofData[];
 	selectedRoofId: string | null;
 	setSelectedRoofId: (id: string | null) => void;
@@ -41,6 +42,13 @@ interface SVGCanvasProps {
 	startDraggingRoofVertex: (e: React.MouseEvent, roofId: string, idx: number) => void;
 	startDraggingObject: (e: React.MouseEvent, objId: string) => void;
 	startDraggingObjectVertex: (e: React.MouseEvent, objId: string, idx: number) => void;
+	
+	// Stage 5 Placement props
+	panelGroups: (PanelGroup & { id: string; center_x: number; center_y: number })[];
+	selectedGroupId: string | null;
+	setSelectedGroupId: (id: string | null) => void;
+	startDraggingGroup: (e: React.MouseEvent, gId: string) => void;
+	panelSpec: PanelSpec | null;
 }
 
 /**
@@ -64,6 +72,11 @@ export default function SVGCanvas({
 	startDraggingRoofVertex,
 	startDraggingObject,
 	startDraggingObjectVertex,
+	panelGroups,
+	selectedGroupId,
+	setSelectedGroupId,
+	startDraggingGroup,
+	panelSpec,
 }: SVGCanvasProps) {
 
 	return (
@@ -79,7 +92,7 @@ export default function SVGCanvas({
 				
 				const isSelected = selectedRoofId === r.id;
 
-				if (stage === 2) {
+				if (stage === "roof") {
 					return (
 						<g key={r.id}>
 							{/* Roof polygon shape */}
@@ -133,7 +146,7 @@ export default function SVGCanvas({
 				const strokeColor = isSelected ? "#a7ce38" : "rgba(255,255,255,0.5)";
 				const fillColor = isSelected ? "rgba(167,206,56,0.15)" : "rgba(255,255,255,0.08)";
 
-				if (stage === 2) {
+				if (stage === "roof") {
 					return null;
 				}
 
@@ -296,7 +309,7 @@ export default function SVGCanvas({
 			 ────────────────────────────────────────────────────────────────── */}
 			
 			{/* Stage 2 active roof outline draft */}
-			{stage === 2 && isDrawingRoofs && currentPoints.length > 0 && (
+			{stage === "roof" && isDrawingRoofs && currentPoints.length > 0 && (
 				<g>
 					{/* Interior tint for draft roof */}
 					<polygon
@@ -343,7 +356,7 @@ export default function SVGCanvas({
 			)}
 
 			{/* Stage 3 wall segments outline draft */}
-			{stage === 3 && objectDrawingMode === "wall" && wallStartPoint && mousePosMeters && (
+			{stage === "obstruction" && objectDrawingMode === "wall" && wallStartPoint && mousePosMeters && (
 				<g>
 					{/* Reference line between wall start and cursor */}
 					<line
@@ -368,7 +381,7 @@ export default function SVGCanvas({
 			)}
 
 			{/* Stage 3 custom polygon outline draft */}
-			{stage === 3 && objectDrawingMode === "polygon" && currentPoints.length > 0 && (
+			{stage === "obstruction" && objectDrawingMode === "polygon" && currentPoints.length > 0 && (
 				<g>
 					<polyline
 						points={currentPoints
@@ -402,6 +415,72 @@ export default function SVGCanvas({
 					))}
 				</g>
 			)}
+
+			{/* ──────────────────────────────────────────────────────────────────
+					LAYER D: PANEL STRUCTURES (STAGE 5/PLACEMENT ONLY)
+			 ────────────────────────────────────────────────────────────────── */}
+			{stage === "placement" && panelGroups.map((g) => {
+				const isSelected = selectedGroupId === g.id;
+				const panels = getPanelsInGroup(g, panelSpec);
+				const orientation = g.orientation || "portrait";
+				const L = (panelSpec?.length || 2279) / 1000;
+				const W = (panelSpec?.width || 1134) / 1000;
+				const pW = orientation === "portrait" ? W : L;
+				const pH = orientation === "portrait" ? L : W;
+
+				return (
+					<g
+						key={g.id}
+						className="cursor-move pointer-events-auto"
+						onMouseDown={(e) => startDraggingGroup(e, g.id)}
+						onClick={(e) => {
+							e.stopPropagation();
+							setSelectedGroupId(g.id);
+						}}
+					>
+						{panels.map((p) => {
+							const xPx = (p.x / widthMeters) * 100;
+							const yPx = (p.y / heightMeters) * 100;
+							const wPx = (pW / widthMeters) * 100;
+							const hPx = (pH / heightMeters) * 100;
+
+							return (
+								<g key={p.id}>
+									<rect
+										x={xPx - wPx / 2}
+										y={yPx - hPx / 2}
+										width={wPx}
+										height={hPx}
+										transform={`rotate(${g.table_angle || 0}, ${xPx}, ${yPx})`}
+										fill={isSelected ? "rgba(167,206,56,0.35)" : "rgba(34,197,94,0.22)"}
+										stroke={isSelected ? "#a7ce38" : "#22c55e"}
+										strokeWidth={isSelected ? 0.35 : 0.22}
+									/>
+									{/* Grid lines inside panel to mimic solar cells */}
+									<line
+										x1={xPx - wPx / 2}
+										y1={yPx}
+										x2={xPx + wPx / 2}
+										y2={yPx}
+										transform={`rotate(${g.table_angle || 0}, ${xPx}, ${yPx})`}
+										stroke="rgba(255,255,255,0.12)"
+										strokeWidth={0.1}
+									/>
+									<line
+										x1={xPx}
+										y1={yPx - hPx / 2}
+										x2={xPx}
+										y2={yPx + hPx / 2}
+										transform={`rotate(${g.table_angle || 0}, ${xPx}, ${yPx})`}
+										stroke="rgba(255,255,255,0.12)"
+										strokeWidth={0.1}
+									/>
+								</g>
+							);
+						})}
+					</g>
+				);
+			})}
 		</svg>
 	);
 }

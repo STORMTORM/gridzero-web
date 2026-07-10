@@ -3,11 +3,14 @@ import { Plus, Minus } from "lucide-react";
 import api from "../../api/client";
 import RoofMappingStep from "./RoofMappingStep";
 import ObstructionMappingStep from "./ObstructionMappingStep";
+import PanelPlacementStep from "./PanelPlacementStep";
+import { TableConfigModal } from "./TableConfigModal";
+import SnapshotsStep from "./SnapshotsStep";
 import Viewer from "./3d/Viewer";
 import SVGCanvas from "./SVGCanvas";
-import { generateUUID, calculateArea, isPointInPolygon } from "../../utils/design/coords";
+import { generateUUID, calculateArea, isPointInPolygon, getPanelsInGroup } from "../../utils/design/coords";
 import { buildLiveSceneData } from "../../utils/design/sceneDataBuilder";
-import type { SceneData, LocalObject } from "../../utils/design/types";
+import type { SceneData, LocalObject, PanelGroup, PanelSpec } from "../../utils/design/types";
 
 /**
  * Interface representing a custom frontend mapped roof layout structure.
@@ -29,6 +32,146 @@ export interface RoofData {
 		thickness: number;
 		setback: number;
 	}[];
+}
+
+type PlacedPanelGroup = PanelGroup & { id: string; center_x: number; center_y: number };
+
+export interface PlacementConfig {
+	orientation: "portrait" | "landscape";
+	grid_cols: number;
+	grid_rows: number;
+	table_angle: number;
+	tilt_angle: number;
+	pillar_count: number;
+	cells?: { r: number; c: number }[];
+	pillars_per_structure_ew?: number;
+	panels_per_structure?: number;
+}
+
+const DEFAULT_PLACEMENT_CONFIG: PlacementConfig = {
+	orientation: "portrait",
+	grid_cols: 5,
+	grid_rows: 2,
+	table_angle: 0,
+	tilt_angle: 15,
+	pillar_count: 2,
+};
+
+const DEFAULT_PREFERENCES = {
+	front_pillar_height: 1.2192,
+	back_pillar_height: 2.1336,
+	module_to_module_ns: 25.4,
+	module_to_module_ew: 25.4,
+	row_gap: 1.6,
+	col_gap: 0,
+	overhang_module_length: 100,
+	overhang_module_width: 100,
+	pillar_to_pillar_ns: 2.2,
+	pillar_to_pillar_ew: 2.0,
+	rafter_overhang: 0.1,
+	purlin_overhang: 0.1,
+	base_height: 0.3048,
+	base_length: 0.3048,
+	base_width: 0.3048,
+};
+
+function groupPanelCount(g: Pick<PanelGroup, "grid_cols" | "grid_rows" | "cells">): number {
+	return g.cells?.length || ((g.grid_cols || 1) * (g.grid_rows || 1));
+}
+
+function rotatePoint(x: number, y: number, cx: number, cy: number, angleDeg: number): [number, number] {
+	const theta = (angleDeg * Math.PI) / 180;
+	const dx = x - cx;
+	const dy = y - cy;
+	return [
+		cx + dx * Math.cos(theta) - dy * Math.sin(theta),
+		cy + dx * Math.sin(theta) + dy * Math.cos(theta),
+	];
+}
+
+function panelCorners(center: [number, number], w: number, h: number, angleDeg: number): [number, number][] {
+	const [cx, cy] = center;
+	const raw: [number, number][] = [
+		[cx - w / 2, cy - h / 2],
+		[cx + w / 2, cy - h / 2],
+		[cx + w / 2, cy + h / 2],
+		[cx - w / 2, cy + h / 2],
+	];
+	return raw.map(([x, y]) => rotatePoint(x, y, cx, cy, angleDeg));
+}
+
+function rectsOverlap(a: [number, number][], b: [number, number][]): boolean {
+	const axes: [number, number][] = [];
+	for (const poly of [a, b]) {
+		for (let i = 0; i < poly.length; i++) {
+			const p1 = poly[i];
+			const p2 = poly[(i + 1) % poly.length];
+			const edge: [number, number] = [p2[0] - p1[0], p2[1] - p1[1]];
+			axes.push([-edge[1], edge[0]]);
+		}
+	}
+	for (const axis of axes) {
+		const len = Math.hypot(axis[0], axis[1]) || 1;
+		const nx = axis[0] / len;
+		const ny = axis[1] / len;
+		const project = (poly: [number, number][]) => {
+			const vals = poly.map(([x, y]) => x * nx + y * ny);
+			return [Math.min(...vals), Math.max(...vals)];
+		};
+		const [aMin, aMax] = project(a);
+		const [bMin, bMax] = project(b);
+		if (aMax < bMin || bMax < aMin) return false;
+	}
+	return true;
+}
+
+function distToSegment(p: [number, number], a: [number, number], b: [number, number]): number {
+	const vx = b[0] - a[0];
+	const vy = b[1] - a[1];
+	const wx = p[0] - a[0];
+	const wy = p[1] - a[1];
+	const c1 = vx * wx + vy * wy;
+	if (c1 <= 0) return Math.hypot(p[0] - a[0], p[1] - a[1]);
+	const c2 = vx * vx + vy * vy;
+	if (c2 <= c1) return Math.hypot(p[0] - b[0], p[1] - b[1]);
+	const t = c1 / c2;
+	return Math.hypot(p[0] - (a[0] + t * vx), p[1] - (a[1] + t * vy));
+}
+
+function panelIntersectsObject(corners: [number, number][], obj: LocalObject): boolean {
+	const center: [number, number] = [
+		corners.reduce((sum, p) => sum + p[0], 0) / corners.length,
+		corners.reduce((sum, p) => sum + p[1], 0) / corners.length,
+	];
+
+	if (obj.type === "cuboid") {
+		const objCorners = panelCorners(
+			[obj.center_x, obj.center_y],
+			obj.length || 0,
+			obj.width || 0,
+			obj.angle || 0,
+		);
+		return rectsOverlap(corners, objCorners);
+	}
+
+	if (obj.type === "cylinder" || obj.type === "tree") {
+		const radius = obj.radius || 0;
+		if (Math.hypot(center[0] - obj.center_x, center[1] - obj.center_y) <= radius) return true;
+		return corners.some((p) => Math.hypot(p[0] - obj.center_x, p[1] - obj.center_y) <= radius);
+	}
+
+	if (obj.type === "polygon" && obj.polygon?.length) {
+		if (isPointInPolygon(center, obj.polygon)) return true;
+		return corners.some((p) => isPointInPolygon(p, obj.polygon!));
+	}
+
+	if (obj.type === "wall" && obj.p1 && obj.p2) {
+		const halfT = Math.max(0.1, (obj.thickness || 0.2) / 2);
+		return corners.some((p) => distToSegment(p, obj.p1!, obj.p2!) <= halfT)
+			|| distToSegment(center, obj.p1, obj.p2) <= halfT;
+	}
+
+	return false;
 }
 
 interface CategoryConfig {
@@ -68,7 +211,7 @@ interface UnifiedDesignStepProps {
 	imageUrl: string;
 	initialRoofs: RoofData[];
 	initialObjects: LocalObject[];
-	stage: number;
+	stage: string;
 	onSaveStatusChange?: (saving: boolean) => void;
 	sceneData?: SceneData | null;
 	onContinue?: () => void;
@@ -98,24 +241,57 @@ export default function UnifiedDesignStep({
 	const [selectedObjectId, setSelectedObjectId] = useState<string | null>(null);
 	const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-	useEffect(() => {
-		if (toastMessage) {
-			const timer = setTimeout(() => setToastMessage(null), 5000);
-			return () => clearTimeout(timer);
-		}
-	}, [toastMessage]);
-
-	// Drawing States
-	const [isDrawingRoofs, setIsDrawingRoofs] = useState(false);
+	// Obstruction Drawing Options
 	const [objectDrawingMode, setObjectDrawingMode] = useState<string>("none");
 
 	const [currentPoints, setCurrentPoints] = useState<[number, number][]>([]);
 	const [mousePosMeters, setMousePosMeters] = useState<[number, number] | null>(null);
 	const [wallStartPoint, setWallStartPoint] = useState<[number, number] | null>(null);
 
+	// Stage 5: Panel Placement States
+	const [panelGroups, setPanelGroups] = useState<PlacedPanelGroup[]>([]);
+	const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
+	const [isPlacingGroup, setIsPlacingGroup] = useState(false);
+	const [targetPanelCount, setTargetPanelCount] = useState(0);
+	const [placementConfig, setPlacementConfig] = useState<PlacementConfig>(DEFAULT_PLACEMENT_CONFIG);
+	const [showConfigModal, setShowConfigModal] = useState(false);
+	const [activeCaptureTarget, setActiveCaptureTarget] = useState<string | null>(null);
+	const panelSpec: PanelSpec | null = useMemo(() => sceneData?.panel_spec || null, [sceneData]);
+
+	const handleConfigConfirm = (config: any) => {
+		if (selectedGroupId) {
+			// Edit mode
+			updateSelectedGroup({
+				orientation: config.orientation,
+				grid_rows: config.grid_rows,
+				grid_cols: config.grid_cols,
+				pillar_count: config.pillar_count,
+				cells: config.cells,
+				pillars_per_structure_ew: config.pillars_per_structure_ew,
+				panels_per_structure: config.panels_per_structure,
+			});
+			setShowConfigModal(false);
+		} else {
+			// Place mode
+			setPlacementConfig({
+				orientation: config.orientation,
+				grid_cols: config.grid_cols,
+				grid_rows: config.grid_rows,
+				table_angle: config.table_angle,
+				tilt_angle: config.tilt_angle,
+				pillar_count: config.pillar_count,
+				cells: config.cells,
+				pillars_per_structure_ew: config.pillars_per_structure_ew,
+				panels_per_structure: config.panels_per_structure,
+			});
+			setIsPlacingGroup(true);
+			setShowConfigModal(false);
+		}
+	};
+
 	// Dragging states (unified)
 	const [activeDrag, setActiveDrag] = useState<{
-		type: "roof-vertex" | "object" | "object-vertex";
+		type: "roof-vertex" | "object" | "object-vertex" | "group";
 		targetId: string;
 		vertexIndex?: number;
 		startMousePos: [number, number];
@@ -132,6 +308,76 @@ export default function UnifiedDesignStep({
 	const [savingRoofs, setSavingRoofs] = useState(false);
 	const [savingObjects, setSavingObjects] = useState(false);
 
+	const placedPanelCount = useMemo(() => {
+		return panelGroups.reduce((count, g) => count + groupPanelCount(g), 0);
+	}, [panelGroups]);
+
+	const remainingPanelSlots = useMemo(() => {
+		if (!targetPanelCount) return Infinity;
+		return Math.max(0, targetPanelCount - placedPanelCount);
+	}, [targetPanelCount, placedPanelCount]);
+
+	const selectedGroup = useMemo(() => {
+		return panelGroups.find((g) => g.id === selectedGroupId) || null;
+	}, [panelGroups, selectedGroupId]);
+
+	const validatePanelGroup = (group: PlacedPanelGroup, allGroups = panelGroups): string | null => {
+		if (!panelSpec) return "Select equipment before placing panels.";
+		const panels = getPanelsInGroup(group, panelSpec);
+		if (panels.length === 0) return "This table has no panels.";
+
+		const otherGroups = allGroups.filter((g) => g.id !== group.id);
+		const otherRects = otherGroups.flatMap((g) =>
+			getPanelsInGroup(g, panelSpec).map((p) => panelCorners([p.x, p.y], p.pW, p.pH, g.table_angle || 0))
+		);
+
+		for (const p of panels) {
+			const corners = panelCorners([p.x, p.y], p.pW, p.pH, group.table_angle || 0);
+			const roof = roofs.find((r) => corners.every((pt) => isPointInPolygon(pt, r.points)));
+			if (!roof) return "Panels must fit completely inside a mapped roof boundary.";
+			if (objects.some((obj) => panelIntersectsObject(corners, obj))) {
+				return "Panels cannot overlap an obstruction.";
+			}
+			if (otherRects.some((rect) => rectsOverlap(corners, rect))) {
+				return "Panels cannot overlap another table.";
+			}
+		}
+		return null;
+	};
+
+	const updateSelectedGroup = (updates: Partial<PanelGroup>) => {
+		if (!selectedGroupId) return;
+		const current = panelGroups.find((g) => g.id === selectedGroupId);
+		if (!current) return;
+		const candidate = { ...current, ...updates };
+		const nextCount = panelGroups.reduce((sum, g) => sum + groupPanelCount(g.id === selectedGroupId ? candidate : g), 0);
+		if (targetPanelCount && nextCount > targetPanelCount) {
+			setToastMessage(`Panel limit reached. Only ${Math.max(0, targetPanelCount - (placedPanelCount - groupPanelCount(current)))} panel(s) can fit in this table.`);
+			return;
+		}
+		const validation = validatePanelGroup(candidate, panelGroups.map((g) => g.id === selectedGroupId ? candidate : g));
+		if (validation) {
+			setToastMessage(validation);
+			return;
+		}
+		const updated = panelGroups.map((g) => {
+			if (g.id === selectedGroupId) {
+				return candidate;
+			}
+			return g;
+		});
+		setPanelGroups(updated);
+		savePanelsDesignDebounced(updated);
+	};
+
+	const deleteSelectedGroup = () => {
+		if (!selectedGroupId) return;
+		const updated = panelGroups.filter((g) => g.id !== selectedGroupId);
+		setPanelGroups(updated);
+		setSelectedGroupId(null);
+		savePanelsDesign(updated);
+	};
+
 	const viewportRef = useRef<HTMLDivElement>(null);
 	const innerContainerRef = useRef<HTMLDivElement>(null);
 
@@ -140,6 +386,8 @@ export default function UnifiedDesignStep({
 	const latestRoofsRef = useRef(roofs);
 	const saveObjectsTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 	const latestObjectsRef = useRef(objects);
+	const saveDebounceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+	const latestPanelGroupsRef = useRef(panelGroups);
 	
 	useEffect(() => {
 		latestRoofsRef.current = roofs;
@@ -148,6 +396,10 @@ export default function UnifiedDesignStep({
 	useEffect(() => {
 		latestObjectsRef.current = objects;
 	}, [objects]);
+
+	useEffect(() => {
+		latestPanelGroupsRef.current = panelGroups;
+	}, [panelGroups]);
 
 	useEffect(() => {
 		return () => {
@@ -159,6 +411,10 @@ export default function UnifiedDesignStep({
 				clearTimeout(saveObjectsTimeoutRef.current);
 				saveObjectsDesign(latestObjectsRef.current);
 			}
+			if (saveDebounceTimeoutRef.current) {
+				clearTimeout(saveDebounceTimeoutRef.current);
+				savePanelsDesign(latestPanelGroupsRef.current);
+			}
 		};
 	}, []);
 
@@ -166,10 +422,15 @@ export default function UnifiedDesignStep({
 	const pxToMX = (px: number) => (px / 100) * widthMeters;
 	const pxToMY = (px: number) => (px / 100) * heightMeters;
 
-	// Keep parent updated with saving state changes
+
+
+	// Auto-hide Toast Message after 5 seconds
 	useEffect(() => {
-		onSaveStatusChange?.(savingRoofs || savingObjects);
-	}, [savingRoofs, savingObjects, onSaveStatusChange]);
+		if (toastMessage) {
+			const timer = setTimeout(() => setToastMessage(null), 5000);
+			return () => clearTimeout(timer);
+		}
+	}, [toastMessage]);
 
 	// Sync initial data from workspace
 	useEffect(() => {
@@ -179,6 +440,47 @@ export default function UnifiedDesignStep({
 	useEffect(() => {
 		setObjects(initialObjects);
 	}, [initialObjects]);
+
+	// Load target selections panel count
+	useEffect(() => {
+		if (!sitevisitId) return;
+		const fetchSelectionInfo = async () => {
+			try {
+				const res = await api.get(`/visit/selection/info/${sitevisitId}`);
+				const rawCount = res.data?.panel_count ?? res.data?.sitevisit?.panel_count;
+				const count = Number(rawCount);
+				setTargetPanelCount(Number.isFinite(count) && count > 0 ? count : 0);
+			} catch (err) {
+				console.error("Failed to fetch selection panel count info", err);
+			}
+		};
+		fetchSelectionInfo();
+	}, [sitevisitId]);
+
+	// Populate initial panel groups from sceneData
+	useEffect(() => {
+		if (!sceneData) return;
+		const groups: PlacedPanelGroup[] = [];
+		if (sceneData.panel_groups) {
+			Object.entries(sceneData.panel_groups).forEach(([gId, g]) => {
+				const matched = sceneData.panel_placements?.filter((p) => p.group_id === gId) || [];
+				if (matched.length > 0) {
+					const sumX = matched.reduce((sum, p) => sum + p.center_x, 0);
+					const sumY = matched.reduce((sum, p) => sum + p.center_y, 0);
+					groups.push({
+						...g,
+						id: gId,
+						center_x: sumX / matched.length,
+						center_y: sumY / matched.length,
+					});
+				}
+			});
+		}
+		setPanelGroups(groups);
+	}, [sceneData]);
+
+	// Drawing states
+	const [isDrawingRoofs, setIsDrawingRoofs] = useState(false);
 
 	// ────────────────────────────────────────────────────────────────────────
 	// SAVE CALLS
@@ -312,10 +614,119 @@ export default function UnifiedDesignStep({
 		}
 	};
 
-	// Compile active state lists (roofs, objects) into the structured payload expected by the 3D Viewer
+	const [savingPanels, setSavingPanels] = useState(false);
+
+	// Update saving status change effect to also include savingPanels
+	useEffect(() => {
+		onSaveStatusChange?.(savingRoofs || savingObjects || savingPanels);
+	}, [savingRoofs, savingObjects, savingPanels, onSaveStatusChange]);
+
+	const savePanelsDesign = async (currentGroups = panelGroups) => {
+		try {
+			setSavingPanels(true);
+			const panelsPayload: Record<string, any> = {};
+			const groupsPayload: Record<string, any> = {};
+
+			currentGroups.forEach((g) => {
+				const panels = getPanelsInGroup(g, panelSpec);
+				
+				panels.forEach((p) => {
+					const roofIdx = roofs.findIndex((r) => isPointInPolygon([p.x, p.y], r.points));
+					panelsPayload[p.id] = {
+						center_x: p.x,
+						center_y: p.y,
+						angle: g.table_angle || 0,
+						roof_idx: roofIdx !== -1 ? roofIdx : 0,
+						group_id: g.id,
+						orientation: g.orientation || "portrait",
+						cell_r: p.r,
+						cell_c: p.c,
+						tilt_angle: g.tilt_angle || 15,
+						front_pillar_height: g.front_pillar_height,
+						back_pillar_height: g.back_pillar_height,
+						module_to_module_ns: g.module_to_module_ns,
+						module_to_module_ew: g.module_to_module_ew,
+						pillar_to_pillar_ns: g.pillar_to_pillar_ns,
+						pillar_to_pillar_ew: g.pillar_to_pillar_ew,
+						col_gap: g.col_gap,
+					};
+				});
+
+				groupsPayload[g.id] = {
+					type: g.type || "table",
+					orientation: g.orientation || "portrait",
+					grid_rows: g.grid_rows || 1,
+					grid_cols: g.grid_cols || 1,
+					table_angle: g.table_angle || 0,
+					tilt_angle: g.tilt_angle || 15,
+					cells: g.cells || null,
+					pillar_count: g.pillar_count || 2,
+					front_pillar_height: g.front_pillar_height,
+					back_pillar_height: g.back_pillar_height,
+					module_to_module_ns: g.module_to_module_ns,
+					module_to_module_ew: g.module_to_module_ew,
+					row_gap: g.row_gap,
+					col_gap: g.col_gap,
+					overhang_module_length: g.overhang_module_length,
+					overhang_module_width: g.overhang_module_width,
+					pillar_to_pillar_ns: g.pillar_to_pillar_ns,
+					pillar_to_pillar_ew: g.pillar_to_pillar_ew,
+					rafter_overhang: g.rafter_overhang,
+					purlin_overhang: g.purlin_overhang,
+					base_height: g.base_height,
+					base_length: g.base_length,
+					base_width: g.base_width,
+				};
+			});
+
+			await api.post("/visit/panels/create", {
+				sitevisit_id: sitevisitId,
+				panels: panelsPayload,
+				groups: groupsPayload,
+			});
+		} catch (error) {
+			console.error("Failed to save panel design:", error);
+		} finally {
+			setSavingPanels(false);
+		}
+	};
+
+	const savePanelsDesignDebounced = (currentGroups = panelGroups) => {
+		if (saveDebounceTimeoutRef.current) {
+			clearTimeout(saveDebounceTimeoutRef.current);
+		}
+		setSavingPanels(true);
+		saveDebounceTimeoutRef.current = setTimeout(async () => {
+			await savePanelsDesign(currentGroups);
+			saveDebounceTimeoutRef.current = null;
+		}, 2000);
+	};
+
+	// Compile active state lists (roofs, objects, panels) into the structured payload expected by the 3D Viewer
 	const liveSceneData = useMemo(() => {
-		return buildLiveSceneData(sceneData, roofs, objects, stage);
-	}, [sceneData, roofs, objects, stage]);
+		return buildLiveSceneData(sceneData, roofs, objects, stage, panelGroups, panelSpec);
+	}, [sceneData, roofs, objects, stage, panelGroups, panelSpec]);
+
+	const handlePlacementContinue = async () => {
+		if (!panelSpec) {
+			setToastMessage("No panel selected. Complete equipment selection first.");
+			return;
+		}
+		if (placedPanelCount <= 0) {
+			setToastMessage("Place at least one panel table before continuing.");
+			return;
+		}
+		if (targetPanelCount && placedPanelCount < targetPanelCount) {
+			setToastMessage(`Place ${targetPanelCount - placedPanelCount} more panel${targetPanelCount - placedPanelCount !== 1 ? "s" : ""} to match the selected capacity.`);
+			return;
+		}
+		if (saveDebounceTimeoutRef.current) {
+			clearTimeout(saveDebounceTimeoutRef.current);
+			saveDebounceTimeoutRef.current = null;
+		}
+		await savePanelsDesign(panelGroups);
+		onContinue?.();
+	};
 
 	// ────────────────────────────────────────────────────────────────────────
 	// VIEWPORT ZOOM & PAN
@@ -526,6 +937,19 @@ export default function UnifiedDesignStep({
 					return obj;
 				});
 				setObjects(updatedObjs);
+			} else if (activeDrag.type === "group") {
+				const nextX = orig.center_x + dx;
+				const nextY = orig.center_y + dy;
+				
+				const updatedGroups = panelGroups.map((g) => {
+					if (g.id !== activeDrag.targetId) return g;
+					return {
+						...g,
+						center_x: nextX,
+						center_y: nextY,
+					};
+				});
+				setPanelGroups(updatedGroups);
 			}
 		}
 	};
@@ -587,6 +1011,19 @@ export default function UnifiedDesignStep({
 					}
 				}
 				saveObjectsDesign(objects);
+			} else if (activeDrag.type === "group") {
+				const group = panelGroups.find((g) => g.id === activeDrag.targetId);
+				if (group) {
+					const validation = validatePanelGroup(group, panelGroups);
+					if (validation) {
+						const restored = panelGroups.map((g) => g.id === activeDrag.targetId ? activeDrag.originalState : g);
+						setPanelGroups(restored);
+						setToastMessage(validation);
+						setActiveDrag(null);
+						return;
+					}
+				}
+				savePanelsDesign(panelGroups);
 			} else {
 				saveObjectsDesign(objects);
 			}
@@ -604,7 +1041,7 @@ export default function UnifiedDesignStep({
 	// ────────────────────────────────────────────────────────────────────────
 	const startDraggingRoofVertex = (e: React.MouseEvent, roofId: string, ptIdx: number) => {
 		e.stopPropagation();
-		if (isDrawingRoofs || stage !== 2) return;
+		if (isDrawingRoofs || stage !== "roof") return;
 
 		setSelectedRoofId(roofId);
 		const roof = roofs.find((r) => r.id === roofId);
@@ -622,7 +1059,7 @@ export default function UnifiedDesignStep({
 
 	const startDraggingObject = (e: React.MouseEvent, objId: string) => {
 		e.stopPropagation();
-		if (objectDrawingMode !== "none" || stage !== 3) return;
+		if (objectDrawingMode !== "none" || stage !== "obstruction") return;
 
 		setSelectedObjectId(objId);
 		const obj = objects.find((o) => o.id === objId);
@@ -639,7 +1076,7 @@ export default function UnifiedDesignStep({
 
 	const startDraggingObjectVertex = (e: React.MouseEvent, objId: string, vIdx: number) => {
 		e.stopPropagation();
-		if (objectDrawingMode !== "none" || stage !== 3) return;
+		if (objectDrawingMode !== "none" || stage !== "obstruction") return;
 
 		const obj = objects.find((o) => o.id === objId);
 		if (!obj) return;
@@ -654,14 +1091,85 @@ export default function UnifiedDesignStep({
 		});
 	};
 
+	const startDraggingGroup = (e: React.MouseEvent, gId: string) => {
+		e.stopPropagation();
+		if (isPlacingGroup || stage !== "placement") return;
+
+		setSelectedGroupId(gId);
+		const group = panelGroups.find((g) => g.id === gId);
+		if (!group) return;
+
+		const mousePos = getMouseMeters(e);
+		setActiveDrag({
+			type: "group",
+			targetId: gId,
+			startMousePos: mousePos,
+			originalState: JSON.parse(JSON.stringify(group)),
+		});
+	};
+
 	// ────────────────────────────────────────────────────────────────────────
 	// CANVAS CLICKS (DRAWING CREATIONS)
 	// ────────────────────────────────────────────────────────────────────────
 	const handleCanvasClick = (e: React.MouseEvent) => {
 		const [mx, my] = getMouseMeters(e);
 
+		// If not drawing/placing, clicking on empty canvas clears selections
+		if (!isDrawingRoofs && objectDrawingMode === "none" && !isPlacingGroup) {
+			setSelectedRoofId(null);
+			setSelectedObjectId(null);
+			setSelectedGroupId(null);
+			return;
+		}
+
+		// ── STAGE 5: PANEL PLACEMENT ──
+		if (stage === "placement" && isPlacingGroup) {
+			const clickedRoofIdx = roofs.findIndex((r) => isPointInPolygon([mx, my], r.points));
+			if (clickedRoofIdx === -1) {
+				setToastMessage("Structures must be placed inside a mapped roof boundary.");
+				return;
+			}
+
+			const panelsNeeded = placementConfig.grid_cols * placementConfig.grid_rows;
+			const activeCells = placementConfig.cells?.length ? placementConfig.cells : undefined;
+			const activePanelsNeeded = activeCells?.length || panelsNeeded;
+			if (remainingPanelSlots !== Infinity && activePanelsNeeded > remainingPanelSlots) {
+				setToastMessage(`Panel limit reached. Only ${remainingPanelSlots} panel${remainingPanelSlots !== 1 ? "s" : ""} remaining.`);
+				return;
+			}
+
+			const newGroupId = generateUUID("group");
+			const newGroup: PlacedPanelGroup = {
+				id: newGroupId,
+				type: "table",
+				orientation: placementConfig.orientation,
+				grid_cols: placementConfig.grid_cols,
+				grid_rows: placementConfig.grid_rows,
+				table_angle: placementConfig.table_angle,
+				tilt_angle: placementConfig.tilt_angle,
+				center_x: mx,
+				center_y: my,
+				pillar_count: placementConfig.pillar_count,
+				cells: activeCells,
+				pillars_per_structure_ew: placementConfig.pillars_per_structure_ew,
+				panels_per_structure: placementConfig.panels_per_structure,
+				...DEFAULT_PREFERENCES,
+			};
+			const validation = validatePanelGroup(newGroup, [...panelGroups, newGroup]);
+			if (validation) {
+				setToastMessage(validation);
+				return;
+			}
+			const updated = [...panelGroups, newGroup];
+			setPanelGroups(updated);
+			setSelectedGroupId(newGroupId);
+			setIsPlacingGroup(false);
+			savePanelsDesign(updated);
+			return;
+		}
+
 		// ── STAGE 2: ROOF BOUNDARY DRAWING ──
-		if (stage === 2 && isDrawingRoofs) {
+		if (stage === "roof" && isDrawingRoofs) {
 			const isFirstPointClose = currentPoints.length > 0 &&
 				Math.hypot(mx - currentPoints[0][0], my - currentPoints[0][1]) < 0.8;
 
@@ -698,7 +1206,7 @@ export default function UnifiedDesignStep({
 		}
 
 		// ── STAGE 3: OBSTRUCTION PLACEMENT ──
-		if (stage === 3 && objectDrawingMode !== "none") {
+		if (stage === "obstruction" && objectDrawingMode !== "none") {
 			// VALIDATION RULE: Don't let objects be placed unless there is a roof planned
 			if (roofs.length === 0) {
 				setObjectDrawingMode("none");
@@ -848,6 +1356,7 @@ export default function UnifiedDesignStep({
 			if (e.key === "Escape") {
 				setIsDrawingRoofs(false);
 				setObjectDrawingMode("none");
+				setIsPlacingGroup(false);
 				setCurrentPoints([]);
 				setWallStartPoint(null);
 			}
@@ -913,18 +1422,19 @@ export default function UnifiedDesignStep({
 		<div className="flex-grow w-full flex flex-col md:flex-row overflow-hidden relative">
 
 			{/* Column 1: 2D drawing canvas */}
-			<div
-				ref={viewportRef}
-				onWheel={handleWheel}
-				onMouseDown={handleMouseDown}
-				onMouseMove={handleMouseMove}
-				onMouseUp={handleMouseUp}
-				onMouseLeave={handleMouseLeave}
-				onClick={handleCanvasClick}
-				className={`flex-grow flex-1 h-full bg-neutral-950 flex items-center justify-center relative overflow-hidden p-6 border-r border-white/10 ${
-					(isDrawingRoofs || objectDrawingMode !== "none") ? "cursor-crosshair" : isPanning ? "cursor-grabbing" : "cursor-grab"
-				}`}
-			>
+			{stage !== "snapshots" && (
+				<div
+					ref={viewportRef}
+					onWheel={handleWheel}
+					onMouseDown={handleMouseDown}
+					onMouseMove={handleMouseMove}
+					onMouseUp={handleMouseUp}
+					onMouseLeave={handleMouseLeave}
+					onClick={handleCanvasClick}
+					className={`flex-grow flex-1 h-full bg-neutral-950 flex items-center justify-center relative overflow-hidden p-6 border-r border-white/10 ${
+						(isDrawingRoofs || objectDrawingMode !== "none" || isPlacingGroup) ? "cursor-crosshair" : isPanning ? "cursor-grabbing" : "cursor-grab"
+					}`}
+				>
 				{/* Canvas bounding frame */}
 				<div
 					ref={innerContainerRef}
@@ -964,8 +1474,19 @@ export default function UnifiedDesignStep({
 						startDraggingRoofVertex={startDraggingRoofVertex}
 						startDraggingObject={startDraggingObject}
 						startDraggingObjectVertex={startDraggingObjectVertex}
+						panelGroups={panelGroups}
+						selectedGroupId={selectedGroupId}
+						setSelectedGroupId={setSelectedGroupId}
+						startDraggingGroup={startDraggingGroup}
+						panelSpec={panelSpec}
 					/>
 				</div>
+
+				{stage === "placement" && isPlacingGroup && (
+					<div className="absolute top-6 left-1/2 -translate-x-1/2 bg-black/75 border border-white/10 rounded-2xl px-4 py-2 text-[11px] font-bold text-white shadow-xl z-30 pointer-events-none">
+						Tap inside a clear roof area to place the configured table
+					</div>
+				)}
 
 				{/* 2D Zoom Control buttons overlay */}
 				<div className="absolute bottom-6 right-6 flex flex-col gap-1.5 z-25">
@@ -985,11 +1506,26 @@ export default function UnifiedDesignStep({
 					</button>
 				</div>
 			</div>
+			)}
 
 			{/* Column 2: 3D live preview container */}
 			<div className="flex-grow flex-1 h-full relative overflow-hidden bg-neutral-950 border-r border-white/10">
 				{liveSceneData ? (
-					<Viewer data={liveSceneData} />
+					<>
+						<Viewer data={liveSceneData} />
+						{stage === "snapshots" && activeCaptureTarget && (
+							<div className="absolute inset-0 z-30 pointer-events-none flex items-center justify-center">
+								<div
+									style={{ aspectRatio: activeCaptureTarget === "corner_snapshot" ? 190 / 80 : 1 }}
+									className="w-full max-w-[90%] max-h-[90%] border-2 border-white rounded-xl shadow-[0_0_0_9999px_rgba(0,0,0,0.55)] relative"
+								>
+									<div className="absolute -top-6 left-0 text-[9px] font-bold text-white uppercase tracking-wider bg-black/60 px-2 py-0.5 rounded">
+										{activeCaptureTarget === "corner_snapshot" ? "Proposal Cover Frame (190:80)" : "Shadow Analysis Grid (1:1)"}
+									</div>
+								</div>
+							</div>
+						)}
+					</>
 				) : (
 					<div className="flex flex-col items-center justify-center h-full gap-3 text-neutral-500 bg-neutral-950">
 						<span className="text-xs font-semibold animate-pulse">Initializing 3D viewport...</span>
@@ -999,7 +1535,7 @@ export default function UnifiedDesignStep({
 
 			{/* Column 3: Design Sidebar step component */}
 			<div className="w-full md:w-[380px] bg-neutral-900/60 p-6 flex flex-col justify-between flex-shrink-0 border-l border-white/10 gap-6 overflow-y-auto z-20 font-sans text-neutral-200">
-				{stage === 2 ? (
+				{stage === "roof" && (
 					<RoofMappingStep
 						roofs={roofs}
 						selectedRoofId={selectedRoofId}
@@ -1013,7 +1549,8 @@ export default function UnifiedDesignStep({
 						updateSelectedRoof={updateSelectedRoof}
 						onContinue={onContinue || (() => {})}
 					/>
-				) : (
+				)}
+				{stage === "obstruction" && (
 					<ObstructionMappingStep
 						roofs={roofs}
 						objects={objects}
@@ -1026,6 +1563,28 @@ export default function UnifiedDesignStep({
 						onContinue={onContinue || (() => {})}
 					/>
 				)}
+				{stage === "placement" && (
+					<PanelPlacementStep
+						panelSpec={panelSpec}
+						targetPanelCount={targetPanelCount}
+						placedPanelCount={placedPanelCount}
+						remainingPanelSlots={remainingPanelSlots}
+						selectedGroup={selectedGroup}
+						isPlacingGroup={isPlacingGroup}
+						setIsPlacingGroup={setIsPlacingGroup}
+						openConfigModal={() => setShowConfigModal(true)}
+						deleteSelectedGroup={deleteSelectedGroup}
+						updateSelectedGroup={updateSelectedGroup}
+						onContinue={handlePlacementContinue}
+					/>
+				)}
+				{stage === "snapshots" && (
+					<SnapshotsStep
+						sitevisitId={sitevisitId}
+						setActiveCaptureTarget={setActiveCaptureTarget}
+						onContinue={onContinue || (() => {})}
+					/>
+				)}
 			</div>
 
 			{toastMessage && (
@@ -1035,6 +1594,15 @@ export default function UnifiedDesignStep({
 					<button onClick={() => setToastMessage(null)} className="text-neutral-500 hover:text-white ml-2">✕</button>
 				</div>
 			)}
+
+			<TableConfigModal
+				visible={showConfigModal}
+				onClose={() => setShowConfigModal(false)}
+				remainingSlots={remainingPanelSlots}
+				initialConfig={selectedGroup as any}
+				onConfirm={handleConfigConfirm}
+				panelSpec={panelSpec}
+			/>
 
 		</div>
 	);

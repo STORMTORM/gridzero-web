@@ -1,3 +1,5 @@
+import type { PanelGroup, PanelSpec } from "./types";
+
 /**
  * Coordinate Geometry and Helper Utilities for Design Canvas
  */
@@ -44,4 +46,51 @@ export function isPointInPolygon(point: [number, number], polygon: [number, numb
 		if (intersect) inside = !inside;
 	}
 	return inside;
+}
+
+/**
+ * Computes individual panel coordinates relative to the group center.
+ */
+export function getPanelsInGroup(
+	g: PanelGroup & { id: string; center_x: number; center_y: number },
+	panelSpec: PanelSpec | null
+) {
+	const L = (panelSpec?.length || 2279) / 1000;
+	const W = (panelSpec?.width || 1134) / 1000;
+	const orientation = g.orientation || "portrait";
+	
+	const pW = orientation === "portrait" ? W : L;
+	const pH = orientation === "portrait" ? L : W;
+	const gap = 0.02; // 2cm gap
+	
+	const cols = g.grid_cols || 1;
+	const rows = g.grid_rows || 1;
+	
+	const theta = ((g.table_angle || 0) * Math.PI) / 180;
+	
+	const list = [];
+	for (let r = 0; r < rows; r++) {
+		for (let c = 0; c < cols; c++) {
+			const isActive = g.cells 
+				? g.cells.some(cell => cell.r === r && cell.c === c)
+				: true;
+			if (!isActive) continue;
+			
+			const offsetX = (c - (cols - 1) / 2) * (pW + gap);
+			const offsetY = (r - (rows - 1) / 2) * (pH + gap);
+			const rotX = offsetX * Math.cos(theta) - offsetY * Math.sin(theta);
+			const rotY = offsetX * Math.sin(theta) + offsetY * Math.cos(theta);
+			
+			list.push({
+				id: `${g.id}_${r}_${c}`,
+				x: g.center_x + rotX,
+				y: g.center_y + rotY,
+				r,
+				c,
+				pW,
+				pH,
+			});
+		}
+	}
+	return list;
 }
