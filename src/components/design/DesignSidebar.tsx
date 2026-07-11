@@ -1,5 +1,5 @@
 import { PenTool, Check, Trash2, Undo, Layers } from "lucide-react";
-import type { RoofData } from "./UnifiedDesignStep";
+import type { RoofData } from "../../features/design/types";
 import type { LocalObject } from "../../utils/design/types";
 
 interface DesignSidebarProps {

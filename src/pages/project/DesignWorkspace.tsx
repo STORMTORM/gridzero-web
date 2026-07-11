@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { RefreshCw } from "lucide-react";
-import api from "../../api/client";
 import ProjectTopbar from "../../components/ProjectTopbar";
 import UnifiedDesignStep from "../../components/design/UnifiedDesignStep";
-import type { RoofData } from "../../components/design/UnifiedDesignStep";
-import type { SceneData, LocalObject } from "../../utils/design/types";
+import type { RoofData } from "../../features/design/types";
+import type { LocalObject } from "../../utils/design/types";
+import { useProject } from "../../features/project/hooks/useProject";
+import { useDesign } from "../../features/design/hooks/useDesign";
 
 export default function DesignWorkspace() {
 	const { id } = useParams<{ id: string }>();
@@ -15,12 +16,12 @@ export default function DesignWorkspace() {
 
 	// Project & Map Metadata
 	const [projectName, setProjectName] = useState("");
-	const [loading, setLoading] = useState(true);
 	const [imageUrl, setImageUrl] = useState("");
 	const [widthMeters, setWidthMeters] = useState(50);
 	const [heightMeters, setHeightMeters] = useState(50);
 	const [initialRoofs, setInitialRoofs] = useState<RoofData[]>([]);
 	const [initialObjects, setInitialObjects] = useState<LocalObject[]>([]);
+	const [parsingData, setParsingData] = useState(true);
 	
 	const stage = (stageParam === "obstruction" || stageParam === "placement" || stageParam === "snapshots") ? stageParam : "roof";
 	const setStage = (s: "roof" | "obstruction" | "placement" | "snapshots") => {
@@ -35,228 +36,217 @@ export default function DesignWorkspace() {
 	};
 	const currentStageNumber = stageNumberMap[stage] || 2;
 
-	const [sceneData, setSceneData] = useState<SceneData | null>(null);
-
 	// UI State Indicators
 	const [_saving, setSaving] = useState(false);
 
-	// Fetch map capture details and existing roof layouts from database
+	// React Query Server States
+	const { data: projectData, isLoading: loadingProject } = useProject(id);
+	const { data: designData, isLoading: loadingDesign } = useDesign(id);
+
+	// Parse map capture details and existing roof layouts when query results arrive
 	useEffect(() => {
-		if (!id) return;
-		const fetchDesignData = async () => {
-			try {
-				setLoading(true);
-				const [mapRes, sceneRes] = await Promise.all([
-					api.get(`/visit/map/${id}`),
-					api.get(`/visit/3d/${id}`)
-				]);
-				const data = mapRes.data;
-				const sceneDataPayload = sceneRes.data as SceneData;
+		if (!projectData || !designData) return;
 
-				setProjectName(data.map_details?.project_name || data.project_name || `Project ${id}`);
-				const imgUrl = data.image_link || data.file_url || data.map_image_url || data.image_url || "";
-				setImageUrl(imgUrl);
-				
-				const wMeters = parseFloat(data.map_details?.width_meters || data.width_meters || 50);
-				const hMeters = parseFloat(data.map_details?.height_meters || data.height_meters || 50);
-				setWidthMeters(wMeters);
-				setHeightMeters(hMeters);
+		setParsingData(true);
+		const data = projectData;
 
-				setSceneData(sceneDataPayload);
+		setProjectName(data.map_details?.project_name);
+		const imgUrl = data.image_link;
+		setImageUrl(imgUrl);
+		
+		const wMeters = parseFloat(data.map_details?.width_meters || data.width_meters || 50);
+		const hMeters = parseFloat(data.map_details?.height_meters || data.height_meters || 50);
+		setWidthMeters(wMeters);
+		setHeightMeters(hMeters);
 
-				if (imgUrl) {
-					const img = new Image();
-					img.src = imgUrl;
-					img.onload = () => {
-						const naturalW = img.naturalWidth || 1000;
-						const naturalH = img.naturalHeight || 1000;
+		if (imgUrl) {
+			const img = new Image();
+			img.src = imgUrl;
+			img.onload = () => {
+				const naturalW = img.naturalWidth || 1000;
+				const naturalH = img.naturalHeight || 1000;
 
-						if (data.roofs) {
-							const parsedRoofs: RoofData[] = Object.entries(data.roofs).map(([roofId, roofInfo]: [string, any]) => {
-								const rawCoords = roofInfo.roof || [];
-								
-								// Infer coordinate space (pixels vs meters)
-								let coordSpace: "meters" | "pixels" = "meters";
-								if (rawCoords.length > 0) {
-									const maxX = Math.max(...rawCoords.map(([x]: number[]) => Math.abs(x)));
-									const maxY = Math.max(...rawCoords.map(([_, y]: number[]) => Math.abs(y)));
-									const fitsMeters = maxX <= wMeters + 1 && maxY <= hMeters + 1;
-									coordSpace = fitsMeters ? "meters" : "pixels";
-								}
-
-								// Map coordinates to meters if they are stored in pixel coords
-								const points: [number, number][] = rawCoords.map(([cx, cy]: number[]) => {
-									if (coordSpace === "pixels") {
-										return [
-											(cx / naturalW) * wMeters,
-											(cy / naturalH) * hMeters
-										];
-									}
-									return [cx, cy];
-								});
-
-								const apiWalls = {
-									...(data.walls || {}),
-									...(data.objects?.wall || {})
-								};
-								const relatedWalls = Object.values(apiWalls).filter((w: any) => w.roof_id === roofId);
-								
-								const parapetEdges = points.map((p1: any, i: number) => {
-									const p2 = points[(i + 1) % points.length];
-									const matchedWall = relatedWalls.find((w: any) => {
-										const wp1 = w.p1;
-										const wp2 = w.p2;
-										if (!wp1 || !wp2) return false;
-										
-										const matchesForward =
-											Math.abs(p1[0] - wp1[0]) <= 0.05 &&
-											Math.abs(p1[1] - wp1[1]) <= 0.05 &&
-											Math.abs(p2[0] - wp2[0]) <= 0.05 &&
-											Math.abs(p2[1] - wp2[1]) <= 0.05;
-											
-										const matchesReverse =
-											Math.abs(p1[0] - wp2[0]) <= 0.05 &&
-											Math.abs(p1[1] - wp2[1]) <= 0.05 &&
-											Math.abs(p2[0] - wp1[0]) <= 0.05 &&
-											Math.abs(p2[1] - wp1[1]) <= 0.05;
-											
-										return matchesForward || matchesReverse;
-									});
-									
-									const wall = matchedWall as any;
-									return {
-										enabled: !!matchedWall,
-										height: matchedWall ? Math.max(0, (wall.z_end || 0) - (wall.z_init || 0)) : 1.0,
-										thickness: matchedWall ? (wall.thickness || 0.3) : 0.3,
-										setback: matchedWall ? (wall.setback || 0) : 0,
-									};
-								});
-
-								const enabledEdges = parapetEdges.filter(e => e.enabled);
-								const hasParapet = enabledEdges.length > 0;
-								
-								let parapetSameDimensions = true;
-								if (enabledEdges.length > 1) {
-									const first = enabledEdges[0];
-									parapetSameDimensions = enabledEdges.every(e => 
-										Math.abs(e.height - first.height) < 0.01 &&
-										Math.abs(e.thickness - first.thickness) < 0.01 &&
-										Math.abs(e.setback - first.setback) < 0.01
-									);
-								}
-
-								const firstWall = enabledEdges[0] || { height: 1.0, thickness: 0.3, setback: 0.0 };
-
-								return {
-									id: roofId,
-									name: roofInfo.name || "Roof Boundary",
-									height: roofInfo.height || 3,
-									points,
-									area: roofInfo.area || 0,
-									parapetEnabled: hasParapet,
-									parapetHeight: firstWall.height,
-									parapetThickness: firstWall.thickness,
-									parapetSetback: firstWall.setback,
-									parapetSameDimensions,
-									parapetEdges,
-								};
-							});
-							setInitialRoofs(parsedRoofs);
+				if (data.roofs) {
+					const parsedRoofs: RoofData[] = Object.entries(data.roofs).map(([roofId, roofInfo]: [string, any]) => {
+						const rawCoords = roofInfo.roof || [];
+						
+						// Infer coordinate space (pixels vs meters)
+						let coordSpace: "meters" | "pixels" = "meters";
+						if (rawCoords.length > 0) {
+							const maxX = Math.max(...rawCoords.map(([x]: number[]) => Math.abs(x)));
+							const maxY = Math.max(...rawCoords.map(([_, y]: number[]) => Math.abs(y)));
+							const fitsMeters = maxX <= wMeters + 1 && maxY <= hMeters + 1;
+							coordSpace = fitsMeters ? "meters" : "pixels";
 						}
 
-						// Parse objects
-						const parsedObjects: LocalObject[] = [];
-						if (data.objects) {
-							const categories: ("cuboid" | "cylinder" | "wall" | "polygon" | "tree")[] = ["cuboid", "cylinder", "wall", "polygon", "tree"];
-							categories.forEach((cat) => {
-								const catDict = data.objects[cat] || {};
-								Object.entries(catDict).forEach(([key, val]: [string, any]) => {
-									// Exclude parapet walls from draggable objects list
-									if (cat === "wall" && val.roof_id) {
-										const parentRoof = data.roofs?.[val.roof_id];
-										if (parentRoof) {
-											const pts = parentRoof.roof || [];
-											const wp1 = val.p1;
-											const wp2 = val.p2;
-											if (wp1 && wp2 && pts.length > 0) {
-												let isParapetEdge = false;
-												for (let i = 0; i < pts.length; i++) {
-													const nextIdx = (i + 1) % pts.length;
-													const edgeStart = pts[i];
-													const edgeEnd = pts[nextIdx];
-													
-													const matchesForward =
-														Math.abs(edgeStart[0] - wp1[0]) <= 0.05 &&
-														Math.abs(edgeStart[1] - wp1[1]) <= 0.05 &&
-														Math.abs(edgeEnd[0] - wp2[0]) <= 0.05 &&
-														Math.abs(edgeEnd[1] - wp2[1]) <= 0.05;
-														
-													const matchesReverse =
-														Math.abs(edgeStart[0] - wp2[0]) <= 0.05 &&
-														Math.abs(edgeStart[1] - wp2[1]) <= 0.05 &&
-														Math.abs(edgeEnd[0] - wp1[0]) <= 0.05 &&
-														Math.abs(edgeEnd[1] - wp1[1]) <= 0.05;
-														
-													if (matchesForward || matchesReverse) {
-														isParapetEdge = true;
-														break;
-													}
-												}
-												if (isParapetEdge) {
-													return; // Skip parapet wall objects
-												}
+						// Map coordinates to meters if they are stored in pixel coords
+						const points: [number, number][] = rawCoords.map(([cx, cy]: number[]) => {
+							if (coordSpace === "pixels") {
+								return [
+									(cx / naturalW) * wMeters,
+									(cy / naturalH) * hMeters
+								];
+							}
+							return [cx, cy];
+						});
+
+						const apiWalls = {
+							...(data.walls || {}),
+							...(data.objects?.wall || {})
+						};
+						const relatedWalls = Object.values(apiWalls).filter((w: any) => w.roof_id === roofId);
+						
+						const parapetEdges = points.map((p1: any, i: number) => {
+							const p2 = points[(i + 1) % points.length];
+							const matchedWall = relatedWalls.find((w: any) => {
+								const wp1 = w.p1;
+								const wp2 = w.p2;
+								if (!wp1 || !wp2) return false;
+								
+								const matchesForward =
+									Math.abs(p1[0] - wp1[0]) <= 0.05 &&
+									Math.abs(p1[1] - wp1[1]) <= 0.05 &&
+									Math.abs(p2[0] - wp2[0]) <= 0.05 &&
+									Math.abs(p2[1] - wp2[1]) <= 0.05;
+									
+								const matchesReverse =
+									Math.abs(p1[0] - wp2[0]) <= 0.05 &&
+									Math.abs(p1[1] - wp2[1]) <= 0.05 &&
+									Math.abs(p2[0] - wp1[0]) <= 0.05 &&
+									Math.abs(p2[1] - wp1[1]) <= 0.05;
+									
+								return matchesForward || matchesReverse;
+							});
+							
+							const wall = matchedWall as any;
+							return {
+								enabled: !!matchedWall,
+								height: matchedWall ? Math.max(0, (wall.z_end || 0) - (wall.z_init || 0)) : 1.0,
+								thickness: matchedWall ? (wall.thickness || 0.3) : 0.3,
+								setback: matchedWall ? (wall.setback || 0) : 0,
+							};
+						});
+
+						const enabledEdges = parapetEdges.filter(e => e.enabled);
+						const hasParapet = enabledEdges.length > 0;
+						
+						let parapetSameDimensions = true;
+						if (enabledEdges.length > 1) {
+							const first = enabledEdges[0];
+							parapetSameDimensions = enabledEdges.every(e => 
+								Math.abs(e.height - first.height) < 0.01 &&
+								Math.abs(e.thickness - first.thickness) < 0.01 &&
+								Math.abs(e.setback - first.setback) < 0.01
+							);
+						}
+
+						const firstWall = enabledEdges[0] || { height: 1.0, thickness: 0.3, setback: 0.0 };
+
+						return {
+							id: roofId,
+							name: roofInfo.name || "Roof Boundary",
+							height: roofInfo.height || 3,
+							points,
+							area: roofInfo.area || 0,
+							parapetEnabled: hasParapet,
+							parapetHeight: firstWall.height,
+							parapetThickness: firstWall.thickness,
+							parapetSetback: firstWall.setback,
+							parapetSameDimensions,
+							parapetEdges,
+						};
+					});
+					setInitialRoofs(parsedRoofs);
+				}
+
+				// Parse objects
+				const parsedObjects: LocalObject[] = [];
+				if (data.objects) {
+					const categories: ("cuboid" | "cylinder" | "wall" | "polygon" | "tree")[] = ["cuboid", "cylinder", "wall", "polygon", "tree"];
+					categories.forEach((cat) => {
+						const catDict = data.objects[cat] || {};
+						Object.entries(catDict).forEach(([key, val]: [string, any]) => {
+							// Exclude parapet walls from draggable objects list
+							if (cat === "wall" && val.roof_id) {
+								const parentRoof = data.roofs?.[val.roof_id];
+								if (parentRoof) {
+									const pts = parentRoof.roof || [];
+									const wp1 = val.p1;
+									const wp2 = val.p2;
+									if (wp1 && wp2 && pts.length > 0) {
+										let isParapetEdge = false;
+										for (let i = 0; i < pts.length; i++) {
+											const nextIdx = (i + 1) % pts.length;
+											const edgeStart = pts[i];
+											const edgeEnd = pts[nextIdx];
+											
+											const matchesForward =
+												Math.abs(edgeStart[0] - wp1[0]) <= 0.05 &&
+												Math.abs(edgeStart[1] - wp1[1]) <= 0.05 &&
+												Math.abs(edgeEnd[0] - wp2[0]) <= 0.05 &&
+												Math.abs(edgeEnd[1] - wp2[1]) <= 0.05;
+												
+											const matchesReverse =
+												Math.abs(edgeStart[0] - wp2[0]) <= 0.05 &&
+												Math.abs(edgeStart[1] - wp2[1]) <= 0.05 &&
+												Math.abs(edgeEnd[0] - wp1[0]) <= 0.05 &&
+												Math.abs(edgeEnd[1] - wp1[1]) <= 0.05;
+												
+											if (matchesForward || matchesReverse) {
+												isParapetEdge = true;
+												break;
 											}
 										}
+										if (isParapetEdge) {
+											return; // Skip parapet wall objects
+										}
 									}
+								}
+							}
 
-									parsedObjects.push({
-										id: key,
-										name: val.name || `${cat.toUpperCase()} ${key}`,
-										type: cat,
-										tag: val.tag || undefined,
-										roof_id: val.roof_id || undefined,
-										on_roof: val.on_roof || false,
-										cast_shadow: val.cast_shadow !== false,
-										center_x: val.center_x ?? 0,
-										center_y: val.center_y ?? 0,
-										z_init: val.z_init ?? 0,
-										z_end: val.z_end ?? 3,
-										length: val.length ?? 2,
-										width: val.width ?? 2,
-										angle: val.angle ?? 0,
-										radius: val.radius ?? 1,
-										p1: val.p1 || undefined,
-										p2: val.p2 || undefined,
-										thickness: val.thickness ?? 0.23,
-										polygon: val.polygon || undefined,
-									});
-								});
+							parsedObjects.push({
+								id: key,
+								name: val.name || `${cat.toUpperCase()} ${key}`,
+								type: cat,
+								tag: val.tag || undefined,
+								roof_id: val.roof_id || undefined,
+								on_roof: val.on_roof || false,
+								cast_shadow: val.cast_shadow !== false,
+								center_x: val.center_x ?? 0,
+								center_y: val.center_y ?? 0,
+								z_init: val.z_init ?? 0,
+								z_end: val.z_end ?? 3,
+								length: val.length ?? 2,
+								width: val.width ?? 2,
+								angle: val.angle ?? 0,
+								radius: val.radius ?? 1,
+								p1: val.p1 || undefined,
+								p2: val.p2 || undefined,
+								thickness: val.thickness ?? 0.23,
+								polygon: val.polygon || undefined,
 							});
-						}
-						setInitialObjects(parsedObjects);
-
-						setLoading(false);
-					};
-					img.onerror = () => {
-						setLoading(false);
-					};
-				} else {
-					setLoading(false);
+						});
+					});
 				}
-			} catch (err) {
-				console.error("Failed to load project details for design workspace", err);
-				setLoading(false);
-			}
-		};
-		fetchDesignData();
-	}, [id]);
+				setInitialObjects(parsedObjects);
+				setParsingData(false);
+			};
+			img.onerror = () => {
+				setParsingData(false);
+			};
+		} else {
+			setParsingData(false);
+		}
+	}, [projectData, designData, id]);
+
+	const loading = loadingProject || loadingDesign || parsingData;
 
 	if (loading) {
 		return (
 			<div className="flex-grow flex items-center justify-center bg-black h-screen w-screen overflow-hidden">
 				<div className="flex flex-col items-center gap-3">
 					<RefreshCw className="w-8 h-8 text-white animate-spin" />
-					<span className="text-sm font-semibold text-neutral-400 animate-pulse">Loading design cockpit...</span>
+					<span className="text-sm font-semibold text-neutral-400 animate-pulse">Loading...</span>
 				</div>
 			</div>
 		);
@@ -283,7 +273,7 @@ export default function DesignWorkspace() {
 					initialObjects={initialObjects}
 					stage={stage}
 					onSaveStatusChange={setSaving}
-					sceneData={sceneData}
+					sceneData={designData}
 					onContinue={() => {
 						if (stage === "roof") {
 							setStage("obstruction");

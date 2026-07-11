@@ -1,5 +1,5 @@
 import React from "react";
-import type { RoofData } from "./UnifiedDesignStep";
+import type { RoofData } from "../../features/design/types";
 import type { LocalObject, PanelGroup, PanelSpec } from "../../utils/design/types";
 import { getPanelsInGroup } from "../../utils/design/coords";
 
