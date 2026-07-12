@@ -1,10 +1,11 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { 
-  ArrowLeft, ArrowRight, ChevronDown, ChevronUp, RefreshCw, Cpu, 
+  ArrowRight, ChevronDown, ChevronUp, RefreshCw, Cpu, 
   Layers, Settings, Zap, HardDrive
 } from "lucide-react";
-import api from "../../api/client";
+import * as siteVisitApi from "../../api/siteVisitApi";
+import ProjectTopbar from "../../components/ProjectTopbar";
 
 // Custom type declarations matching the API schema
 interface PanelItem {
@@ -237,6 +238,7 @@ export default function EquipmentSelection() {
 
   // Loaded items
   const [selectedPanel, setSelectedPanel] = useState<PanelItem | null>(null);
+  const [projectName, setProjectName] = useState("");
   const [selectedInverter, setSelectedInverter] = useState<InverterItem | null>(null);
   const [panelCalculation, setPanelCalculation] = useState<PanelCalculation | null>(null);
   const [accessoriesCompleted, setAccessoriesCompleted] = useState(false);
@@ -390,13 +392,18 @@ export default function EquipmentSelection() {
       setInitialLoading(true);
       try {
         // 1. Fetch info and favourite brands
-        const [infoRes, brandsRes, accBrandsRes] = await Promise.all([
-          api.get(`/visit/selection/info/${id}`),
-          api.get("/visit/selection/panel-brands").catch(() => null),
-          api.get("/visit/selection/accessory-brands").catch(() => null),
+        const [infoData, brandsData, accBrandsData] = await Promise.all([
+          siteVisitApi.getSelectionInfo(id),
+          siteVisitApi.getPanelBrands().catch(() => null),
+          siteVisitApi.getAccessoryBrands().catch(() => null),
         ]);
 
-        const d = infoRes.data;
+        const d = infoData;
+        if (d?.sitevisit?.project_name) {
+          setProjectName(d.sitevisit.project_name);
+        } else if (d?.sitevisit?.name) {
+          setProjectName(d.sitevisit.name);
+        }
         const dbProposalOnly = !!d?.sitevisit?.proposal_only;
         const queryProposalOnly = proposalOnlyParam === "1" || proposalOnlyParam === "true";
         setIsProposalOnly(dbProposalOnly || queryProposalOnly);
@@ -426,12 +433,12 @@ export default function EquipmentSelection() {
           }
         }
 
-        if (brandsRes?.data?.brands) {
-          setPanelBrands(brandsRes.data.brands);
+        if (brandsData?.brands) {
+          setPanelBrands(brandsData.brands);
         }
 
-        if (accBrandsRes?.data) {
-          const opts = accBrandsRes.data;
+        if (accBrandsData) {
+          const opts = accBrandsData;
           setAccessoryBrandOptions({
             dc_cable: normalizeBrandOptions(opts.dc_cable),
             ac_cable: normalizeBrandOptions(opts.ac_cable),
@@ -494,18 +501,16 @@ export default function EquipmentSelection() {
     (async () => {
       setLoadingPanels(true);
       try {
-        const res = await api.get("/visit/selection/panel", {
-          params: {
-            brands: selectedPanelBrand || undefined,
-            technology: panelTechFilter === "all" ? undefined : panelTechFilter,
-            search: panelSearch || undefined,
-            page: panelPage,
-            limit: 6,
-          }
+        const res = await siteVisitApi.getPanels({
+          brands: selectedPanelBrand || undefined,
+          technology: panelTechFilter === "all" ? undefined : panelTechFilter,
+          search: panelSearch || undefined,
+          page: panelPage,
+          limit: 6,
         });
-        const items = Array.isArray(res.data?.data) ? res.data.data : [];
+        const items = Array.isArray(res?.data) ? res.data : [];
         setPanelItems(items);
-        setPanelHasMore(items.length === (res.data?.limit ?? 6));
+        setPanelHasMore(items.length === (res?.limit ?? 6));
       } catch (err) {
         console.error(err);
       } finally {
@@ -542,16 +547,16 @@ export default function EquipmentSelection() {
       setLoadingInverters(true);
       try {
         // Fetch inverter brands matching criteria
-        const optRes = await api.post(`/visit/selection/inverter-filter-options/${id}`, {
+        const optData = await siteVisitApi.getInverterFilterOptions(id, {
           panel_count: selectedPanelCount,
           capacity: selectedPowerKwp,
           calc_type: panelCalculation.type,
           panel_id: selectedPanel.id,
         });
-        setInverterBrands(normalizeBrandOptions(optRes.data?.brands));
+        setInverterBrands(normalizeBrandOptions(optData?.brands));
 
         // Fetch inverters matching criteria
-        const res = await api.post(`/visit/selection/get-inverter/${id}`, {
+        const res = await siteVisitApi.getInverter(id, {
           panel_count: selectedPanelCount,
           capacity: selectedPowerKwp,
           calc_type: panelCalculation.type,
@@ -559,8 +564,8 @@ export default function EquipmentSelection() {
           brands: selectedInverterBrand ? [selectedInverterBrand] : undefined,
           phase: inverterPhaseFilter === "all" ? undefined : inverterPhaseFilter,
         });
-        if (res.data?.inverters) {
-          setInverters(res.data.inverters);
+        if (res?.inverters) {
+          setInverters(res.inverters);
         } else {
           setInverters([]);
         }
@@ -635,8 +640,8 @@ export default function EquipmentSelection() {
   const handleSelectPanel = async (panel: PanelItem) => {
     if (!id) return;
     try {
-      const res = await api.post(`/visit/selection/panel/${id}`, { panel_id: panel.id });
-      const calc = res.data as PanelCalculation;
+      const data = await siteVisitApi.selectPanel(id, panel.id);
+      const calc = data as PanelCalculation;
       const ratingKw = (calc.panel_rating || panel.rating || 550) / 1000;
       const autoKwp = capSystemKwp(roofPanelSuggestion(calc, panel).suggested * ratingKw);
 
@@ -661,7 +666,7 @@ export default function EquipmentSelection() {
   const handleSelectInverter = async (inverter: InverterItem) => {
     if (!id) return;
     try {
-      await api.post(`/visit/selection/inverter/${id}`, { inverter_id: inverter.id });
+      await siteVisitApi.selectInverter(id, inverter.id);
       setSelectedInverter(inverter);
       setSelectedInverterBrand(inverter.brand);
       setActiveStep("accessories");
@@ -685,13 +690,13 @@ export default function EquipmentSelection() {
     try {
       setSelectedInverter(null);
       setSelectedInverterBrand(null);
-      const res = await api.post(`/visit/selection/get-inverter/${id}`, {
+      const data = await siteVisitApi.getInverter(id, {
         panel_count: derivedPanelCount,
         capacity: selectedPowerKwp,
         calc_type: panelCalculation.type,
         panel_id: selectedPanel.id,
       });
-      setInverters(Array.isArray(res.data?.inverters) ? res.data.inverters : []);
+      setInverters(Array.isArray(data?.inverters) ? data.inverters : []);
       setCapacityConfirmed(true);
       lastFetchedInverterParamsRef.current = "";
 
@@ -756,7 +761,7 @@ export default function EquipmentSelection() {
 
       // 1. Post final equipment settings (proposal-only visits only)
       if (isProposalOnly) {
-        await api.post("/visit/proposal-only/equipment", {
+        await siteVisitApi.saveEquipmentProposal({
           sitevisit_id: id,
           panel_id: selectedPanel.id,
           inverter_id: selectedInverter.id,
@@ -766,7 +771,7 @@ export default function EquipmentSelection() {
       }
 
       // 2. Post electrical parameters
-      await api.post(`/visit/sld/params/${id}`, {
+      await siteVisitApi.saveSldParams(id, {
         dc_cable_size: parseFloat(dcCableSize) || 4,
         ac_cable_size: parseFloat(acCableSize) || 4,
         dc_mcb_rating: parseFloat(dcMcbRating) || 32,
@@ -856,30 +861,12 @@ export default function EquipmentSelection() {
     <div className="flex flex-col h-screen w-screen bg-black overflow-hidden text-neutral-100 font-sans select-none relative">
       
       {/* Premium Top Navigation Bar */}
-      <header className="h-16 w-full bg-black border-b border-white/10 flex items-center justify-between px-6 z-30 flex-shrink-0">
-        <div className="flex items-center gap-3">
-          <button 
-            onClick={() => navigate(`/project/${id}/details`)}
-            className="p-2 hover:bg-white/5 rounded-lg transition-colors text-neutral-400 hover:text-white"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-          <div className="flex flex-col">
-            <span className="text-sm font-bold text-white uppercase tracking-wider">Equipment Selection</span>
-            <span className="text-[10px] text-neutral-500 font-bold">Configure project solar hardware specifications</span>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <button
-            onClick={handleFinishSelection}
-            disabled={savingStep || !canFinish}
-            className="bg-white hover:bg-neutral-200 disabled:opacity-30 disabled:cursor-not-allowed text-black px-5 py-2 rounded-xl text-sm font-bold flex items-center gap-1.5 cursor-pointer transition-all animate-in fade-in"
-          >
-            <span>Continue</span>
-          </button>
-        </div>
-      </header>
+      <ProjectTopbar
+        projectName={projectName}
+        currentStage={4} // Panel Selection
+        saving={savingStep}
+        onContinue={handleFinishSelection}
+      />
 
       {/* Main split-screen panel */}
       <div className="flex-grow flex w-full overflow-hidden">
@@ -1520,63 +1507,25 @@ export default function EquipmentSelection() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-[280px_minmax(0,1fr)] gap-5 min-h-0 flex-grow">
-                <aside className="bg-neutral-950/60 border border-white/5 rounded-2xl p-5 flex flex-col gap-4 h-fit sticky top-0">
-                  <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">Selection Summary</span>
-                  <div className="grid gap-3 text-xs">
-                    <div className="bg-white/5 rounded-xl p-3 border border-white/5">
-                      <span className="block text-[9px] text-neutral-500 font-bold uppercase">System</span>
-                      <span className="block text-white font-bold mt-1">{selectedPowerKwp.toFixed(2)} kWp</span>
-                      <span className="block text-neutral-500 text-[10px] mt-0.5">{selectedPanelCount} panels · {stringCount || "—"} strings</span>
-                    </div>
-                    <div className="bg-white/5 rounded-xl p-3 border border-white/5">
-                      <span className="block text-[9px] text-neutral-500 font-bold uppercase">DCDB</span>
-                      <span className="block text-white font-bold mt-1">{parseInt(stringCount, 10) || 0} in / {parseInt(stringCount, 10) || 0} out</span>
-                      <span className="block text-neutral-500 text-[10px] mt-0.5">{dcdbBrand || "Best practice brand"}</span>
-                    </div>
-                    <div className="bg-white/5 rounded-xl p-3 border border-white/5">
-                      <span className="block text-[9px] text-neutral-500 font-bold uppercase">ACDB</span>
-                      <span className="block text-white font-bold mt-1">1 in / 1 out</span>
-                      <span className="block text-neutral-500 text-[10px] mt-0.5">{acdbBrand || "Best practice brand"}</span>
-                    </div>
-                    <div className="bg-white/5 rounded-xl p-3 border border-white/5">
-                      <span className="block text-[9px] text-neutral-500 font-bold uppercase">Battery</span>
-                      <span className="block text-white font-bold mt-1">{batteryEnabled ? `${batteryKwh || "—"} kWh` : "Not included"}</span>
-                    </div>
-                  </div>
-                  {(firstAccessoryError || stringsOutOfRange || batteryInvalid) && (
-                    <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3 text-[11px] font-bold text-red-300 leading-relaxed">
-                      {firstAccessoryError || (stringsOutOfRange && stringBounds ? `Strings must be ${stringBounds.min}-${stringBounds.max}.` : "Please enter a valid battery capacity.")}
-                    </div>
-                  )}
-                  <button
-                    onClick={handleFinishSelection}
-                    disabled={savingStep || !canFinish}
-                    className="mt-1 bg-white hover:bg-neutral-200 disabled:opacity-30 disabled:cursor-not-allowed text-black px-4 py-3 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1"
-                  >
-                    {savingStep ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : "Save & Continue"}
-                  </button>
-                </aside>
-
-                <div className="overflow-y-auto pr-2 scrollbar-thin flex flex-col gap-4 min-h-0">
+              <div className="flex flex-col gap-5 min-h-0 flex-grow overflow-y-auto pr-2 scrollbar-thin">
                   <section className="bg-white/5 border border-white/5 rounded-2xl p-5 flex flex-col gap-4">
                     <div className="flex items-center gap-2 border-b border-white/5 pb-3">
                       <Zap className="w-4 h-4 text-amber-500" />
                       <span className="uppercase tracking-wider text-[10px] font-bold text-white">Strings & DC Side</span>
                     </div>
-                    <div className="grid grid-cols-4 gap-3">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <label className="flex flex-col gap-1.5">
                         <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Strings</span>
                         <input type="number" value={stringCount} onChange={(e) => setStringCount(e.target.value.replace(/[^0-9]/g, ""))} className={`bg-neutral-900 border rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none font-bold ${stringsOutOfRange ? "border-red-500/70" : "border-white/10 focus:border-white/20"}`} />
                         {stringBounds && <span className={`text-[10px] font-bold ${stringsOutOfRange ? "text-red-400" : "text-neutral-500"}`}>Allowed {stringBounds.min}-{stringBounds.max}</span>}
                       </label>
                       <label className="flex flex-col gap-1.5">
-                        <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">DC Cable Size</span>
-                        <input type="number" value={dcCableSize} onChange={(e) => setDcCableSize(e.target.value)} className="bg-neutral-900 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-white/20 font-bold" />
+                        <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">DC Cable Size (mm²)</span>
+                        <input type="number" value={dcCableSize} onChange={(e) => setDcCableSize(e.target.value)} placeholder="e.g. 6" className="bg-neutral-900 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-white/20 font-bold" />
                       </label>
                       <label className="flex flex-col gap-1.5">
-                        <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">DC Cable Length</span>
-                        <input type="number" value={dcCableLength} onChange={(e) => setDcCableLength(e.target.value)} className="bg-neutral-900 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-white/20 font-bold" />
+                        <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">DC Cable Length (m)</span>
+                        <input type="number" value={dcCableLength} onChange={(e) => setDcCableLength(e.target.value)} placeholder="e.g. 30" className="bg-neutral-900 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-white/20 font-bold" />
                       </label>
                       <label className="flex flex-col gap-1.5">
                         <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">DC Cable Brand</span>
@@ -1585,22 +1534,35 @@ export default function EquipmentSelection() {
                           {accessoryBrandOptions.dc_cable.map(brand => <option key={brand.name} value={brand.name}>{brand.name}</option>)}
                         </select>
                       </label>
+                      <div className="flex flex-col gap-1.5">
+                        <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">DCDB</span>
+                        <div className="bg-neutral-900/50 border border-white/5 rounded-xl px-4 py-2.5 text-xs text-neutral-400 font-bold">
+                          {stringCount ? `${stringCount} in / ${stringCount} out` : "—"}
+                        </div>
+                      </div>
+                      <label className="flex flex-col gap-1.5">
+                        <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">DCDB Brand</span>
+                        <select value={dcdbBrand} onChange={(e) => setDcdbBrand(e.target.value)} className="bg-neutral-900 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-white/20 cursor-pointer font-bold">
+                          <option value="">Best practice</option>
+                          {accessoryBrandOptions.dcdb.map(brand => <option key={brand.name} value={brand.name}>{brand.name}</option>)}
+                        </select>
+                      </label>
                     </div>
                   </section>
 
                   <section className="bg-white/5 border border-white/5 rounded-2xl p-5 flex flex-col gap-4">
                     <div className="flex items-center gap-2 border-b border-white/5 pb-3">
                       <Zap className="w-4 h-4 text-emerald-500" />
-                      <span className="uppercase tracking-wider text-[10px] font-bold text-white">AC Side & Protection</span>
+                      <span className="uppercase tracking-wider text-[10px] font-bold text-white">AC Side</span>
                     </div>
-                    <div className="grid grid-cols-4 gap-3">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <label className="flex flex-col gap-1.5">
-                        <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">AC Cable Size</span>
-                        <input type="number" value={acCableSize} onChange={(e) => setAcCableSize(e.target.value)} className="bg-neutral-900 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-white/20 font-bold" />
+                        <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">AC Cable Size (mm²)</span>
+                        <input type="number" value={acCableSize} onChange={(e) => setAcCableSize(e.target.value)} placeholder="e.g. 6" className="bg-neutral-900 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-white/20 font-bold" />
                       </label>
                       <label className="flex flex-col gap-1.5">
-                        <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">AC Cable Length</span>
-                        <input type="number" value={acCableLength} onChange={(e) => setAcCableLength(e.target.value)} className="bg-neutral-900 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-white/20 font-bold" />
+                        <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">AC Cable Length (m)</span>
+                        <input type="number" value={acCableLength} onChange={(e) => setAcCableLength(e.target.value)} placeholder="e.g. 20" className="bg-neutral-900 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-white/20 font-bold" />
                       </label>
                       <label className="flex flex-col gap-1.5">
                         <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">AC Cable Brand</span>
@@ -1609,25 +1571,12 @@ export default function EquipmentSelection() {
                           {accessoryBrandOptions.ac_cable.map(brand => <option key={brand.name} value={brand.name}>{brand.name}</option>)}
                         </select>
                       </label>
-                      <label className="flex flex-col gap-1.5">
-                        <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">AC MCB Rating</span>
-                        <input type="number" value={acMcbRating} onChange={(e) => setAcMcbRating(e.target.value)} className="bg-neutral-900 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-white/20 font-bold" />
-                      </label>
-                      <label className="flex flex-col gap-1.5">
-                        <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">DC Fuse Rating</span>
-                        <input type="number" value={dcFuseRating} onChange={(e) => setDcFuseRating(e.target.value)} className="bg-neutral-900 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-white/20 font-bold" />
-                      </label>
-                      <label className="flex flex-col gap-1.5">
-                        <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">DC MCB Rating</span>
-                        <input type="number" value={dcMcbRating} onChange={(e) => setDcMcbRating(e.target.value)} className="bg-neutral-900 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-white/20 font-bold" />
-                      </label>
-                      <label className="flex flex-col gap-1.5">
-                        <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">DCDB Brand</span>
-                        <select value={dcdbBrand} onChange={(e) => setDcdbBrand(e.target.value)} className="bg-neutral-900 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-white/20 cursor-pointer font-bold">
-                          <option value="">Best practice</option>
-                          {accessoryBrandOptions.dcdb.map(brand => <option key={brand.name} value={brand.name}>{brand.name}</option>)}
-                        </select>
-                      </label>
+                      <div className="flex flex-col gap-1.5">
+                        <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">ACDB</span>
+                        <div className="bg-neutral-900/50 border border-white/5 rounded-xl px-4 py-2.5 text-xs text-neutral-400 font-bold">
+                          1 in / 1 out
+                        </div>
+                      </div>
                       <label className="flex flex-col gap-1.5">
                         <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">ACDB Brand</span>
                         <select value={acdbBrand} onChange={(e) => setAcdbBrand(e.target.value)} className="bg-neutral-900 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-white/20 cursor-pointer font-bold">
@@ -1643,10 +1592,10 @@ export default function EquipmentSelection() {
                       <Settings className="w-4 h-4 text-violet-400" />
                       <span className="uppercase tracking-wider text-[10px] font-bold text-white">Connectors, Structure & Storage</span>
                     </div>
-                    <div className="grid grid-cols-4 gap-3">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <label className="flex flex-col gap-1.5">
-                        <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">MC4 Connectors</span>
-                        <input type="number" value={mc4Connectors} onChange={(e) => setMc4Connectors(e.target.value)} className="bg-neutral-900 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-white/20 font-bold" />
+                        <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">MC4 Connectors (Pcs)</span>
+                        <input type="number" value={mc4Connectors} onChange={(e) => setMc4Connectors(e.target.value)} placeholder="e.g. 12" className="bg-neutral-900 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-white/20 font-bold" />
                       </label>
                       <label className="flex flex-col gap-1.5">
                         <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">MC4 Brand</span>
@@ -1656,8 +1605,8 @@ export default function EquipmentSelection() {
                         </select>
                       </label>
                       <label className="flex flex-col gap-1.5">
-                        <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Earthing Kit & LA</span>
-                        <input type="number" value={earthingKit} onChange={(e) => setEarthingKit(e.target.value)} className="bg-neutral-900 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-white/20 font-bold" />
+                        <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Earthing Kit & LA (Pcs)</span>
+                        <input type="number" value={earthingKit} onChange={(e) => setEarthingKit(e.target.value)} placeholder="e.g. 3" className="bg-neutral-900 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-white/20 font-bold" />
                       </label>
                       <label className="flex flex-col gap-1.5">
                         <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Earthing Brand</span>
@@ -1666,13 +1615,13 @@ export default function EquipmentSelection() {
                           {accessoryBrandOptions.earthing_kit.map(brand => <option key={brand.name} value={brand.name}>{brand.name}</option>)}
                         </select>
                       </label>
-                      <label className="flex flex-col gap-1.5 col-span-2">
+                      <label className="flex flex-col gap-1.5">
                         <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Structure Type</span>
-                        <input type="text" value={structureType} onChange={(e) => setStructureType(e.target.value)} className="bg-neutral-900 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-white/20 font-bold" />
+                        <input type="text" value={structureType} onChange={(e) => setStructureType(e.target.value)} placeholder="e.g. Fixed Mounting Structure" className="bg-neutral-900 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-white/20 font-bold" />
                       </label>
-                      <label className="flex flex-col gap-1.5 col-span-2">
+                      <label className="flex flex-col gap-1.5">
                         <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Structure Material</span>
-                        <input type="text" value={structureMaterial} onChange={(e) => setStructureMaterial(e.target.value)} className="bg-neutral-900 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-white/20 font-bold" />
+                        <input type="text" value={structureMaterial} onChange={(e) => setStructureMaterial(e.target.value)} placeholder="HDGI" className="bg-neutral-900 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-white/20 font-bold" />
                       </label>
                     </div>
                     <div className="border-t border-white/5 pt-4 flex items-center justify-between gap-4">
@@ -1685,7 +1634,10 @@ export default function EquipmentSelection() {
                       </div>
                       <div className="flex items-center gap-3">
                         {batteryEnabled && (
-                          <input type="number" value={batteryKwh} onChange={(e) => setBatteryKwh(e.target.value)} placeholder="kWh" className={`w-28 bg-neutral-900 border rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none font-bold ${batteryInvalid ? "border-red-500/70" : "border-white/10 focus:border-white/20"}`} />
+                          <div className="flex flex-col gap-1">
+                            <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Battery Capacity (kWh)</span>
+                            <input type="number" value={batteryKwh} onChange={(e) => setBatteryKwh(e.target.value)} placeholder="e.g. 5.12" className={`w-28 bg-neutral-900 border rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none font-bold ${batteryInvalid ? "border-red-500/70" : "border-white/10 focus:border-white/20"}`} />
+                          </div>
                         )}
                         <button onClick={() => setBatteryEnabled((v) => !v)} className={`px-4 py-2 rounded-xl border text-xs font-bold transition-all ${batteryEnabled ? "bg-white text-black border-white" : "bg-white/5 text-white border-white/10 hover:bg-white/10"}`}>
                           {batteryEnabled ? "Enabled" : "Disabled"}
@@ -1693,7 +1645,6 @@ export default function EquipmentSelection() {
                       </div>
                     </div>
                   </section>
-                </div>
               </div>
 
               <div className="flex justify-start pt-4 border-t border-white/5 flex-shrink-0">

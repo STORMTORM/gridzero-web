@@ -1,5 +1,5 @@
 import type { SceneData, LocalObject, PanelGroup, PanelSpec, PanelPlacement } from "./types";
-import type { RoofData } from "../../features/design/types";
+import type { RoofData } from "../../features/shared/types";
 import { getPanelsInGroup, isPointInPolygon } from "./coords";
 
 /**

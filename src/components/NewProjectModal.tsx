@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { X, Box, FileText, ArrowRight, RefreshCw, ArrowLeft } from "lucide-react";
 import { APIProvider, Map, useMap } from "@vis.gl/react-google-maps";
 import { toBlob } from "html-to-image";
-import api from "../api/client";
+import * as siteVisitApi from "../api/siteVisitApi";
 
 interface NewProjectModalProps {
 	isOpen: boolean;
@@ -277,11 +277,9 @@ export default function NewProjectModal({
 			}
 
 			// 7. Submit to backend API endpoint
-			const res = await api.post("/visit/file/upload", formData, {
-				headers: { "Content-Type": "multipart/form-data" },
-			});
+			const res = await siteVisitApi.createProject(formData);
 
-			const sitevisitId = res.data?.sitevisit_id;
+			const sitevisitId = res?.sitevisit_id;
 			if (!sitevisitId) throw new Error("No sitevisit_id returned from server");
 
 			// Complete and route

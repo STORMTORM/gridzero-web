@@ -4,7 +4,9 @@ import { ChevronRight, ArrowLeft } from "lucide-react";
 interface ProjectTopbarProps {
 	projectName: string;
 	currentStage: number; // 1 to 8
+	saving?: boolean;
 	savingStatus?: string;
+	onContinue?: () => void;
 }
 
 const STAGE_BREADCRUMBS: Record<number, string> = {
@@ -21,6 +23,9 @@ const STAGE_BREADCRUMBS: Record<number, string> = {
 export default function ProjectTopbar({
 	projectName,
 	currentStage,
+	saving,
+	savingStatus,
+	onContinue,
 }: ProjectTopbarProps) {
 	const navigate = useNavigate();
 
@@ -64,6 +69,33 @@ export default function ProjectTopbar({
 						);
 					})}
 				</div>
+			</div>
+
+			{/* Actions Right */}
+			<div className="flex items-center gap-4 self-start xl:self-auto">
+				{/* Saving Indicator */}
+				{(saving || savingStatus) && (
+					<div className="flex items-center gap-2 px-3 py-1 bg-white-500/10 border border-white-500/20 rounded-full animate-pulse shadow-[0_0_12px_rgba(20,184,166,0.2)]">
+						<span className="relative flex h-2 w-2">
+							<span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+							<span className="relative inline-flex rounded-full h-2 w-2 bg-white-500"></span>
+						</span>
+						<span className="text-[10px] font-extrabold text-white uppercase tracking-widest">
+							{savingStatus || "SAVING"}
+						</span>
+					</div>
+				)}
+
+				{/* Continue Button */}
+				{onContinue && (
+					<button
+						onClick={onContinue}
+						className="flex items-center gap-1.5 px-4 py-1.5 bg-white hover:bg-neutral-200 text-black font-bold text-xs uppercase tracking-wider rounded transition-all cursor-pointer shadow-[0_0_8px_rgba(255,255,255,0.15)]"
+					>
+						<span>Continue</span>
+						<ChevronRight className="w-3.5 h-3.5" />
+					</button>
+				)}
 			</div>
 		</div>
 	);

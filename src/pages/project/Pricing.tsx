@@ -10,7 +10,7 @@ import {
 	Check,
 	Bookmark,
 } from "lucide-react";
-import api from "../../api/client";
+import * as siteVisitApi from "../../api/siteVisitApi";
 import ProjectTopbar from "../../components/ProjectTopbar";
 
 interface PaymentTerm {
@@ -29,6 +29,7 @@ export default function Pricing() {
 	
 	const [loading, setLoading] = useState(true);
 	const [saving, setSaving] = useState(false);
+	const [isAutoSaving, setIsAutoSaving] = useState(false);
 	const [settingDefaultPt, setSettingDefaultPt] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 
@@ -57,8 +58,7 @@ export default function Pricing() {
 		const loadProposalData = async () => {
 			try {
 				setLoading(true);
-				const res = await api.get(`/visit/proposal/${id}`);
-				const r = res.data;
+				const r = await siteVisitApi.getProposal(id);
 				setProposalData(r);
 
 				setProjectName(r.project_name || `Project ${id}`);
@@ -128,12 +128,15 @@ export default function Pricing() {
 			isFirstRender.current = false;
 			return;
 		}
+		setIsAutoSaving(true);
 		const saveDebounce = setTimeout(async () => {
 			try {
-				await api.post("/visit/proposal/save", buildPayload());
+				await siteVisitApi.saveProposal(buildPayload());
 				console.log("Proposal pricing auto-saved successfully");
 			} catch (e) {
 				console.error("Auto-save pricing failed", e);
+			} finally {
+				setIsAutoSaving(false);
 			}
 		}, 1500);
 
@@ -186,7 +189,7 @@ export default function Pricing() {
 	const handleSetPtDefault = async () => {
 		setSettingDefaultPt(true);
 		try {
-			await api.put("/auth/profile", { payment_terms: paymentTerms });
+			await siteVisitApi.updateProfile({ payment_terms: paymentTerms });
 			console.log("Default payment terms saved.");
 		} catch (err) {
 			console.error("Failed to save default payment terms", err);
@@ -210,7 +213,7 @@ export default function Pricing() {
 		}
 		setSaving(true);
 		try {
-			await api.post("/visit/proposal/save", {
+			await siteVisitApi.saveProposal({
 				...buildPayload(),
 				finalize: true,
 			});
@@ -241,6 +244,7 @@ export default function Pricing() {
 			<ProjectTopbar
 				projectName={projectName}
 				currentStage={7}
+				saving={isAutoSaving}
 				savingStatus="Auto-saving pricing"
 			/>
 

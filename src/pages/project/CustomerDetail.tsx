@@ -8,7 +8,7 @@ import {
 	ChevronRight,
 } from "lucide-react";
 import ProjectTopbar from "../../components/ProjectTopbar";
-import { useProjectForm } from "../../features/project/hooks/useProjectForm";
+import { useProjectForm } from "../../features/customer/hooks/useProjectForm";
 
 const STATE_DISCOM_MAP: Record<string, string[]> = {
 	"Andhra Pradesh": ["APEPDCL (Eastern Power Distribution Company of AP)", "APSPDCL (Southern Power Distribution Company of AP)"],
@@ -37,6 +37,7 @@ export default function CustomerDetail() {
 		updateField,
 		loading,
 		saving,
+		isAutoSaving,
 		submitForm,
 	} = useProjectForm(id);
 
@@ -71,6 +72,7 @@ export default function CustomerDetail() {
 			<ProjectTopbar
 				projectName={formValues.projectName}
 				currentStage={1}
+				saving={isAutoSaving}
 				savingStatus="Auto-saving changes"
 			/>
 

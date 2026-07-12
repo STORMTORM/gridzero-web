@@ -13,10 +13,12 @@ import {
 	ChevronsLeft,
 	ChevronsRight,
 } from "lucide-react";
-import api from "../api/client";
-import { useProjects } from "../features/dashboard/hooks/useProjects";
-import type { Project } from "../features/dashboard/types";
+import * as siteVisitApi from "../api/siteVisitApi";
+import { useProjects } from "../features/shared/hooks/useProjects";
+import type { Project } from "../features/shared/types";
+import { mapProject } from "../features/shared/utils/projectMapper";
 import { useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "../api/queryKeys";
 
 interface DashboardProps {
 	onNewProjectClick?: () => void;
@@ -33,17 +35,21 @@ export default function Dashboard({
 	const PAGE_SIZE = 8;
 
 	const { data, isLoading: loading, error } = useProjects();
-	const projects: Project[] = data ?? [];
+
+	const projects = useMemo<Project[]>(() => {
+		const rawList = Array.isArray(data) ? data : (data?.data || []);
+		return rawList.map(mapProject);
+	}, [data]);
 
 	// Delete site visit
 	const handleDeleteProject = async (id: string) => {
 		if (!confirm("Are you sure you want to delete this project?")) return;
 
 		try {
-			await api.delete(`/visit/${id}`);
+			await siteVisitApi.deleteProject(id);
 
 			await queryClient.invalidateQueries({
-				queryKey: ["projects"],
+				queryKey: queryKeys.projects,
 			});
 		} catch (err) {
 			console.error("Failed to delete project", err);
@@ -51,13 +57,14 @@ export default function Dashboard({
 		}
 	};
 
+	console.log(projects);
+
 	const activeDesigns = useMemo(() => {
 		return projects.filter((p) => p.stage < 8).length;
 	}, [projects]);
 
 	const draftProposals = useMemo(() => {
-		return projects.filter((p) => p.stage >= 8 || p.status === "PROPOSAL")
-			.length;
+		return projects.filter((p) => p.stage >= 8).length;
 	}, [projects]);
 
 	const totalCapacity = useMemo(() => {
@@ -268,11 +275,8 @@ export default function Dashboard({
 							{/* Data Rows Container */}
 							<div className="flex-grow flex flex-col justify-stretch min-h-0">
 								{paginatedProjects.map((project) => {
-									const isReady =
-										project.status === "PROPOSAL" ||
-										project.status === "COMPLIANCE";
-									const isPending =
-										project.status === "FORM PENDING";
+									const isReady = project.stage >= 8;
+									const isPending = project.stage === 1;
 
 									return (
 										<div

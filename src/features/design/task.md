@@ -1,9 +1,0 @@
-- `[x]` Update Stage 7 breadcrumbs label to "Pricing" in `ProjectTopbar.tsx`.
-- `[x]` Implement `Pricing.tsx` page component representing system cost, taxes, discounts, rebates, additional costs, and milestone terms.
-- `[x]` Register route `/project/:id/pricing` inside `App.tsx`.
-- `[x]` Update snapshots stage continuation in `DesignWorkspace.tsx` to transition to `/pricing`.
-- `[x]` Replace Panels column with formatted Customer Phone number on Dashboard project table.
-- `[x]` Refactor CustomerDetail page component to delegate concerns to useProjectForm hook.
-- `[x]` Refactor Design Workspace CAD editor state system and geometry modules.
-- `[x]` Resolve duplicate API requests in DesignWorkspace.tsx using useProject and useDesign React Query hooks.
-- `[x]` Refactor useDesignEditor.ts into focused composition hooks and pure services.
