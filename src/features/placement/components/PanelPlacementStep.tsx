@@ -1,4 +1,4 @@
-import { Trash2, Layers, HardDrive, Grid3X3 } from "lucide-react";
+import { Trash2, Layers, Grid3X3 } from "lucide-react";
 import type { PanelGroup, PanelSpec } from "../../../utils/design/types";
 
 interface PanelPlacementStepProps {
