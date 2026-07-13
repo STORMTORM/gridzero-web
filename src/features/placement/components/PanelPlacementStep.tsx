@@ -30,8 +30,8 @@ export default function PanelPlacementStep({
 	updateSelectedGroup,
 	onContinue,
 }: PanelPlacementStepProps) {
-	const limitReached = remainingPanelSlots !== Infinity && remainingPanelSlots <= 0;
-	const canContinue = !!panelSpec && placedPanelCount > 0 && (!targetPanelCount || placedPanelCount >= targetPanelCount);
+	const overLimit = targetPanelCount > 0 && placedPanelCount > targetPanelCount;
+	const canContinue = !!panelSpec && placedPanelCount > 0 && !overLimit;
 
 	return (
 		<div className="h-full flex flex-col justify-between">
@@ -79,7 +79,7 @@ export default function PanelPlacementStep({
 					{!isPlacingGroup ? (
 						<button
 							onClick={openAddConfigModal}
-							disabled={limitReached}
+							disabled={canContinue}
 							className="w-full py-2.5 bg-white hover:bg-neutral-200 disabled:opacity-30 disabled:cursor-not-allowed text-black text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow"
 						>
 							<Grid3X3 className="w-3.5 h-3.5" />

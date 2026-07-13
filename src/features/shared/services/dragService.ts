@@ -21,6 +21,63 @@ export const dragService = {
 		};
 	},
 
+	/**
+	 * Returns the corner/edge sample points for an object at a given center position.
+	 * Used to check that the entire object footprint is inside a roof polygon.
+	 */
+	getObjectBoundaryPoints: (
+		obj: LocalObject,
+		cx: number,
+		cy: number
+	): [number, number][] => {
+		if (obj.type === "cuboid") {
+			const hw = (obj.length || 2) / 2;
+			const hh = (obj.width || 2) / 2;
+			const angleRad = ((obj.angle || 0) * Math.PI) / 180;
+			const cos = Math.cos(angleRad);
+			const sin = Math.sin(angleRad);
+			// Four rotated corners of the cuboid
+			const corners: [number, number][] = [
+				[-hw, -hh], [hw, -hh], [hw, hh], [-hw, hh]
+			].map(([lx, ly]) => [
+				cx + lx * cos - ly * sin,
+				cy + lx * sin + ly * cos,
+			]);
+			return corners;
+		}
+
+		if (obj.type === "cylinder" || obj.type === "tree") {
+			const r = obj.radius || 1;
+			// Sample 8 points around the circle perimeter
+			const samples: [number, number][] = [];
+			for (let i = 0; i < 8; i++) {
+				const angle = (i * Math.PI * 2) / 8;
+				samples.push([cx + r * Math.cos(angle), cy + r * Math.sin(angle)]);
+			}
+			return samples;
+		}
+
+		// Fallback: just the center
+		return [[cx, cy]];
+	},
+
+	/**
+	 * Checks whether ALL boundary points of an object are inside at least one
+	 * of the given roof polygons. Returns the matching roof or undefined.
+	 */
+	findContainingRoof: (
+		obj: LocalObject,
+		cx: number,
+		cy: number,
+		roofs: RoofData[]
+	): RoofData | undefined => {
+		const points = dragService.getObjectBoundaryPoints(obj, cx, cy);
+		// The object must be fully inside a single roof
+		return roofs.find((r) =>
+			points.every((p) => isPointInPolygon(p, r.points))
+		);
+	},
+
 	handleObjectDrag: (
 		origObj: LocalObject,
 		dx: number,
@@ -31,28 +88,46 @@ export const dragService = {
 		if (origObj.type === "cuboid" || origObj.type === "cylinder" || origObj.type === "tree") {
 			const nextX = origObj.center_x + dx;
 			const nextY = origObj.center_y + dy;
-			const snapRoof = roofs.find((r) => isPointInPolygon([nextX, nextY], r.points));
 
-			if (origObj.on_roof && !snapRoof) {
+			if (origObj.on_roof) {
+				// On-roof objects: check that entire footprint stays inside a roof
+				const snapRoof = dragService.findContainingRoof(origObj, nextX, nextY, roofs);
+				if (!snapRoof) {
+					// Object would go off the edge — block the drag
+					return currentObjects.find(o => o.id === origObj.id) || origObj;
+				}
+				const objHeight = origObj.z_end - origObj.z_init;
+				return {
+					...origObj,
+					center_x: nextX,
+					center_y: nextY,
+					on_roof: true,
+					roof_id: snapRoof.id,
+					z_init: snapRoof.height,
+					z_end: snapRoof.height + objHeight,
+				};
+			}
+
+			// Off-roof objects: block if entire footprint enters a roof
+			const snapRoof = dragService.findContainingRoof(origObj, nextX, nextY, roofs);
+			if (snapRoof) {
 				return currentObjects.find(o => o.id === origObj.id) || origObj;
 			}
-			if (!origObj.on_roof && snapRoof) {
+
+			// Also check center still has no roof (partial overlap for off-roof is allowed to move freely)
+			const centerInRoof = roofs.find((r) => isPointInPolygon([nextX, nextY], r.points));
+			if (centerInRoof) {
 				return currentObjects.find(o => o.id === origObj.id) || origObj;
 			}
-
-			const onRoof = !!snapRoof;
-			const roofId = snapRoof ? snapRoof.id : undefined;
-			const zInit = snapRoof ? snapRoof.height : 0;
-			const objHeight = origObj.z_end - origObj.z_init;
 
 			return {
 				...origObj,
 				center_x: nextX,
 				center_y: nextY,
-				on_roof: onRoof,
-				roof_id: roofId,
-				z_init: zInit,
-				z_end: zInit + objHeight,
+				on_roof: false,
+				roof_id: undefined,
+				z_init: 0,
+				z_end: origObj.z_end - origObj.z_init,
 			};
 		}
 
@@ -61,7 +136,11 @@ export const dragService = {
 			const nextP2: [number, number] = [origObj.p2[0] + dx, origObj.p2[1] + dy];
 			const nextX = (nextP1[0] + nextP2[0]) / 2;
 			const nextY = (nextP1[1] + nextP2[1]) / 2;
-			const snapRoof = roofs.find((r) => isPointInPolygon([nextX, nextY], r.points));
+			// For walls, check both endpoints
+			const bothInRoof = roofs.find((r) =>
+				isPointInPolygon(nextP1, r.points) && isPointInPolygon(nextP2, r.points)
+			);
+			const snapRoof = bothInRoof || roofs.find((r) => isPointInPolygon([nextX, nextY], r.points));
 			const onRoof = !!snapRoof;
 			const roofId = snapRoof ? snapRoof.id : undefined;
 			const zInit = snapRoof ? snapRoof.height : 0;
@@ -84,7 +163,10 @@ export const dragService = {
 			const translatedPoly = origObj.polygon.map((p) => [p[0] + dx, p[1] + dy] as [number, number]);
 			const nextX = translatedPoly.reduce((acc, p) => acc + p[0], 0) / translatedPoly.length;
 			const nextY = translatedPoly.reduce((acc, p) => acc + p[1], 0) / translatedPoly.length;
-			const snapRoof = roofs.find((r) => isPointInPolygon([nextX, nextY], r.points));
+			// For polygons, check all vertices
+			const snapRoof = roofs.find((r) =>
+				translatedPoly.every((p) => isPointInPolygon(p, r.points))
+			) || roofs.find((r) => isPointInPolygon([nextX, nextY], r.points));
 			const onRoof = !!snapRoof;
 			const roofId = snapRoof ? snapRoof.id : undefined;
 			const zInit = snapRoof ? snapRoof.height : 0;

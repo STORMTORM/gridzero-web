@@ -6,7 +6,7 @@ import { getPanelsInGroup } from "../../../utils/design/coords";
 // ─────────────────────────────────────────────────────────────────────────────
 // VISUAL STYLING VARIABLES (Tweak handles, lines, and thicknesses here!)
 // ─────────────────────────────────────────────────────────────────────────────
-const ROOF_VERTEX_RADIUS = 0.7;             // Radius of selected roof vertex dots
+const ROOF_VERTEX_RADIUS = 0.8;             // Radius of selected roof vertex dots
 const ROOF_LINE_STROKE_WIDTH = 0.25;          // Default roof boundary outline width
 const ROOF_LINE_SELECTED_STROKE_WIDTH = 0.3; // Selected active roof boundary outline width
 const VERTEX_HANDLE_STROKE_WIDTH = 0.3;      // White circle handles stroke thickness
@@ -144,7 +144,7 @@ export default function SVGCanvas({
 			{objects.map((obj) => {
 				const isSelected = selectedObjectId === obj.id;
 				const strokeColor = isSelected ? "#a7ce38" : "rgba(255,255,255,0.5)";
-				const fillColor = isSelected ? "rgba(167,206,56,0.15)" : "rgba(255,255,255,0.08)";
+				const fillColor = isSelected ? "rgba(255,255,255,1)" : "rgba(255,255,255,0.7)";
 
 				if (stage === "roof") {
 					return null;
@@ -166,8 +166,8 @@ export default function SVGCanvas({
 							height={hPx}
 							transform={`rotate(${obj.angle}, ${xPx}, ${yPx})`}
 							fill={fillColor}
-							stroke={strokeColor}
-							strokeWidth={isSelected ? OBSTACLE_SELECTED_STROKE_WIDTH : OBSTACLE_STROKE_WIDTH}
+							// stroke={strokeColor}
+							// strokeWidth={isSelected ? OBSTACLE_SELECTED_STROKE_WIDTH : OBSTACLE_STROKE_WIDTH}
 							className="object-handle cursor-move pointer-events-auto"
 							onMouseDown={(e) => startDraggingObject(e, obj.id)}
 							onClick={(e) => {
@@ -452,7 +452,7 @@ export default function SVGCanvas({
 										transform={`rotate(${g.table_angle || 0}, ${xPx}, ${yPx})`}
 										fill={isSelected ? "rgba(167,206,56,0.35)" : "rgba(34,197,94,0.22)"}
 										stroke={isSelected ? "#a7ce38" : "#22c55e"}
-										strokeWidth={isSelected ? 0.35 : 0.22}
+										strokeWidth={isSelected ? 0.3 : 0.2}
 									/>
 									<line
 										x1={xPx - wPx / 2}

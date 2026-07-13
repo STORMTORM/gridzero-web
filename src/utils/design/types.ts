@@ -63,8 +63,10 @@ export interface PanelPlacement {
   col_gap?: number;
 }
 
+export type PanelGroupType = "table-together" | "table-row";
+
 export interface PanelGroup {
-  type: string;
+  type: PanelGroupType;
   orientation?: "portrait" | "landscape";
   spacing?: string;
   grid_rows?: number;

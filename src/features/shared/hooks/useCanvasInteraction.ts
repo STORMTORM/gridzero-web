@@ -101,21 +101,35 @@ export function useCanvasInteraction({
 		viewport.setIsPanning(false);
 		if (activeDrag) {
 			if (activeDrag.type === "roof-vertex") {
-				autoSave.saveRoofDesign(roofs);
+				// Only save if the vertex actually moved
+				const roof = roofs.find((r) => r.id === activeDrag.targetId);
+				const origRoof = activeDrag.originalState;
+				const didMove = roof && origRoof && JSON.stringify(roof.points) !== JSON.stringify(origRoof.points);
+				if (didMove) {
+					autoSave.saveRoofDesign(roofs);
+				}
 			} else if (activeDrag.type === "object") {
 				const obj = objects.find((o) => o.id === activeDrag.targetId);
+				const orig = activeDrag.originalState;
+
+				// Check if the object actually moved
+				const didMove = obj && (
+					obj.center_x !== orig.center_x ||
+					obj.center_y !== orig.center_y
+				);
+
 				if (obj && obj.type !== "wall" && obj.type !== "polygon") {
-					const expectedOnRoof = activeDrag.originalState.on_roof;
+					const expectedOnRoof = orig.on_roof;
 
 					if (expectedOnRoof && !obj.on_roof) {
 						const restored = objects.map((o) => o.id === obj.id ? {
 							...o,
-							center_x: activeDrag.originalState.center_x,
-							center_y: activeDrag.originalState.center_y,
-							on_roof: activeDrag.originalState.on_roof,
-							roof_id: activeDrag.originalState.roof_id,
-							z_init: activeDrag.originalState.z_init,
-							z_end: activeDrag.originalState.z_end,
+							center_x: orig.center_x,
+							center_y: orig.center_y,
+							on_roof: orig.on_roof,
+							roof_id: orig.roof_id,
+							z_init: orig.z_init,
+							z_end: orig.z_end,
 						} : o);
 						setObjects(restored);
 						autoSave.saveObjectsDesign(restored);
@@ -127,12 +141,12 @@ export function useCanvasInteraction({
 					if (!expectedOnRoof && obj.on_roof) {
 						const restored = objects.map((o) => o.id === obj.id ? {
 							...o,
-							center_x: activeDrag.originalState.center_x,
-							center_y: activeDrag.originalState.center_y,
-							on_roof: activeDrag.originalState.on_roof,
-							roof_id: activeDrag.originalState.roof_id,
-							z_init: activeDrag.originalState.z_init,
-							z_end: activeDrag.originalState.z_end,
+							center_x: orig.center_x,
+							center_y: orig.center_y,
+							on_roof: orig.on_roof,
+							roof_id: orig.roof_id,
+							z_init: orig.z_init,
+							z_end: orig.z_end,
 						} : o);
 						setObjects(restored);
 						autoSave.saveObjectsDesign(restored);
@@ -141,22 +155,42 @@ export function useCanvasInteraction({
 						return;
 					}
 				}
-				autoSave.saveObjectsDesign(objects);
+				// Only save if the object actually moved
+				if (didMove) {
+					autoSave.saveObjectsDesign(objects);
+				}
 			} else if (activeDrag.type === "group") {
 				const group = panelGroups.find((g) => g.id === activeDrag.targetId);
+				const orig = activeDrag.originalState;
+
+				// Check if the group actually moved
+				const didMove = group && (
+					group.center_x !== orig.center_x ||
+					group.center_y !== orig.center_y
+				);
+
 				if (group) {
 					const validation = panelService.validatePanelGroup(group, panelGroups, panelPlacement.panelSpec, roofs, objects);
 					if (validation) {
-						const restored = panelGroups.map((g) => g.id === activeDrag.targetId ? activeDrag.originalState : g);
+						const restored = panelGroups.map((g) => g.id === activeDrag.targetId ? orig : g);
 						setPanelGroups(restored);
 						setToastMessage(validation);
 						setActiveDrag(null);
 						return;
 					}
 				}
-				autoSave.savePanelsDesign(panelGroups);
-			} else {
-				autoSave.saveObjectsDesign(objects);
+				// Only save if the group actually moved
+				if (didMove) {
+					autoSave.savePanelsDesign(panelGroups);
+				}
+			} else if (activeDrag.type === "object-vertex") {
+				// Vertex drag on wall/polygon — check if position changed
+				const obj = objects.find((o) => o.id === activeDrag.targetId);
+				const orig = activeDrag.originalState;
+				const didMove = obj && JSON.stringify(obj) !== JSON.stringify(orig);
+				if (didMove) {
+					autoSave.saveObjectsDesign(objects);
+				}
 			}
 			setActiveDrag(null);
 		}
@@ -240,7 +274,7 @@ export function useCanvasInteraction({
 		const newGroupId = generateUUID("group");
 		const newGroup: PlacedPanelGroup = {
 			id: newGroupId,
-			type: "table",
+			type: "table-together",
 			orientation: panelPlacement.placementConfig.orientation,
 			grid_cols: panelPlacement.placementConfig.grid_cols,
 			grid_rows: panelPlacement.placementConfig.grid_rows,

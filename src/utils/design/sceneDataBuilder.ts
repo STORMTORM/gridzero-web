@@ -105,7 +105,7 @@ export function buildLiveSceneData(
 	if (stage === "placement") {
 		panelGroups.forEach((g) => {
 			groupsRecord[g.id] = {
-				type: g.type || "table",
+				type: g.type || "table-together",
 				orientation: g.orientation || "portrait",
 				grid_rows: g.grid_rows || 1,
 				grid_cols: g.grid_cols || 1,
