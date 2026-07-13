@@ -264,6 +264,31 @@ export function useCanvasInteraction({
 			setToastMessage("Structures must be placed inside a mapped roof boundary.");
 			return;
 		}
+
+		// ── Duplicate mode: place the pending template at click position ──
+		if (panelPlacement.pendingDuplicateGroup) {
+			const template = panelPlacement.pendingDuplicateGroup;
+			const panelsInTemplate = panelService.groupPanelCount(template);
+			if (panelPlacement.remainingPanelSlots !== Infinity && panelsInTemplate > panelPlacement.remainingPanelSlots) {
+				setToastMessage(`Panel limit reached. Only ${panelPlacement.remainingPanelSlots} panel${panelPlacement.remainingPanelSlots !== 1 ? "s" : ""} remaining.`);
+				return;
+			}
+			const placed: PlacedPanelGroup = { ...template, center_x: mx, center_y: my };
+			const validation = panelService.validatePanelGroup(placed, [...panelGroups, placed], panelPlacement.panelSpec, roofs, objects);
+			if (validation) {
+				setToastMessage(validation);
+				return;
+			}
+			const updated = [...panelGroups, placed];
+			setPanelGroups(updated);
+			selection.setSelectedGroupId(placed.id);
+			panelPlacement.setIsPlacingGroup(false);
+			panelPlacement.setPendingDuplicateGroup(null);
+			autoSave.savePanelsDesign(updated);
+			return;
+		}
+
+		// ── Normal placement mode: use placementConfig ──
 		const panelsNeeded = panelPlacement.placementConfig.grid_cols * panelPlacement.placementConfig.grid_rows;
 		const activeCells = panelPlacement.placementConfig.cells?.length ? panelPlacement.placementConfig.cells : undefined;
 		const activePanelsNeeded = activeCells?.length || panelsNeeded;

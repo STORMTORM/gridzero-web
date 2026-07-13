@@ -178,7 +178,7 @@ export async function savePanels(sitevisitId: string, groupsList: PlacedPanelGro
 		
 		panels.forEach((p) => {
 			const roofIdx = roofsList.findIndex((r) => isPointInPolygon([p.x, p.y], r.points));
-			panelsPayload[p.id] = {
+			panelsPayload[generateUUID()] = {
 				center_x: p.x,
 				center_y: p.y,
 				angle: g.table_angle || 0,

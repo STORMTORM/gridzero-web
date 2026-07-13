@@ -49,6 +49,8 @@ interface SVGCanvasProps {
 	setSelectedGroupId: (id: string | null) => void;
 	startDraggingGroup: (e: React.MouseEvent, gId: string) => void;
 	panelSpec: PanelSpec | null;
+	/** IDs of objects whose footprint overlaps a placed panel (shown red) */
+	overlappingObjectIds?: Set<string>;
 }
 
 /**
@@ -77,6 +79,7 @@ export default function SVGCanvas({
 	setSelectedGroupId,
 	startDraggingGroup,
 	panelSpec,
+	overlappingObjectIds,
 }: SVGCanvasProps) {
 
 	return (
@@ -142,9 +145,18 @@ export default function SVGCanvas({
 					LAYER B: OBSTRUCTION OBJECTS
 			 ────────────────────────────────────────────────────────────────── */}
 			{objects.map((obj) => {
-				const isSelected = selectedObjectId === obj.id;
-				const strokeColor = isSelected ? "#a7ce38" : "rgba(255,255,255,0.5)";
-				const fillColor = isSelected ? "rgba(255,255,255,1)" : "rgba(255,255,255,0.7)";
+				// In placement stage: objects are read-only (no interaction)
+				const isPlacementStage = stage === "placement";
+				const isOverlapping = overlappingObjectIds?.has(obj.id) ?? false;
+				const isSelected = !isPlacementStage && selectedObjectId === obj.id;
+
+				// Color logic: red if overlapping panel, else normal
+				const strokeColor = isOverlapping
+					? "rgba(239,68,68,0.9)"
+					: isSelected ? "#a7ce38" : "rgba(255,255,255,0.5)";
+				const fillColor = isOverlapping
+					? "rgba(239,68,68,0.55)"
+					: isSelected ? "rgba(255,255,255,1)" : "rgba(255,255,255,0.7)";
 
 				if (stage === "roof") {
 					return null;
@@ -166,14 +178,13 @@ export default function SVGCanvas({
 							height={hPx}
 							transform={`rotate(${obj.angle}, ${xPx}, ${yPx})`}
 							fill={fillColor}
-							// stroke={strokeColor}
-							// strokeWidth={isSelected ? OBSTACLE_SELECTED_STROKE_WIDTH : OBSTACLE_STROKE_WIDTH}
-							className="object-handle cursor-move pointer-events-auto"
-							onMouseDown={(e) => startDraggingObject(e, obj.id)}
-							onClick={(e) => {
-								e.stopPropagation();
-								setSelectedObjectId(obj.id);
-							}}
+							stroke={isOverlapping ? strokeColor : undefined}
+							strokeWidth={isOverlapping ? OBSTACLE_STROKE_WIDTH : undefined}
+							className={isPlacementStage ? "pointer-events-none" : "object-handle cursor-move pointer-events-auto"}
+							{...(isPlacementStage ? {} : {
+								onMouseDown: (e: React.MouseEvent) => startDraggingObject(e, obj.id),
+								onClick: (e: React.MouseEvent) => { e.stopPropagation(); setSelectedObjectId(obj.id); },
+							})}
 						/>
 					);
 				}
@@ -183,21 +194,27 @@ export default function SVGCanvas({
 					const cy = (obj.center_y / heightMeters) * 100;
 					const rPx = (obj.radius! / widthMeters) * 100;
 
+					// Trees get special green tint unless overlapping
+					const circleFill = isOverlapping
+						? fillColor
+						: obj.type === "tree" ? "rgba(34,197,94,0.18)" : fillColor;
+					const circleStroke = isOverlapping
+						? strokeColor
+						: obj.type === "tree" ? (isSelected ? "#a7ce38" : "rgba(34,197,94,0.6)") : strokeColor;
 					return (
 						<circle
 							key={obj.id}
 							cx={cx}
 							cy={cy}
 							r={rPx}
-							fill={obj.type === "tree" ? "rgba(34,197,94,0.18)" : fillColor}
-							stroke={obj.type === "tree" ? (isSelected ? "#a7ce38" : "rgba(34,197,94,0.6)") : strokeColor}
+							fill={circleFill}
+							stroke={circleStroke}
 							strokeWidth={isSelected ? OBSTACLE_SELECTED_STROKE_WIDTH : OBSTACLE_STROKE_WIDTH}
-							className="object-handle cursor-move pointer-events-auto"
-							onMouseDown={(e) => startDraggingObject(e, obj.id)}
-							onClick={(e) => {
-								e.stopPropagation();
-								setSelectedObjectId(obj.id);
-							}}
+							className={isPlacementStage ? "pointer-events-none" : "object-handle cursor-move pointer-events-auto"}
+							{...(isPlacementStage ? {} : {
+								onMouseDown: (e: React.MouseEvent) => startDraggingObject(e, obj.id),
+								onClick: (e: React.MouseEvent) => { e.stopPropagation(); setSelectedObjectId(obj.id); },
+							})}
 						/>
 					);
 				}
@@ -211,20 +228,19 @@ export default function SVGCanvas({
 					return (
 						<g key={obj.id}>
 							{/* Fatter transparent helper line for easier mouse grab selection */}
-							<line
-								x1={x1}
-								y1={y1}
-								x2={x2}
-								y2={y2}
-								stroke="transparent"
-								strokeWidth="2.5"
-								className="object-handle cursor-move pointer-events-auto"
-								onMouseDown={(e) => startDraggingObject(e, obj.id)}
-								onClick={(e) => {
-									e.stopPropagation();
-									setSelectedObjectId(obj.id);
-								}}
-							/>
+							{!isPlacementStage && (
+								<line
+									x1={x1}
+									y1={y1}
+									x2={x2}
+									y2={y2}
+									stroke="transparent"
+									strokeWidth="2.5"
+									className="object-handle cursor-move pointer-events-auto"
+									onMouseDown={(e) => startDraggingObject(e, obj.id)}
+									onClick={(e) => { e.stopPropagation(); setSelectedObjectId(obj.id); }}
+								/>
+							)}
 							{/* Visual wall stroke */}
 							<line
 								x1={x1}
@@ -275,12 +291,11 @@ export default function SVGCanvas({
 								fill={fillColor}
 								stroke={strokeColor}
 								strokeWidth={isSelected ? OBSTACLE_SELECTED_STROKE_WIDTH : OBSTACLE_STROKE_WIDTH}
-								className="object-handle cursor-move pointer-events-auto"
-								onMouseDown={(e) => startDraggingObject(e, obj.id)}
-								onClick={(e) => {
-									e.stopPropagation();
-									setSelectedObjectId(obj.id);
-								}}
+								className={isPlacementStage ? "pointer-events-none" : "object-handle cursor-move pointer-events-auto"}
+								{...(isPlacementStage ? {} : {
+									onMouseDown: (e: React.MouseEvent) => startDraggingObject(e, obj.id),
+									onClick: (e: React.MouseEvent) => { e.stopPropagation(); setSelectedObjectId(obj.id); },
+								})}
 							/>
 							{/* Draggable polygon corner handles */}
 							{isSelected &&

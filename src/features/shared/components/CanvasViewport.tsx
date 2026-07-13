@@ -32,6 +32,7 @@ interface CanvasViewportProps {
 	setSelectedGroupId: (id: string | null) => void;
 	startDraggingGroup: (e: React.MouseEvent, id: string) => void;
 	panelSpec: PanelSpec | null;
+	overlappingObjectIds?: Set<string>;
 	isPanning: boolean;
 	isPlacingGroup: boolean;
 	handleWheel: (e: React.WheelEvent) => void;
@@ -72,6 +73,7 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({
 	setSelectedGroupId,
 	startDraggingGroup,
 	panelSpec,
+	overlappingObjectIds,
 	isPanning,
 	isPlacingGroup,
 	handleWheel,
@@ -139,6 +141,7 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({
 					setSelectedGroupId={setSelectedGroupId}
 					startDraggingGroup={startDraggingGroup}
 					panelSpec={panelSpec}
+					overlappingObjectIds={overlappingObjectIds}
 				/>
 			</div>
 

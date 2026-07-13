@@ -1,4 +1,4 @@
-import { Trash2, Layers, Grid3X3 } from "lucide-react";
+import { Trash2, Layers, Grid3X3, Copy } from "lucide-react";
 import type { PanelGroup, PanelSpec } from "../../../utils/design/types";
 
 interface PanelPlacementStepProps {
@@ -12,6 +12,7 @@ interface PanelPlacementStepProps {
 	openAddConfigModal: () => void;
 	openEditConfigModal: () => void;
 	deleteSelectedGroup: () => void;
+	duplicateSelectedGroup: () => void;
 	updateSelectedGroup: (updates: Partial<PanelGroup>) => void;
 	onContinue: () => void;
 }
@@ -27,6 +28,7 @@ export default function PanelPlacementStep({
 	openAddConfigModal,
 	openEditConfigModal,
 	deleteSelectedGroup,
+	duplicateSelectedGroup,
 	updateSelectedGroup,
 	onContinue,
 }: PanelPlacementStepProps) {
@@ -57,8 +59,10 @@ export default function PanelPlacementStep({
 					</div>
 					<div className="flex justify-between items-center">
 						<span className="text-neutral-400">Placed Count:</span>
-						<span className={`text-sm font-bold ${placedPanelCount >= targetPanelCount ? "text-emerald-400" : "text-amber-400"}`}>
-							{placedPanelCount} Panels
+						<span className={`text-sm font-bold ${
+							overLimit ? "text-red-400" : placedPanelCount >= targetPanelCount && targetPanelCount > 0 ? "text-emerald-400" : "text-amber-400"
+						}`}>
+							{placedPanelCount} Panels{overLimit ? " ⚠ Over limit" : ""}
 						</span>
 					</div>
 					<div className="h-1.5 bg-black/40 rounded-full overflow-hidden mt-2">
@@ -79,7 +83,7 @@ export default function PanelPlacementStep({
 					{!isPlacingGroup ? (
 						<button
 							onClick={openAddConfigModal}
-							disabled={canContinue}
+							disabled={overLimit}
 							className="w-full py-2.5 bg-white hover:bg-neutral-200 disabled:opacity-30 disabled:cursor-not-allowed text-black text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow"
 						>
 							<Grid3X3 className="w-3.5 h-3.5" />
@@ -273,14 +277,23 @@ export default function PanelPlacementStep({
 							</div>
 						</details>
 
-						{/* Delete Structure table */}
-						<button
-							onClick={deleteSelectedGroup}
-							className="w-full mt-2 py-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-455 text-xs font-bold rounded-xl border border-rose-500/15 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-						>
-							<Trash2 className="w-3.5 h-3.5" />
-							<span>Delete Structure</span>
-						</button>
+						{/* Duplicate & Delete Structure table */}
+						<div className="flex gap-2 mt-2">
+							<button
+								onClick={duplicateSelectedGroup}
+								className="flex-1 py-2 bg-white/5 hover:bg-white/10 text-neutral-300 text-xs font-bold rounded-xl border border-white/10 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+							>
+								<Copy className="w-3.5 h-3.5" />
+								<span>Duplicate</span>
+							</button>
+							<button
+								onClick={deleteSelectedGroup}
+								className="flex-1 py-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-455 text-xs font-bold rounded-xl border border-rose-500/15 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+							>
+								<Trash2 className="w-3.5 h-3.5" />
+								<span>Delete</span>
+							</button>
+						</div>
 					</div>
 				) : (
 					<div className="border border-dashed border-white/10 rounded-2xl p-6 text-center text-xs text-neutral-500">

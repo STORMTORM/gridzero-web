@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Check, Trash2 } from "lucide-react";
+import { Check, Trash2, Copy } from "lucide-react";
 import type { LocalObject } from "../../../utils/design/types";
 import type { RoofData } from "../../shared/types";
 
@@ -11,6 +11,7 @@ interface ObstructionMappingStepProps {
 	objectDrawingMode: string;
 	setObjectDrawingMode: (mode: string) => void;
 	deleteSelectedObject: () => void;
+	duplicateSelectedObject: () => void;
 	updateSelectedObject: (fields: Partial<LocalObject>) => void;
 	onContinue: () => void;
 }
@@ -23,6 +24,7 @@ export default function ObstructionMappingStep({
 	objectDrawingMode,
 	setObjectDrawingMode,
 	deleteSelectedObject,
+	duplicateSelectedObject,
 	updateSelectedObject,
 	onContinue,
 }: ObstructionMappingStepProps) {
@@ -195,13 +197,22 @@ export default function ObstructionMappingStep({
 					<div className="border-t border-white/10 pt-5 flex flex-col gap-5 bg-transparent animate-in slide-in-from-bottom duration-250">
 						<div className="flex justify-between items-center">
 							<span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Object Parameters</span>
-							<button
-								onClick={deleteSelectedObject}
-								className="p-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-455 border border-rose-500/10 transition-colors cursor-pointer"
-								title="Delete selected object"
-							>
-								<Trash2 size={13} />
-							</button>
+							<div className="flex gap-1.5">
+								<button
+									onClick={duplicateSelectedObject}
+									className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-neutral-400 hover:text-white border border-white/10 transition-colors cursor-pointer"
+									title="Duplicate object"
+								>
+									<Copy size={13} />
+								</button>
+								<button
+									onClick={deleteSelectedObject}
+									className="p-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-455 border border-rose-500/10 transition-colors cursor-pointer"
+									title="Delete selected object"
+								>
+									<Trash2 size={13} />
+								</button>
+							</div>
 						</div>
 
 						{/* Height parameters */}

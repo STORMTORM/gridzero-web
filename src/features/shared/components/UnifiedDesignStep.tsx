@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { DesignStage } from "../enums";
 import RoofMappingStep from "../../roof/components/RoofMappingStep";
 import ObstructionMappingStep from "../../obstructions/components/ObstructionMappingStep";
@@ -9,6 +9,7 @@ import { CanvasViewport } from "./CanvasViewport";
 import { ThreeDViewport } from "./ThreeDViewport";
 import type { SceneData, LocalObject } from "../../../utils/design/types";
 import type { RoofData, PlacedPanelGroup, DragState } from "../types";
+import { getPanelsInGroup, isPointInPolygon } from "../../../utils/design/coords";
 
 // Import individual hooks directly
 import { useSelection } from "../hooks/useSelection";
@@ -177,6 +178,65 @@ export default function UnifiedDesignStep({
 		autoSave,
 	});
 
+	// Compute which object IDs are overlapped by any panel (only in placement stage)
+	const overlappingObjectIds = useMemo(() => {
+		if (stage !== "placement" || panelGroups.length === 0 || objects.length === 0) {
+			return new Set<string>();
+		}
+		const overlapping = new Set<string>();
+		for (const group of panelGroups) {
+			const panels = getPanelsInGroup(group, panelPlacement.panelSpec);
+			for (const panel of panels) {
+				for (const obj of objects) {
+					if (overlapping.has(obj.id)) continue;
+					// Check if the panel center falls inside the object's footprint
+					if (obj.type === "cuboid" && obj.length && obj.width) {
+						// Build rotated corners of the cuboid and check using polygon test
+						const hw = obj.length / 2;
+						const hh = obj.width / 2;
+						const angle = ((obj.angle || 0) * Math.PI) / 180;
+						const cos = Math.cos(angle);
+						const sin = Math.sin(angle);
+						const corners: [number, number][] = [
+							[-hw, -hh], [hw, -hh], [hw, hh], [-hw, hh]
+						].map(([lx, ly]) => [
+							obj.center_x + lx * cos - ly * sin,
+							obj.center_y + lx * sin + ly * cos,
+						] as [number, number]);
+						if (isPointInPolygon([panel.x, panel.y], corners)) {
+							overlapping.add(obj.id);
+						}
+					} else if ((obj.type === "cylinder" || obj.type === "tree") && obj.radius) {
+						const dx = panel.x - obj.center_x;
+						const dy = panel.y - obj.center_y;
+						if (Math.sqrt(dx * dx + dy * dy) <= obj.radius) {
+							overlapping.add(obj.id);
+						}
+					} else if (obj.type === "polygon" && obj.polygon) {
+						if (isPointInPolygon([panel.x, panel.y], obj.polygon as [number, number][])) {
+							overlapping.add(obj.id);
+						}
+					} else if (obj.type === "wall" && obj.p1 && obj.p2) {
+						// Check if panel center is within wall thickness distance of the wall segment
+						const [x1, y1] = obj.p1;
+						const [x2, y2] = obj.p2;
+						const dx = x2 - x1;
+						const dy = y2 - y1;
+						const lenSq = dx * dx + dy * dy;
+						const t = lenSq > 0 ? Math.max(0, Math.min(1, ((panel.x - x1) * dx + (panel.y - y1) * dy) / lenSq)) : 0;
+						const closestX = x1 + t * dx;
+						const closestY = y1 + t * dy;
+						const dist = Math.sqrt((panel.x - closestX) ** 2 + (panel.y - closestY) ** 2);
+						if (dist <= (obj.thickness || 0.23) / 2) {
+							overlapping.add(obj.id);
+						}
+					}
+				}
+			}
+		}
+		return overlapping;
+	}, [stage, panelGroups, objects, panelPlacement.panelSpec]);
+
 	return (
 		<div className="flex-grow w-full flex flex-col md:flex-row overflow-hidden relative">
 
@@ -210,6 +270,7 @@ export default function UnifiedDesignStep({
 					setSelectedGroupId={selection.setSelectedGroupId}
 					startDraggingGroup={interaction.startDraggingGroup}
 					panelSpec={panelPlacement.panelSpec}
+					overlappingObjectIds={overlappingObjectIds}
 					isPanning={viewport.isPanning}
 					isPlacingGroup={panelPlacement.isPlacingGroup}
 					handleWheel={viewport.handleWheel}
@@ -256,6 +317,7 @@ export default function UnifiedDesignStep({
 						objectDrawingMode={objectEditor.objectDrawingMode}
 						setObjectDrawingMode={objectEditor.setObjectDrawingMode}
 						deleteSelectedObject={objectEditor.deleteSelectedObject}
+						duplicateSelectedObject={objectEditor.duplicateSelectedObject}
 						updateSelectedObject={objectEditor.updateSelectedObject}
 						onContinue={onContinue || (() => {})}
 					/>
@@ -279,6 +341,7 @@ export default function UnifiedDesignStep({
 							panelPlacement.setShowConfigModal(true);
 						}}
 						deleteSelectedGroup={panelPlacement.deleteSelectedGroup}
+						duplicateSelectedGroup={panelPlacement.duplicateSelectedGroup}
 						updateSelectedGroup={panelPlacement.updateSelectedGroup}
 						onContinue={panelPlacement.handlePlacementContinue}
 					/>

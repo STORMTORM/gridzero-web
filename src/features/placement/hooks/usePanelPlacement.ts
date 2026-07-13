@@ -4,6 +4,7 @@ import type { SceneData, PanelSpec, PanelGroup, LocalObject } from "../../../uti
 import * as siteVisitApi from "../../../api/siteVisitApi";
 import { panelService } from "../../shared/services/panelService";
 import { DEFAULT_PLACEMENT_CONFIG } from "../../shared/constants";
+import { generateUUID } from "../../../utils/design/coords";
 
 interface PanelPlacementParams {
 	sitevisitId: string;
@@ -37,6 +38,7 @@ export function usePanelPlacement({
 	stage,
 }: PanelPlacementParams) {
 	const [isPlacingGroup, setIsPlacingGroup] = useState(false);
+	const [pendingDuplicateGroup, setPendingDuplicateGroup] = useState<PlacedPanelGroup | null>(null);
 	const [targetPanelCount, setTargetPanelCount] = useState(0);
 	const [placementConfig, setPlacementConfig] = useState<PlacementConfig>(DEFAULT_PLACEMENT_CONFIG);
 	const [showConfigModal, setShowConfigModal] = useState(false);
@@ -105,6 +107,22 @@ export function usePanelPlacement({
 		setSelectedGroupId(null);
 		savePanelsDesign(updated);
 	}, [panelGroups, selectedGroupId, setSelectedGroupId, savePanelsDesign, setPanelGroups]);
+
+	const duplicateSelectedGroup = useCallback(() => {
+		if (!selectedGroupId) return;
+		const original = panelGroups.find((g) => g.id === selectedGroupId);
+		if (!original) return;
+		// Check if duplicating would exceed the panel limit
+		const panelsInOriginal = panelService.groupPanelCount(original);
+		if (targetPanelCount > 0 && placedPanelCount + panelsInOriginal > targetPanelCount) {
+			setToastMessage(`Cannot duplicate: would exceed the target of ${targetPanelCount} panels.`);
+			return;
+		}
+		// Store as template and enter placement mode — user clicks to place
+		const template: PlacedPanelGroup = { ...original, id: generateUUID() };
+		setPendingDuplicateGroup(template);
+		setIsPlacingGroup(true);
+	}, [panelGroups, selectedGroupId, targetPanelCount, placedPanelCount, setToastMessage]);
 
 	const handleConfigConfirm = useCallback((config: any) => {
 		if (configModalMode === "edit" && selectedGroupId) {
@@ -175,6 +193,9 @@ export function usePanelPlacement({
 		configModalRemainingSlots,
 		updateSelectedGroup,
 		deleteSelectedGroup,
+		duplicateSelectedGroup,
+		pendingDuplicateGroup,
+		setPendingDuplicateGroup,
 		handleConfigConfirm,
 		handlePlacementContinue,
 	};
