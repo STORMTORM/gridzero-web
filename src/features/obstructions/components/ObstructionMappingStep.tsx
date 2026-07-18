@@ -61,31 +61,31 @@ export default function ObstructionMappingStep({
 			<div className="flex flex-col gap-6">
 				{/* Title */}
 				<div>
-					<h3 className="text-sm font-bold text-white flex items-center gap-2">
+					<h3 className="text-sm font-bold text-text flex items-center gap-2">
 						<span>Obstruction Mapping</span>
 					</h3>
-					<p className="text-[11px] text-neutral-500 font-medium mt-1">
+					<p className="text-[11px] text-placeholder font-medium mt-1">
 						Map building segments, water tanks, trees, AC units, and walls.
 					</p>
 				</div>
 
 				{/* Object Drawing buttons */}
 				<div className="flex flex-col gap-3">
-					<span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Add Obstruction</span>
+					<span className="text-[10px] font-bold text-placeholder uppercase tracking-wider">Add Obstruction</span>
 					
 					{roofs.length === 0 ? (
 						<div className="bg-rose-500/10 border border-rose-500/20 rounded-2xl p-4 flex flex-col gap-2 text-rose-350 select-text">
 							<span className="text-[11px] font-bold flex items-center gap-1.5">
 								⚠️ Placement Disabled
 							</span>
-							<p className="text-[10px] leading-relaxed text-neutral-400 font-medium">
+							<p className="text-[10px] leading-relaxed text-placeholder font-medium">
 								You must draw at least one roof boundary in **Stage 2 (Roof Mapping)** before you can place AC units, water tanks, trees, walls, or custom shapes.
 							</p>
 						</div>
 					) : (
 						<>
 							{/* Tab Selectors */}
-							<div className="flex bg-white/5 p-1 rounded-xl border border-white/5">
+							<div className="flex bg-card p-1 rounded-xl border border-border">
 								<button
 									onClick={() => {
 										setActiveTab("on_roof");
@@ -93,8 +93,8 @@ export default function ObstructionMappingStep({
 									}}
 									className={`flex-1 py-1 text-center text-[10px] font-bold rounded-lg transition-all cursor-pointer ${
 										activeTab === "on_roof"
-											? "bg-white text-black shadow-sm"
-											: "text-neutral-400 hover:text-white"
+											? "bg-primary text-white shadow-sm"
+											: "text-placeholder hover:text-text"
 									}`}
 								>
 									On Roof
@@ -106,8 +106,8 @@ export default function ObstructionMappingStep({
 									}}
 									className={`flex-1 py-1 text-center text-[10px] font-bold rounded-lg transition-all cursor-pointer ${
 										activeTab === "off_roof"
-											? "bg-white text-black shadow-sm"
-											: "text-neutral-400 hover:text-white"
+											? "bg-primary text-white shadow-sm"
+											: "text-placeholder hover:text-text"
 									}`}
 								>
 									Off Roof (Ground)
@@ -132,8 +132,8 @@ export default function ObstructionMappingStep({
 											}}
 											className={`py-1.5 px-2.5 rounded-xl border text-left text-[10px] font-bold transition-all cursor-pointer ${
 												isActive
-													? "bg-white border-white text-black"
-													: "bg-white/5 border-white/5 text-neutral-350 hover:bg-white/10 hover:border-white/10"
+													? "bg-primary border-primary text-white"
+													: "bg-card border-border/50 text-placeholder hover:bg-background hover:border-border"
 											}`}
 										>
 											{cat.label}
@@ -156,9 +156,9 @@ export default function ObstructionMappingStep({
 
 				{/* Mapped Objects List */}
 				<div className="flex flex-col gap-2.5">
-					<span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Mapped Objects ({objects.length})</span>
+					<span className="text-[10px] font-bold text-placeholder uppercase tracking-wider">Mapped Objects ({objects.length})</span>
 					{objects.length === 0 ? (
-						<div className="border border-dashed border-white/10 rounded-2xl p-6 text-center text-xs text-neutral-500">
+						<div className="border border-dashed border-border rounded-2xl p-6 text-center text-xs text-placeholder">
 							No obstructions placed. Select a tool above to outline objects.
 						</div>
 					) : (
@@ -174,17 +174,17 @@ export default function ObstructionMappingStep({
 										onClick={() => setSelectedObjectId(obj.id)}
 										className={`p-3 rounded-xl border transition-all cursor-pointer flex items-center justify-between ${
 											isSelected
-												? "bg-white/10 border-white text-white"
-												: "bg-white/5 border-white/5 text-neutral-400 hover:border-white/10 hover:text-white"
+												? "bg-primary/10 border-primary text-primary"
+												: "bg-card border-border/50 text-placeholder hover:border-border hover:text-text"
 										}`}
 									>
 										<div className="flex flex-col gap-0.5">
 											<span className="text-xs font-bold">{obj.name}</span>
-											<span className="text-[10px] text-neutral-500 capitalize">
+											<span className="text-[10px] text-placeholder capitalize">
 												Type: {subtype} · Height: {dispH}m
 											</span>
 										</div>
-										{isSelected && <div className="w-2 h-2 rounded-full bg-white animate-pulse" />}
+										{isSelected && <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />}
 									</div>
 								);
 							})}
@@ -194,13 +194,13 @@ export default function ObstructionMappingStep({
 
 				{/* Selected Object properties */}
 				{selectedObject && (
-					<div className="border-t border-white/10 pt-5 flex flex-col gap-5 bg-transparent animate-in slide-in-from-bottom duration-250">
+					<div className="border-t border-border pt-5 flex flex-col gap-5 bg-transparent animate-in slide-in-from-bottom duration-250">
 						<div className="flex justify-between items-center">
-							<span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Object Parameters</span>
+							<span className="text-[10px] font-bold text-placeholder uppercase tracking-wider">Object Parameters</span>
 							<div className="flex gap-1.5">
 								<button
 									onClick={duplicateSelectedObject}
-									className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-neutral-400 hover:text-white border border-white/10 transition-colors cursor-pointer"
+									className="p-1.5 rounded-lg bg-card hover:bg-background text-placeholder hover:text-text border border-border transition-colors cursor-pointer"
 									title="Duplicate object"
 								>
 									<Copy size={13} />
@@ -219,9 +219,9 @@ export default function ObstructionMappingStep({
 						<div className="flex flex-col gap-4">
 							{/* Object Height */}
 							<div className="flex flex-col gap-1.5">
-								<div className="flex justify-between items-center text-[11px] font-semibold text-neutral-400">
+								<div className="flex justify-between items-center text-[11px] font-semibold text-placeholder">
 									<span>Height</span>
-									<span className="text-white font-bold">{objHeight.toFixed(1)}m</span>
+									<span className="text-text font-bold">{objHeight.toFixed(1)}m</span>
 								</div>
 								<input
 									type="range"
@@ -235,15 +235,15 @@ export default function ObstructionMappingStep({
 											z_end: selectedObject.z_init + h,
 										});
 									}}
-									className="w-full accent-white cursor-pointer"
+									className="w-full accent-primary cursor-pointer"
 								/>
 							</div>
 
 							{/* Base Elevation */}
 							<div className="flex flex-col gap-1.5">
-								<div className="flex justify-between items-center text-[11px] font-semibold text-neutral-400">
+								<div className="flex justify-between items-center text-[11px] font-semibold text-placeholder">
 									<span>Base Elevation (z_init)</span>
-									<span className="text-white font-bold">{selectedObject.z_init.toFixed(1)}m</span>
+									<span className="text-text font-bold">{selectedObject.z_init.toFixed(1)}m</span>
 								</div>
 								<input
 									type="range"
@@ -260,19 +260,19 @@ export default function ObstructionMappingStep({
 											z_end: z + prevH,
 										});
 									}}
-									className="w-full accent-white cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+									className="w-full accent-primary cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
 								/>
 							</div>
 
 							{/* Dimensions based on object type */}
 							{selectedObject.type === "cuboid" && (
-								<div className="flex flex-col gap-4 border-t border-white/5 pt-3">
+								<div className="flex flex-col gap-4 border-t border-border pt-3">
 									<div className="flex flex-col gap-1.5">
-										<label className="text-[11px] font-semibold text-neutral-400">Object Model Type</label>
+										<label className="text-[11px] font-semibold text-placeholder">Object Model Type</label>
 										<select
 											value={selectedObject.tag || ""}
 											onChange={(e) => updateSelectedObject({ tag: e.target.value || undefined })}
-											className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs font-bold text-white focus:outline-none focus:border-white transition-colors"
+											className="w-full bg-background border border-border rounded-xl px-3 py-2 text-xs font-bold text-text focus:outline-none focus:border-primary transition-colors"
 										>
 											<option value="">Basic Cuboid Block</option>
 											<option value="mumtee">Stair Cabin (Mumtee)</option>
@@ -287,9 +287,9 @@ export default function ObstructionMappingStep({
 
 									{/* Length */}
 									<div className="flex flex-col gap-1.5">
-										<div className="flex justify-between items-center text-[11px] font-semibold text-neutral-400">
+										<div className="flex justify-between items-center text-[11px] font-semibold text-placeholder">
 											<span>Length</span>
-											<span className="text-white font-bold">{selectedObject.length?.toFixed(1)}m</span>
+											<span className="text-text font-bold">{selectedObject.length?.toFixed(1)}m</span>
 										</div>
 										<input
 											type="range"
@@ -298,15 +298,15 @@ export default function ObstructionMappingStep({
 											step="0.1"
 											value={selectedObject.length || 2}
 											onChange={(e) => updateSelectedObject({ length: parseFloat(e.target.value) })}
-											className="w-full accent-white cursor-pointer"
+											className="w-full accent-primary cursor-pointer"
 										/>
 									</div>
 
 									{/* Width */}
 									<div className="flex flex-col gap-1.5">
-										<div className="flex justify-between items-center text-[11px] font-semibold text-neutral-400">
+										<div className="flex justify-between items-center text-[11px] font-semibold text-placeholder">
 											<span>Width</span>
-											<span className="text-white font-bold">{selectedObject.width?.toFixed(1)}m</span>
+											<span className="text-text font-bold">{selectedObject.width?.toFixed(1)}m</span>
 										</div>
 										<input
 											type="range"
@@ -315,15 +315,15 @@ export default function ObstructionMappingStep({
 											step="0.1"
 											value={selectedObject.width || 2}
 											onChange={(e) => updateSelectedObject({ width: parseFloat(e.target.value) })}
-											className="w-full accent-white cursor-pointer"
+											className="w-full accent-primary cursor-pointer"
 										/>
 									</div>
 
 									{/* Angle */}
 									<div className="flex flex-col gap-1.5">
-										<div className="flex justify-between items-center text-[11px] font-semibold text-neutral-400">
+										<div className="flex justify-between items-center text-[11px] font-semibold text-placeholder">
 											<span>Rotation Angle</span>
-											<span className="text-white font-bold">{selectedObject.angle || 0}°</span>
+											<span className="text-text font-bold">{selectedObject.angle || 0}°</span>
 										</div>
 										<input
 											type="range"
@@ -332,18 +332,18 @@ export default function ObstructionMappingStep({
 											step="1"
 											value={selectedObject.angle || 0}
 											onChange={(e) => updateSelectedObject({ angle: parseInt(e.target.value) })}
-											className="w-full accent-white cursor-pointer"
+											className="w-full accent-primary cursor-pointer"
 										/>
 									</div>
 								</div>
 							)}
 
 							{(selectedObject.type === "cylinder" || selectedObject.type === "tree") && (
-								<div className="flex flex-col gap-4 border-t border-white/5 pt-3">
+								<div className="flex flex-col gap-4 border-t border-border pt-3">
 									<div className="flex flex-col gap-1.5">
-										<div className="flex justify-between items-center text-[11px] font-semibold text-neutral-400">
+										<div className="flex justify-between items-center text-[11px] font-semibold text-placeholder">
 											<span>Radius</span>
-											<span className="text-white font-bold">{selectedObject.radius?.toFixed(1)}m</span>
+											<span className="text-text font-bold">{selectedObject.radius?.toFixed(1)}m</span>
 										</div>
 										<input
 											type="range"
@@ -352,17 +352,17 @@ export default function ObstructionMappingStep({
 											step="0.1"
 											value={selectedObject.radius || 1}
 											onChange={(e) => updateSelectedObject({ radius: parseFloat(e.target.value) })}
-											className="w-full accent-white cursor-pointer"
+											className="w-full accent-primary cursor-pointer"
 										/>
 									</div>
 
 									{selectedObject.type === "cylinder" && (
 										<div className="flex flex-col gap-1.5">
-											<label className="text-[11px] font-semibold text-neutral-400">Cylinder Model Type</label>
+											<label className="text-[11px] font-semibold text-placeholder">Cylinder Model Type</label>
 											<select
 												value={selectedObject.tag || ""}
 												onChange={(e) => updateSelectedObject({ tag: e.target.value || undefined })}
-												className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs font-bold text-white focus:outline-none focus:border-white transition-colors"
+												className="w-full bg-background border border-border rounded-xl px-3 py-2 text-xs font-bold text-text focus:outline-none focus:border-primary transition-colors"
 											>
 												<option value="">Basic Cylinder Block</option>
 												<option value="chimney">Circular Chimney</option>
@@ -376,11 +376,11 @@ export default function ObstructionMappingStep({
 
 									{selectedObject.type === "tree" && (
 										<div className="flex flex-col gap-1.5">
-											<label className="text-[11px] font-semibold text-neutral-400">Tree Species Model</label>
+											<label className="text-[11px] font-semibold text-placeholder">Tree Species Model</label>
 											<select
 												value={selectedObject.tag || "mango"}
 												onChange={(e) => updateSelectedObject({ tag: e.target.value })}
-												className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs font-bold text-white focus:outline-none"
+												className="w-full bg-background border border-border rounded-xl px-3 py-2 text-xs font-bold text-text focus:outline-none"
 											>
 												<option value="mango">Mango Tree</option>
 												<option value="coconut">Coconut Palm</option>
@@ -393,11 +393,11 @@ export default function ObstructionMappingStep({
 							)}
 
 							{selectedObject.type === "wall" && (
-								<div className="flex flex-col gap-4 border-t border-white/5 pt-3">
+								<div className="flex flex-col gap-4 border-t border-border pt-3">
 									<div className="flex flex-col gap-1.5">
-										<div className="flex justify-between items-center text-[11px] font-semibold text-neutral-450">
+										<div className="flex justify-between items-center text-[11px] font-semibold text-placeholder">
 											<span>Wall Thickness</span>
-											<span className="text-white font-bold">{selectedObject.thickness?.toFixed(2)}m</span>
+											<span className="text-text font-bold">{selectedObject.thickness?.toFixed(2)}m</span>
 										</div>
 										<input
 											type="range"
@@ -406,7 +406,7 @@ export default function ObstructionMappingStep({
 											step="0.01"
 											value={selectedObject.thickness || 0.23}
 											onChange={(e) => updateSelectedObject({ thickness: parseFloat(e.target.value) })}
-											className="w-full accent-white cursor-pointer"
+											className="w-full accent-primary cursor-pointer"
 										/>
 									</div>
 								</div>
@@ -417,10 +417,10 @@ export default function ObstructionMappingStep({
 			</div>
 
 			{/* Bottom Action bar */}
-			<div className="border-t border-white/10 pt-4 flex gap-3">
+			<div className="border-t border-border pt-4 flex gap-3">
 				<button
 					onClick={onContinue}
-					className="flex-grow py-3 bg-white text-black font-bold text-xs rounded-xl shadow-lg hover:bg-neutral-100 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+					className="flex-grow py-3 bg-primary text-white font-bold text-xs rounded-xl shadow-lg hover:opacity-90 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
 				>
 					<Check size={14} />
 					<span>Save & Continue</span>

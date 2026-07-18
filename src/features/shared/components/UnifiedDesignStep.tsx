@@ -35,6 +35,9 @@ interface UnifiedDesignStepProps {
 	onSaveStatusChange?: (saving: boolean) => void;
 	sceneData?: SceneData | null;
 	onContinue?: () => void;
+	layoutMode?: "split" | "toggle";
+	activeViewport?: "2d" | "3d";
+	setActiveViewport?: (v: "2d" | "3d") => void;
 }
 
 export default function UnifiedDesignStep({
@@ -49,6 +52,9 @@ export default function UnifiedDesignStep({
 	onSaveStatusChange,
 	sceneData,
 	onContinue,
+	layoutMode = "split",
+	activeViewport = "2d",
+	setActiveViewport,
 }: UnifiedDesignStepProps) {
 
 	// ────────────────────────────────────────────────────────────────────────
@@ -317,8 +323,32 @@ export default function UnifiedDesignStep({
 	return (
 		<div className="flex-grow w-full flex flex-col md:flex-row overflow-hidden relative">
 
+			{/* Floating switcher controls for Single View mode */}
+			{layoutMode === "toggle" && setActiveViewport && (
+				<div className="absolute top-4 left-4 z-40 bg-card border border-border p-0.5 rounded-xl flex text-[10px] font-bold text-placeholder shadow-lg">
+					<button
+						type="button"
+						onClick={() => setActiveViewport("2d")}
+						className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+							activeViewport === "2d" ? "bg-primary text-white" : "hover:text-text"
+						}`}
+					>
+						2D Canvas
+					</button>
+					<button
+						type="button"
+						onClick={() => setActiveViewport("3d")}
+						className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+							activeViewport === "3d" ? "bg-primary text-white" : "hover:text-text"
+						}`}
+					>
+						3D View
+					</button>
+				</div>
+			)}
+
 			{/* Column 1: 2D drawing canvas */}
-			{stage !== DesignStage.Snapshot && (
+			{stage !== DesignStage.Snapshot && (layoutMode === "split" || activeViewport === "2d") && (
 				<CanvasViewport
 					helperText={helperText}
 					viewportRef={viewport.viewportRef}
@@ -363,14 +393,16 @@ export default function UnifiedDesignStep({
 			)}
 
 			{/* Column 2: 3D live preview container */}
-			<ThreeDViewport
-				liveSceneData={liveSceneData}
-				stage={stage}
-				activeCaptureTarget={panelPlacement.activeCaptureTarget}
-			/>
+			{(layoutMode === "split" || activeViewport === "3d" || stage === DesignStage.Snapshot) && (
+				<ThreeDViewport
+					liveSceneData={liveSceneData}
+					stage={stage}
+					activeCaptureTarget={panelPlacement.activeCaptureTarget}
+				/>
+			)}
 
 			{/* Column 3: Design Sidebar step component */}
-			<div className="w-full md:w-[380px] bg-neutral-900/60 p-6 flex flex-col justify-between flex-shrink-0 border-l border-white/10 gap-6 overflow-y-auto z-20 font-sans text-neutral-200">
+			<div className="w-full md:w-[380px] bg-card/60 p-6 flex flex-col justify-between flex-shrink-0 border-l border-border gap-6 overflow-y-auto z-20 font-sans text-text">
 				{stage === DesignStage.Roof && (
 					<RoofMappingStep
 						roofs={roofs}
@@ -435,10 +467,10 @@ export default function UnifiedDesignStep({
 			</div>
 
 			{toastMessage && (
-				<div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-neutral-900 border border-white/10 rounded-2xl px-5 py-3 text-xs font-bold text-white shadow-2xl z-50 animate-in fade-in slide-in-from-bottom-4 duration-300 flex items-center gap-2 select-none">
+				<div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-card border border-border rounded-2xl px-5 py-3 text-xs font-bold text-text shadow-2xl z-50 animate-in fade-in slide-in-from-bottom-4 duration-300 flex items-center gap-2 select-none">
 					<span className="text-amber-500">⚠️</span>
 					<span>{toastMessage}</span>
-					<button onClick={() => setToastMessage(null)} className="text-neutral-500 hover:text-white ml-2">✕</button>
+					<button onClick={() => setToastMessage(null)} className="text-placeholder hover:text-text ml-2">✕</button>
 				</div>
 			)}
 

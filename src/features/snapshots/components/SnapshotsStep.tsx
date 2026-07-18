@@ -235,29 +235,29 @@ export default function SnapshotsStep({
 	if (loading) {
 		return (
 			<div className="flex-grow flex flex-col items-center justify-center gap-3 py-12">
-				<RefreshCw className="w-6 h-6 text-neutral-500 animate-spin" />
-				<span className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest">Checking existing snapshots...</span>
+				<RefreshCw className="w-6 h-6 text-placeholder animate-spin" />
+				<span className="text-[11px] font-bold text-placeholder uppercase tracking-widest">Checking existing snapshots...</span>
 			</div>
 		);
 	}
 
 	return (
-		<div className="h-full flex flex-col justify-between font-sans text-neutral-200">
+		<div className="h-full flex flex-col justify-between font-sans text-text">
 			<div className="flex flex-col gap-4">
 				{/* Step title & navigation */}
 				<div className="flex items-center justify-between">
 					<div className="flex flex-col gap-0.5">
-						<span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">
+						<span className="text-[9px] font-bold text-placeholder uppercase tracking-wider">
 							Step {step === "cover" ? "1" : "2"} of 2
 						</span>
-						<h3 className="text-xs font-bold text-white uppercase tracking-wide">
+						<h3 className="text-xs font-bold text-text uppercase tracking-wide">
 							{step === "cover" ? "Proposal Cover Frame" : "Shadow Path Projections"}
 						</h3>
 					</div>
 					{step === "shadows" && !capturingShadowTarget && (
 						<button
 							onClick={() => setStep("cover")}
-							className="p-1.5 hover:bg-white/5 rounded-lg border border-white/5 text-neutral-400 hover:text-white transition-colors cursor-pointer"
+							className="p-1.5 hover:bg-background rounded-lg border border-border text-placeholder hover:text-text transition-colors cursor-pointer"
 							title="Back to Cover"
 						>
 							<ChevronLeft className="w-4 h-4" />
@@ -277,15 +277,15 @@ export default function SnapshotsStep({
 				{step === "cover" && (
 					<div className="flex flex-col gap-4">
 						{/* Square Frame */}
-						<div className="relative aspect-square w-full rounded-2xl bg-neutral-900 border border-white/10 overflow-hidden flex items-center justify-center shadow-inner group">
+						<div className="relative aspect-square w-full rounded-2xl bg-card border border-border overflow-hidden flex items-center justify-center shadow-inner group">
 							{isCapturing ? (
 								<div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center select-none pointer-events-none bg-black/35">
-									<div className="w-full max-w-[85%] aspect-[190/80] border border-dashed border-teal-400/50 rounded-lg flex items-center justify-center bg-teal-500/[0.02] py-4">
-										<Camera className="w-5 h-5 text-teal-400 opacity-80 animate-pulse" />
+									<div className="w-full max-w-[85%] aspect-[190/80] border border-dashed border-primary/50 rounded-lg flex items-center justify-center bg-primary/[0.02] py-4">
+										<Camera className="w-5 h-5 text-primary opacity-80 animate-pulse" />
 									</div>
 									<div className="flex flex-col gap-0.5 mt-2">
-										<span className="text-[10px] font-bold text-teal-400 uppercase tracking-wider">Camera View Active</span>
-										<span className="text-[8px] text-neutral-500 leading-normal max-w-[180px]">
+										<span className="text-[10px] font-bold text-primary uppercase tracking-wider">Camera View Active</span>
+										<span className="text-[8px] text-placeholder leading-normal max-w-[180px]">
 											Adjust the 3D model view on the right to align inside this crop guide.
 										</span>
 									</div>
@@ -312,13 +312,13 @@ export default function SnapshotsStep({
 								<div className="grid grid-cols-2 gap-2">
 									<button
 										onClick={() => alignCamera("cover")}
-										className="py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 text-white text-[10px] font-bold rounded-xl transition-all cursor-pointer"
+										className="py-2.5 bg-card hover:bg-background border border-border text-text text-[10px] font-bold rounded-xl transition-all cursor-pointer"
 									>
 										Align View
 									</button>
 									<button
 										onClick={handleCaptureCover}
-										className="py-2.5 bg-teal-500 hover:bg-teal-600 text-black text-[10px] font-bold rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1 font-bold"
+										className="py-2.5 bg-primary hover:opacity-90 text-white text-[10px] font-bold rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1 font-bold"
 									>
 										<Camera className="w-3.5 h-3.5" />
 										<span>Capture Cover</span>
@@ -329,14 +329,14 @@ export default function SnapshotsStep({
 									<button
 										onClick={handleRetakeCover}
 										disabled={savingCover}
-										className="py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 text-white text-[10px] font-bold rounded-xl transition-all cursor-pointer"
+										className="py-2.5 bg-card hover:bg-background border border-border text-text text-[10px] font-bold rounded-xl transition-all cursor-pointer"
 									>
 										Retake
 									</button>
 									<button
 										onClick={handleSaveCover}
 										disabled={savingCover}
-										className="py-2.5 bg-white hover:bg-neutral-200 text-black text-[10px] font-bold rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1"
+										className="py-2.5 bg-primary hover:opacity-90 text-white text-[10px] font-bold rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1"
 									>
 										<span>{tempCoverImage ? "Save & Continue" : "Continue"}</span>
 										<ChevronRight className="w-3.5 h-3.5" />
@@ -351,33 +351,33 @@ export default function SnapshotsStep({
 				{step === "shadows" && (
 					<div className="flex flex-col gap-4">
 						{/* Square Frame for Alignment/Preview */}
-						<div className="relative aspect-square w-full rounded-2xl bg-neutral-900 border border-white/10 overflow-hidden flex items-center justify-center shadow-inner group">
+						<div className="relative aspect-square w-full rounded-2xl bg-card border border-border overflow-hidden flex items-center justify-center shadow-inner group">
 							{isCapturing ? (
 								<div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center select-none pointer-events-none bg-black/35">
-									<div className="w-full max-w-[85%] aspect-square border border-dashed border-teal-400/50 rounded-lg flex items-center justify-center bg-teal-500/[0.02]">
-										<Camera className="w-5 h-5 text-teal-400 opacity-80 animate-pulse" />
+									<div className="w-full max-w-[85%] aspect-square border border-dashed border-primary/50 rounded-lg flex items-center justify-center bg-primary/[0.02]">
+										<Camera className="w-5 h-5 text-primary opacity-80 animate-pulse" />
 									</div>
 									<div className="flex flex-col gap-0.5 mt-2">
-										<span className="text-[10px] font-bold text-teal-400 uppercase tracking-wider">Top-Down View Active</span>
-										<span className="text-[8px] text-neutral-500 leading-normal max-w-[180px]">
+										<span className="text-[10px] font-bold text-primary uppercase tracking-wider">Top-Down View Active</span>
+										<span className="text-[8px] text-placeholder leading-normal max-w-[180px]">
 											Align the roof in the center of the square. Click Capture Series to generate all shadow projections.
 										</span>
 									</div>
 								</div>
 							) : (
 								/* Grid preview of the 4 generated shadow projection thumbs */
-								<div className="w-full h-full p-3 grid grid-cols-2 gap-2 bg-neutral-950/80">
+								<div className="w-full h-full p-3 grid grid-cols-2 gap-2 bg-background/80">
 									{SHADOW_HOURS.map((h) => {
 										const url = snapshots[h.column];
 										return (
-											<div key={h.hour} className="relative aspect-[4/3] rounded-lg border border-white/5 bg-neutral-900 overflow-hidden flex items-center justify-center shadow-sm">
+											<div key={h.hour} className="relative aspect-[4/3] rounded-lg border border-border bg-card overflow-hidden flex items-center justify-center shadow-sm">
 												{url ? (
 													<img src={url} alt={h.label} className="w-full h-full object-cover" />
 												) : (
-													<span className="text-[8px] font-bold text-neutral-600">{h.label}</span>
+													<span className="text-[8px] font-bold text-placeholder">{h.label}</span>
 												)}
 												{url && (
-													<div className="absolute top-1 right-1 bg-emerald-500/90 p-0.5 rounded-full text-white">
+													<div className="absolute top-1 right-1 bg-primary/95 p-0.5 rounded-full text-white">
 														<CheckCircle2 className="w-2.5 h-2.5" />
 													</div>
 												)}
@@ -391,10 +391,10 @@ export default function SnapshotsStep({
 								<div className="absolute inset-0 bg-black/85 flex flex-col items-center justify-center gap-2.5 p-6 text-center">
 									<RefreshCw className="w-6 h-6 text-amber-500 animate-spin" />
 									<div className="flex flex-col gap-1">
-										<span className="text-[10px] text-white font-bold uppercase tracking-wider animate-pulse">
+										<span className="text-[10px] text-text font-bold uppercase tracking-wider animate-pulse">
 											Capturing Shadow Maps...
 										</span>
-										<span className="text-[9px] text-neutral-455">
+										<span className="text-[9px] text-placeholder">
 											Rendering shadow projection for {SHADOW_HOURS.find(h => h.column === capturingShadowTarget)?.label || ""}
 										</span>
 									</div>
@@ -409,14 +409,14 @@ export default function SnapshotsStep({
 									<button
 										onClick={() => alignCamera("shadows")}
 										disabled={!!capturingShadowTarget}
-										className="py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 text-white text-[10px] font-bold rounded-xl transition-all cursor-pointer"
+										className="py-2.5 bg-card hover:bg-background border border-border text-text text-[10px] font-bold rounded-xl transition-all cursor-pointer"
 									>
 										Align Top-Down
 									</button>
 									<button
 										onClick={handleCaptureShadowSeries}
 										disabled={!!capturingShadowTarget}
-										className="py-2.5 bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-black text-[10px] font-bold rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1 font-bold"
+										className="py-2.5 bg-primary hover:opacity-90 disabled:opacity-50 text-white text-[10px] font-bold rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1 font-bold"
 									>
 										<LayoutGrid className="w-3.5 h-3.5" />
 										<span>Capture Series</span>
@@ -426,14 +426,14 @@ export default function SnapshotsStep({
 								<div className="grid grid-cols-2 gap-2">
 									<button
 										onClick={handleRetakeShadows}
-										className="py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 text-white text-[10px] font-bold rounded-xl transition-all cursor-pointer"
+										className="py-2.5 bg-card hover:bg-background border border-border text-text text-[10px] font-bold rounded-xl transition-all cursor-pointer"
 									>
 										Retake All
 									</button>
 									<button
 										onClick={onContinue}
 										disabled={!hasAllShadows}
-										className="py-2.5 bg-white hover:bg-neutral-200 text-black text-[10px] font-bold rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1"
+										className="py-2.5 bg-primary hover:opacity-90 text-white text-[10px] font-bold rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1"
 									>
 										<span>Save & Continue</span>
 										<ChevronRight className="w-3.5 h-3.5" />

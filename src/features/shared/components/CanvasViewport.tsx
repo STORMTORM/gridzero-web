@@ -96,7 +96,7 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({
 			onMouseUp={handleMouseUp}
 			onMouseLeave={handleMouseLeave}
 			onClick={handleCanvasClick}
-			className={`flex-grow flex-1 h-full bg-neutral-950 flex items-center justify-center relative overflow-hidden p-6 border-r border-white/10 ${
+			className={`flex-grow flex-1 h-full bg-background flex items-center justify-center relative overflow-hidden p-6 border-r border-border ${
 				(isDrawingRoofs || objectDrawingMode !== "none" || isPlacingGroup) ? "cursor-crosshair" : isPanning ? "cursor-grabbing" : "cursor-grab"
 			}`}
 		>
@@ -107,7 +107,7 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({
 					transform: `translate(${panOffset.x}px, ${panOffset.y}px) scale(${scale})`,
 					transformOrigin: "center",
 				}}
-				className="relative w-full max-w-[70vh] aspect-square border border-white/10 rounded-3xl overflow-hidden shadow-2xl bg-neutral-900 select-none flex items-center justify-center transition-transform duration-75 ease-out"
+				className="relative w-full max-w-[70vh] aspect-square border border-border rounded-3xl overflow-hidden shadow-2xl bg-card select-none flex items-center justify-center transition-transform duration-75 ease-out"
 			>
 				{/* Background Satellite snapshot */}
 				{imageUrl && (
@@ -148,7 +148,7 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({
 			</div>
 
 			{helperText && (
-				<div className="absolute top-6 left-1/2 -translate-x-1/2 bg-neutral-900/95 border border-white/10 rounded-2xl px-5 py-2.5 text-[11px] font-bold text-neutral-200 shadow-xl z-30 pointer-events-none text-center max-w-[92%] animate-in fade-in slide-in-from-top-4 duration-200">
+				<div className="absolute top-6 left-1/2 -translate-x-1/2 bg-card/95 border border-border rounded-2xl px-5 py-2.5 text-[11px] font-bold text-text shadow-xl z-30 pointer-events-none text-center max-w-[92%] animate-in fade-in slide-in-from-top-4 duration-200">
 					{helperText}
 				</div>
 			)}
@@ -157,14 +157,14 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({
 			<div className="absolute bottom-6 right-6 flex flex-col gap-1.5 z-25">
 				<button
 					onClick={zoomIn2D}
-					className="w-10 h-10 bg-black/75 hover:bg-neutral-800 text-white rounded-xl border border-white/10 flex items-center justify-center transition-all cursor-pointer shadow-lg active:scale-95"
+					className="w-10 h-10 bg-background/75 hover:bg-background text-text rounded-xl border border-border flex items-center justify-center transition-all cursor-pointer shadow-lg active:scale-95"
 					title="Zoom In"
 				>
 					<Plus className="w-4.5 h-4.5" />
 				</button>
 				<button
 					onClick={zoomOut2D}
-					className="w-10 h-10 bg-black/75 hover:bg-neutral-800 text-white rounded-xl border border-white/10 flex items-center justify-center transition-all cursor-pointer shadow-lg active:scale-95"
+					className="w-10 h-10 bg-background/75 hover:bg-background text-text rounded-xl border border-border flex items-center justify-center transition-all cursor-pointer shadow-lg active:scale-95"
 					title="Zoom Out"
 				>
 					<Minus className="w-4.5 h-4.5" />

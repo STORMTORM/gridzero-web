@@ -848,17 +848,17 @@ export default function EquipmentSelection() {
 
   if (initialLoading) {
     return (
-      <div className="flex-grow flex items-center justify-center bg-black h-screen w-screen overflow-hidden">
+      <div className="flex-grow flex items-center justify-center bg-background h-screen w-screen overflow-hidden">
         <div className="flex flex-col items-center gap-3">
-          <RefreshCw className="w-8 h-8 text-white animate-spin" />
-          <span className="text-sm font-semibold text-neutral-400 animate-pulse">Initializing equipment workspace...</span>
+          <RefreshCw className="w-8 h-8 text-text animate-spin" />
+          <span className="text-sm font-semibold text-placeholder animate-pulse">Initializing equipment workspace...</span>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col h-screen w-screen bg-black overflow-hidden text-neutral-100 font-sans select-none relative">
+    <div className="flex flex-col h-screen w-screen bg-background overflow-hidden text-text font-sans select-none relative">
       
       {/* Premium Top Navigation Bar */}
       <ProjectTopbar
@@ -872,9 +872,9 @@ export default function EquipmentSelection() {
       <div className="flex-grow flex w-full overflow-hidden">
         
         {/* Left progress column */}
-        <aside className="w-[280px] bg-neutral-950/80 border-r border-white/10 flex-shrink-0 flex flex-col p-6 gap-6 font-sans justify-between">
+        <aside className="w-[280px] bg-background/80 border-r border-border flex-shrink-0 flex flex-col p-6 gap-6 font-sans justify-between">
           <div className="flex flex-col gap-6">
-            <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">Configuration Stages</span>
+            <span className="text-[10px] font-bold text-placeholder uppercase tracking-widest">Configuration Stages</span>
             
             <nav className="flex flex-col gap-2">
               {[
@@ -898,20 +898,20 @@ export default function EquipmentSelection() {
                     onClick={() => !locked && setActiveStep(step.key as any)}
                     className={`flex items-start gap-3 p-3 rounded-xl border text-left transition-all ${
                       locked
-                        ? "opacity-35 cursor-not-allowed border-transparent text-neutral-600"
+                        ? "opacity-35 cursor-not-allowed border-transparent text-placeholder"
                         : isCurrent 
-                        ? "bg-white/5 border-white/15 text-white" 
-                        : isDone ? "bg-green-900/10 border-green-900/50 text-green-200" : "bg-transparent border-transparent text-neutral-400 hover:text-white"
+                        ? "bg-primary/10 border-primary/20 text-primary" 
+                        : isDone ? "bg-primary/10 border-primary/30 text-primary" : "bg-transparent border-transparent text-placeholder hover:text-text"
                     }`}
                   >
-                    <div className={`p-2 rounded-lg flex items-center justify-center ${isCurrent ? "bg-white text-black" : "bg-white/5 text-neutral-400"}`}>
+                    <div className={`p-2 rounded-lg flex items-center justify-center ${isCurrent ? "bg-primary text-white" : "bg-background text-placeholder"}`}>
                       <step.icon className="w-4 h-4" />
                     </div>
                     <div className="flex flex-col gap-0.5 min-w-0">
                       <div className="flex items-center gap-1.5">
                         <span className="text-sm font-bold leading-none">{step.label}</span>
                       </div>
-                      <span className="text-[10px] text-neutral-500 font-medium truncate">{step.desc}</span>
+                      <span className="text-[10px] text-placeholder font-medium truncate">{step.desc}</span>
                     </div>
                   </button>
                 );
@@ -921,22 +921,22 @@ export default function EquipmentSelection() {
         </aside>
 
         {/* Right workspace content area */}
-        <main className="flex-1 bg-neutral-900/40 p-8 overflow-y-auto flex flex-col gap-6 relative">
+        <main className="flex-1 bg-card/40 p-8 overflow-y-auto flex flex-col gap-6 relative">
           
           {/* STAGE 1: SOLAR PANELS VIEW */}
           {activeStep === "panel" && (
             <div className="flex flex-col gap-4 h-full max-w-5xl mx-auto w-full animate-in fade-in duration-200 overflow-hidden">
               
               {/* Brand selection area on top */}
-              <div className="flex flex-col gap-3 bg-neutral-950/40 p-4 rounded-2xl border border-white/5 flex-shrink-0">
+              <div className="flex flex-col gap-3 bg-background/40 p-4 rounded-2xl border border-border flex-shrink-0">
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider block">Brands</span>
+                  <span className="text-[10px] font-bold text-placeholder uppercase tracking-wider block">Brands</span>
                   <input
                     type="text"
                     placeholder="Search brands..."
                     value={panelBrandSearch}
                     onChange={(e) => setPanelBrandSearch(e.target.value)}
-                    className="bg-white/5 border border-white/5 rounded-xl px-3 py-1.5 text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-white/20 w-44"
+                    className="bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-text placeholder-placeholder focus:outline-none focus:border-primary/20 w-44"
                   />
                 </div>
                 
@@ -950,8 +950,8 @@ export default function EquipmentSelection() {
                         onClick={() => setSelectedPanelBrand(isBrandSelected ? null : b.brand)}
                         className={`h-16 px-6 rounded-xl border flex flex-col items-center justify-center flex-shrink-0 transition-all cursor-pointer ${
                           isBrandSelected
-                            ? "bg-white/10 border-white/30 text-white"
-                            : "bg-white/5 border-white/5 text-neutral-400 hover:border-white/10"
+                            ? "bg-background border-primary text-text"
+                            : "bg-background border-border text-placeholder hover:border-primary/20"
                         }`}
                       >
                         {b.brand_image ? (
@@ -966,26 +966,26 @@ export default function EquipmentSelection() {
               </div>
 
               {/* Filters */}
-              <div className="flex items-center gap-4 bg-white/5 p-4 rounded-2xl border border-white/5 flex-shrink-0">
+              <div className="flex items-center gap-4 bg-card p-4 rounded-2xl border border-border flex-shrink-0">
                 {/* Search Models bar */}
                 <div className="flex flex-col gap-1 w-64">
-                  <span className="text-[9px] font-bold text-neutral-500 uppercase">Search Models</span>
+                  <span className="text-[9px] font-bold text-placeholder uppercase">Search Models</span>
                   <input
                     type="text"
                     placeholder="Search panel models..."
                     value={panelSearch}
                     onChange={(e) => setPanelSearch(e.target.value)}
-                    className="bg-neutral-900 border border-white/10 rounded-xl px-3 py-1.5 text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-white/20 w-full"
+                    className="bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-text placeholder-placeholder focus:outline-none focus:border-primary/20 w-full"
                   />
                 </div>
 
                 {/* Technology dropdown */}
                 <div className="flex flex-col gap-1 w-48">
-                  <span className="text-[9px] font-bold text-neutral-500 uppercase">Technology</span>
+                  <span className="text-[9px] font-bold text-placeholder uppercase">Technology</span>
                   <select
                     value={panelTechFilter}
                     onChange={(e) => setPanelTechFilter(e.target.value)}
-                    className="bg-neutral-900 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-white/20 w-full cursor-pointer"
+                    className="bg-background border border-border rounded-xl px-3 py-2 text-xs text-text focus:outline-none focus:border-primary/20 w-full cursor-pointer"
                   >
                     <option value="all">All Tech</option>
                     <option value="monoPERC">Mono PERC</option>
@@ -1000,10 +1000,10 @@ export default function EquipmentSelection() {
               <div className="flex-1 flex flex-col gap-2 min-h-0 overflow-y-auto">
                 {loadingPanels ? (
                   <div className="flex items-center justify-center p-12">
-                    <RefreshCw className="w-6 h-6 text-white animate-spin" />
+                    <RefreshCw className="w-6 h-6 text-text animate-spin" />
                   </div>
                 ) : panelItems.length === 0 ? (
-                  <div className="text-center text-xs text-neutral-500 p-12 bg-white/5 rounded-2xl border border-white/5">
+                  <div className="text-center text-xs text-placeholder p-12 bg-card rounded-2xl border border-border">
                     No solar panel models matched the selected filter criteria.
                   </div>
                 ) : (
@@ -1016,18 +1016,18 @@ export default function EquipmentSelection() {
                         onClick={() => handleSelectPanel(panel)}
                         className={`p-4 rounded-xl border text-left transition-all cursor-pointer ${
                           isSelected 
-                            ? "bg-white/10 border-white/30 text-white" 
-                            : "bg-white/5 border-white/5 text-neutral-300"
+                            ? "bg-primary/10 border-primary/30 text-primary" 
+                            : "bg-card border-border text-text"
                         }`}
                       >
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-4">
                             {panel.image && (
-                              <img src={panel.image} alt={panel.app_name || ""} className="w-10 h-10 object-contain bg-white/5 rounded-lg border border-white/5 p-1 flex-shrink-0" />
+                              <img src={panel.image} alt={panel.app_name || ""} className="w-10 h-10 object-contain bg-background rounded-lg border border-border p-1 flex-shrink-0" />
                             )}
                             <div className="flex flex-col">
                               <span className="text-xs font-bold">{panel.app_name || panel.panel_name}</span>
-                              <span className="text-[10px] text-neutral-500 mt-0.5">Rating: {panel.rating}Wp | Tech: {panel.technology || "TOPCon"}</span>
+                              <span className="text-[10px] text-placeholder mt-0.5">Rating: {panel.rating}Wp | Tech: {panel.technology || "TOPCon"}</span>
                             </div>
                           </div>
 
@@ -1036,7 +1036,7 @@ export default function EquipmentSelection() {
                               e.stopPropagation();
                               setExpandedPanelId(isExpanded ? null : panel.id);
                             }}
-                            className="text-[10px] text-neutral-400 hover:text-white font-bold flex items-center gap-0.5 cursor-pointer"
+                            className="text-[10px] text-placeholder hover:text-text font-bold flex items-center gap-0.5 cursor-pointer"
                           >
                             <span>Specs</span>
                             {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
@@ -1044,41 +1044,41 @@ export default function EquipmentSelection() {
                         </div>
 
                         {isExpanded && (
-                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-4 pt-4 border-t border-white/5 text-[10px] text-neutral-400 leading-normal animate-in slide-in-from-top-2 duration-150">
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-4 pt-4 border-t border-border text-[10px] text-placeholder leading-normal animate-in slide-in-from-top-2 duration-150">
                             <div>
-                              <span className="block font-bold text-white">Origin</span>
+                              <span className="block font-bold text-text">Origin</span>
                               <span>{normalizeDcrValue(panel.dcr) ? "DCR" : "Non-DCR"}</span>
                             </div>
                             <div>
-                              <span className="block font-bold text-white">Module Type</span>
+                              <span className="block font-bold text-text">Module Type</span>
                               <span>{panel.module_type}</span>
                             </div>
                             <div>
-                              <span className="block font-bold text-white">Dimensions</span>
+                              <span className="block font-bold text-text">Dimensions</span>
                               <span>{panel.length} × {panel.breadth} × {panel.height} mm</span>
                             </div>
                             <div>
-                              <span className="block font-bold text-white">VOC/VMP</span>
+                              <span className="block font-bold text-text">VOC/VMP</span>
                               <span>{panel.voc || "—"} / {panel.vmp || "—"} V</span>
                             </div>
                             <div>
-                              <span className="block font-bold text-white">ISC/IMP</span>
+                              <span className="block font-bold text-text">ISC/IMP</span>
                               <span>{panel.isc || "—"} / {panel.imp || "—"} A</span>
                             </div>
                             <div>
-                              <span className="block font-bold text-white">Warranty</span>
+                              <span className="block font-bold text-text">Warranty</span>
                               <span>{panel.product_warranty} Years</span>
                             </div>
                             <div>
-                              <span className="block font-bold text-white">Output Guarantee</span>
+                              <span className="block font-bold text-text">Output Guarantee</span>
                               <span>{panel.power_output_warranty} Years</span>
                             </div>
                             <div>
-                              <span className="block font-bold text-white">Cell Type</span>
+                              <span className="block font-bold text-text">Cell Type</span>
                               <span>{panel.cell_type || "Monocrystalline"}</span>
                             </div>
                             <div>
-                              <span className="block font-bold text-white">Cell Design</span>
+                              <span className="block font-bold text-text">Cell Design</span>
                               <span>{panel.cell_design || "Standard"}</span>
                             </div>
                           </div>
@@ -1091,22 +1091,22 @@ export default function EquipmentSelection() {
 
               {/* Pagination Controls */}
               {!loadingPanels && (panelPage > 1 || panelHasMore) && (
-                <div className="flex-shrink-0 flex items-center justify-between pt-2  border-t border-white/10 mt-auto">
-                  <span className="text-[10px] text-neutral-500 font-bold">
+                <div className="flex-shrink-0 flex items-center justify-between pt-2  border-t border-border mt-auto">
+                  <span className="text-[10px] text-placeholder font-bold">
                     Page {panelPage}
                   </span>
                   <div className="flex items-center gap-2">
                     <button
                       disabled={panelPage === 1}
                       onClick={() => setPanelPage(p => Math.max(1, p - 1))}
-                      className="px-3 py-1.5 bg-white/5 hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-white/5 rounded-lg border border-white/5 text-[10px] font-bold transition-colors cursor-pointer"
+                      className="px-3 py-1.5 bg-card hover:bg-background disabled:opacity-30 disabled:hover:bg-card rounded-lg border border-border text-[10px] font-bold transition-colors cursor-pointer"
                     >
                       Previous
                     </button>
                     <button
                       disabled={!panelHasMore}
                       onClick={() => setPanelPage(p => p + 1)}
-                      className="px-3 py-1.5 bg-white/5 hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-white/5 rounded-lg border border-white/5 text-[10px] font-bold transition-colors cursor-pointer"
+                      className="px-3 py-1.5 bg-card hover:bg-background disabled:opacity-30 disabled:hover:bg-card rounded-lg border border-border text-[10px] font-bold transition-colors cursor-pointer"
                     >
                       Next
                     </button>
@@ -1120,42 +1120,42 @@ export default function EquipmentSelection() {
           {activeStep === "capacity" && (
             <div className="flex flex-col gap-6 h-full max-w-2xl mx-auto w-full animate-in fade-in duration-200">
               <div className="flex flex-col gap-1">
-                <h1 className="text-xl font-bold text-white">Target System Capacity</h1>
-                <p className="text-xs text-neutral-400">Lock the solar plant load size matching local space limits.</p>
+                <h1 className="text-xl font-bold text-text">Target System Capacity</h1>
+                <p className="text-xs text-placeholder">Lock the solar plant load size matching local space limits.</p>
               </div>
 
               {/* Roof layout stats card */}
               {panelCalculation && (
-                <div className="bg-white/5 p-6 rounded-2xl border border-white/5 flex flex-col gap-4">
-                  <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Roof Boundary Calculations</span>
+                <div className="bg-card p-6 rounded-2xl border border-border flex flex-col gap-4">
+                  <span className="text-[10px] font-bold text-placeholder uppercase tracking-wider">Roof Boundary Calculations</span>
                   
                   <div className="grid grid-cols-2 gap-4 text-xs">
                     <div className="flex flex-col gap-0.5">
-                      <span className="text-neutral-400">Total Boundary Area:</span>
-                      <span className="text-sm font-bold text-white">{panelCalculation.total_roof_area?.toFixed(1) || 0} m²</span>
+                      <span className="text-placeholder">Total Boundary Area:</span>
+                      <span className="text-sm font-bold text-text">{panelCalculation.total_roof_area?.toFixed(1) || 0} m²</span>
                     </div>
                     <div className="flex flex-col gap-0.5">
-                      <span className="text-neutral-400">Obstruction Buffer:</span>
-                      <span className="text-sm font-bold text-white">{panelCalculation.obstruction_area?.toFixed(1) || 0} m²</span>
+                      <span className="text-placeholder">Obstruction Buffer:</span>
+                      <span className="text-sm font-bold text-text">{panelCalculation.obstruction_area?.toFixed(1) || 0} m²</span>
                     </div>
                     <div className="flex flex-col gap-0.5">
-                      <span className="text-neutral-400">Remaining Free Area:</span>
-                      <span className="text-sm font-bold text-white">{panelCalculation.remaining_area?.toFixed(1) || 0} m²</span>
+                      <span className="text-placeholder">Remaining Free Area:</span>
+                      <span className="text-sm font-bold text-text">{panelCalculation.remaining_area?.toFixed(1) || 0} m²</span>
                     </div>
                     <div className="flex flex-col gap-0.5">
-                      <span className="text-neutral-400">Effective Solar Area:</span>
-                      <span className="text-sm font-bold text-white">{roofSuggestion?.effective.toFixed(1) || 0} m²</span>
+                      <span className="text-placeholder">Effective Solar Area:</span>
+                      <span className="text-sm font-bold text-text">{roofSuggestion?.effective.toFixed(1) || 0} m²</span>
                     </div>
                   </div>
                 </div>
               )}
 
               {/* Capacity settings card */}
-              <div className="bg-white/5 p-6 rounded-2xl border border-white/5 flex flex-col gap-6">
-                <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Adjust Target Capacity</span>
+              <div className="bg-card p-6 rounded-2xl border border-border flex flex-col gap-6">
+                <span className="text-[10px] font-bold text-placeholder uppercase tracking-wider">Adjust Target Capacity</span>
 
                 <div className="flex items-center gap-3">
-                  <div className="flex-grow flex items-center bg-neutral-900 border border-white/10 rounded-xl px-4 py-2">
+                  <div className="flex-grow flex items-center bg-background border border-border rounded-xl px-4 py-2">
                     <input
                       type="number"
                       step="0.1"
@@ -1167,9 +1167,9 @@ export default function EquipmentSelection() {
                         setSelectedInverter(null);
                         setInverters([]);
                       }}
-                      className="bg-transparent text-lg text-white font-bold focus:outline-none w-full text-left"
+                      className="bg-transparent text-lg text-text font-bold focus:outline-none w-full text-left"
                     />
-                    <span className="text-sm font-bold text-neutral-500">kWp</span>
+                    <span className="text-sm font-bold text-placeholder">kWp</span>
                   </div>
 
                   <button
@@ -1183,7 +1183,7 @@ export default function EquipmentSelection() {
                         setInverters([]);
                       }
                     }}
-                    className="bg-white hover:bg-neutral-200 text-black px-5 py-3 rounded-xl text-xs font-bold transition-all cursor-pointer flex-shrink-0"
+                    className="bg-primary hover:opacity-90 text-white px-5 py-3 rounded-xl text-xs font-bold transition-all cursor-pointer flex-shrink-0"
                   >
                     Auto
                   </button>
@@ -1209,9 +1209,9 @@ export default function EquipmentSelection() {
                           setSelectedInverter(null);
                           setInverters([]);
                         }}
-                        className="w-full accent-white cursor-pointer"
+                        className="w-full accent-primary cursor-pointer"
                       />
-                      <div className="flex justify-between text-[10px] text-neutral-500 font-bold">
+                      <div className="flex justify-between text-[10px] text-placeholder font-bold">
                         <span>0.00 kWp</span>
                         <span>{sliderMaxKwp.toFixed(2)} kWp</span>
                       </div>
@@ -1219,20 +1219,20 @@ export default function EquipmentSelection() {
                   );
                 })()}
 
-                <div className="border-t border-white/5 pt-4 flex flex-col gap-3 text-xs text-neutral-450">
+                <div className="border-t border-border pt-4 flex flex-col gap-3 text-xs text-placeholder">
                   <div className="flex justify-between">
                     <span>Total No. of Panels</span>
-                    <span className="font-bold text-white text-sm">{derivedPanelCount} Modules</span>
+                    <span className="font-bold text-text text-sm">{derivedPanelCount} Modules</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Total DC Capacity</span>
-                    <span className="font-bold text-white text-sm">
+                    <span className="font-bold text-text text-sm">
                       {((derivedPanelCount * (selectedPanel?.rating || panelCalculation?.panel_rating || 550)) / 1000).toFixed(2)} kWp
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span>Panel Rating Selection</span>
-                    <span className="font-bold text-neutral-300">{selectedPanel?.rating || 550} Wp</span>
+                    <span className="font-bold text-text">{selectedPanel?.rating || 550} Wp</span>
                   </div>
                 </div>
                 {powerLimitError && (
@@ -1243,10 +1243,10 @@ export default function EquipmentSelection() {
               </div>
 
               {/* Step Navigation */}
-              <div className="flex justify-between items-center mt-6 pt-4 border-t border-white/5 flex-shrink-0">
+              <div className="flex justify-between items-center mt-6 pt-4 border-t border-border flex-shrink-0">
                 <button
                   onClick={() => setActiveStep("panel")}
-                  className="bg-white/5 hover:bg-white/10 text-white border border-white/5 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                  className="bg-card hover:bg-background text-text border border-border px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer"
                 >
                   Back to Panels
                 </button>
@@ -1255,10 +1255,10 @@ export default function EquipmentSelection() {
                     handleSaveCapacity();
                   }}
                   disabled={!!powerLimitError || selectedPowerKwp <= 0 || savingStep}
-                  className="bg-white hover:bg-neutral-200 disabled:opacity-30 disabled:cursor-not-allowed text-black px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1"
+                  className="bg-primary hover:opacity-90 disabled:opacity-30 disabled:cursor-not-allowed text-white px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1"
                 >
                   {savingStep ? (
-                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                     <RefreshCw className="w-3.5 h-3.5 animate-spin" />
                   ) : (
                     <>
                       <span>Next: Select Inverter</span>
@@ -1276,15 +1276,15 @@ export default function EquipmentSelection() {
             <div className="flex flex-col gap-6 h-full max-w-5xl mx-auto w-full animate-in fade-in duration-200 overflow-hidden">
               
               {/* Brand selection area on top */}
-              <div className="flex flex-col gap-3 bg-neutral-950/40 p-4 rounded-2xl border border-white/5 flex-shrink-0">
+              <div className="flex flex-col gap-3 bg-background/40 p-4 rounded-2xl border border-border flex-shrink-0">
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider block">Brands</span>
+                  <span className="text-[10px] font-bold text-placeholder uppercase tracking-wider block">Brands</span>
                   <input
                     type="text"
                     placeholder="Search brands..."
                     value={inverterBrandSearch}
                     onChange={(e) => setInverterBrandSearch(e.target.value)}
-                    className="bg-white/5 border border-white/5 rounded-xl px-3 py-1.5 text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-white/20 w-44"
+                    className="bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-text placeholder-placeholder focus:outline-none focus:border-primary/20 w-44"
                   />
                 </div>
                 
@@ -1298,8 +1298,8 @@ export default function EquipmentSelection() {
                         onClick={() => setSelectedInverterBrand(isBrandSelected ? null : b.name)}
                         className={`h-16 px-6 rounded-xl border flex flex-col items-center justify-center flex-shrink-0 transition-all cursor-pointer ${
                           isBrandSelected
-                            ? "bg-white/10 border-white/30 text-white"
-                            : "bg-white/5 border-white/5 text-neutral-450 hover:border-white/10"
+                            ? "bg-primary/10 border-primary/30 text-primary"
+                            : "bg-background border-border text-placeholder hover:border-primary/20"
                         }`}
                       >
                         {b.logo_url ? (
@@ -1314,31 +1314,31 @@ export default function EquipmentSelection() {
               </div>
 
               {/* Filters */}
-              <div className="flex items-center gap-4 bg-white/5 p-4 rounded-2xl border border-white/5 flex-shrink-0">
+              <div className="flex items-center gap-4 bg-card p-4 rounded-2xl border border-border flex-shrink-0">
                 <div className="flex flex-col gap-0.5 flex-grow">
-                  <span className="text-xs font-bold text-white">Available Inverters</span>
-                  <span className="text-[10px] text-neutral-500">Select compatible inverter for {selectedPowerKwp.toFixed(2)} kWp size</span>
+                  <span className="text-xs font-bold text-text">Available Inverters</span>
+                  <span className="text-[10px] text-placeholder">Select compatible inverter for {selectedPowerKwp.toFixed(2)} kWp size</span>
                 </div>
 
                 {/* Search Inverters bar */}
                 <div className="flex flex-col gap-1 w-64">
-                  <span className="text-[9px] font-bold text-neutral-500 uppercase">Search Inverters</span>
+                  <span className="text-[9px] font-bold text-placeholder uppercase">Search Inverters</span>
                   <input
                     type="text"
                     placeholder="Search inverter model..."
                     value={inverterSearch}
                     onChange={(e) => setInverterSearch(e.target.value)}
-                    className="bg-neutral-900 border border-white/10 rounded-xl px-3 py-1.5 text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-white/20 w-full"
+                    className="bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-text placeholder-placeholder focus:outline-none focus:border-primary/20 w-full"
                   />
                 </div>
 
                 {/* Phase selector dropdown */}
                 <div className="flex flex-col gap-1 w-48">
-                  <span className="text-[9px] font-bold text-neutral-500 uppercase">Phase Filter</span>
+                  <span className="text-[9px] font-bold text-placeholder uppercase">Phase Filter</span>
                   <select
                     value={inverterPhaseFilter}
                     onChange={(e) => setInverterPhaseFilter(e.target.value)}
-                    className="bg-neutral-900 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-white/20 w-full cursor-pointer"
+                    className="bg-background border border-border rounded-xl px-3 py-2 text-xs text-text focus:outline-none focus:border-primary/20 w-full cursor-pointer"
                   >
                     <option value="all">All Phases</option>
                     <option value="single">Single Phase</option>
@@ -1351,10 +1351,10 @@ export default function EquipmentSelection() {
               <div className="flex-grow flex flex-col gap-2 min-h-0 overflow-y-auto">
                 {loadingInverters ? (
                   <div className="flex items-center justify-center p-12 flex-grow">
-                    <RefreshCw className="w-6 h-6 text-white animate-spin" />
+                    <RefreshCw className="w-6 h-6 text-text animate-spin" />
                   </div>
                 ) : filteredInverters.length === 0 ? (
-                  <div className="text-center text-xs text-neutral-500 p-12 bg-white/5 rounded-xl border border-white/5 flex-grow">
+                  <div className="text-center text-xs text-placeholder p-12 bg-card rounded-xl border border-border flex-grow">
                     No inverters matched the system size of {selectedPowerKwp.toFixed(2)} kWp.
                   </div>
                 ) : (
@@ -1368,24 +1368,24 @@ export default function EquipmentSelection() {
                           onClick={() => handleSelectInverter(inv)}
                           className={`p-4 rounded-xl border transition-all cursor-pointer flex flex-col gap-3 ${
                             isSelected 
-                              ? "bg-white/10 border-white/30 text-white shadow-lg"
-                              : "bg-white/5 border-white/5 text-neutral-300 hover:border-white/10"
+                              ? "bg-primary/10 border-primary/30 text-primary shadow-lg"
+                              : "bg-card border-border text-text hover:border-primary/20"
                           }`}
                         >
                           <div className="flex items-center justify-between gap-4">
                             <div className="flex items-center gap-4 min-w-0">
                               {inv.image ? (
-                                <img src={inv.image} alt={inv.app_name || inv.product_name || ""} className="w-10 h-10 object-contain bg-white/5 rounded-lg border border-white/5 p-1 flex-shrink-0" />
+                                <img src={inv.image} alt={inv.app_name || inv.product_name || ""} className="w-10 h-10 object-contain bg-background rounded-lg border border-border p-1 flex-shrink-0" />
                               ) : inv.brand_image ? (
-                                <img src={inv.brand_image} alt={inv.brand || ""} className="w-10 h-10 object-contain bg-white/5 rounded-lg border border-white/5 p-1 flex-shrink-0" />
+                                <img src={inv.brand_image} alt={inv.brand || ""} className="w-10 h-10 object-contain bg-background rounded-lg border border-border p-1 flex-shrink-0" />
                               ) : (
-                                <div className="w-10 h-10 bg-white/5 rounded-lg border border-white/5 flex items-center justify-center flex-shrink-0">
-                                  <Zap className="w-4 h-4 text-neutral-500" />
+                                <div className="w-10 h-10 bg-background rounded-lg border border-border flex items-center justify-center flex-shrink-0">
+                                  <Zap className="w-4 h-4 text-placeholder" />
                                 </div>
                               )}
                               <div className="flex flex-col min-w-0">
                                 <span className="text-xs font-bold truncate">{inv.app_name || inv.product_name || "Unnamed inverter"}</span>
-                                <span className="text-[10px] text-neutral-500 mt-0.5">
+                                <span className="text-[10px] text-placeholder mt-0.5">
                                   {inv.brand || "Unknown brand"} | {inv.rated_ac_output || "—"} kW | {inv.phase || "Phase —"}
                                 </span>
                               </div>
@@ -1396,7 +1396,7 @@ export default function EquipmentSelection() {
                                 e.stopPropagation();
                                 setExpandedInverterId(isExpanded ? null : inv.id);
                               }}
-                              className="text-[10px] text-neutral-400 hover:text-white font-bold flex items-center gap-0.5 cursor-pointer"
+                              className="text-[10px] text-placeholder hover:text-text font-bold flex items-center gap-0.5 cursor-pointer"
                             >
                               <span>Specs</span>
                               {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
@@ -1404,37 +1404,37 @@ export default function EquipmentSelection() {
                           </div>
 
                           {isExpanded && (
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-1 pt-4 border-t border-white/5 text-[10px] text-neutral-400 leading-normal animate-in slide-in-from-top-2 duration-150">
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-1 pt-4 border-t border-border text-[10px] text-placeholder leading-normal animate-in slide-in-from-top-2 duration-150">
                               <div>
-                                <span className="block font-bold text-white">Rated AC Output</span>
+                                <span className="block font-bold text-text">Rated AC Output</span>
                                 <span>{inv.rated_ac_output || "—"} kW</span>
                               </div>
                               <div>
-                                <span className="block font-bold text-white">Max DC Input</span>
+                                <span className="block font-bold text-text">Max DC Input</span>
                                 <span>{inv.max_dc_input_power || "—"} kW</span>
                               </div>
                               <div>
-                                <span className="block font-bold text-white">Phase</span>
+                                <span className="block font-bold text-text">Phase</span>
                                 <span>{inv.phase || "—"}</span>
                               </div>
                               <div>
-                                <span className="block font-bold text-white">MPPT / Strings</span>
+                                <span className="block font-bold text-text">MPPT / Strings</span>
                                 <span>{inv.no_of_mppt || "—"} / {inv.no_of_strings_per_mppt || "—"}</span>
                               </div>
                               <div>
-                                <span className="block font-bold text-white">Max AC Current</span>
+                                <span className="block font-bold text-text">Max AC Current</span>
                                 <span>{inv.max_ac_output_current || "—"} A</span>
                               </div>
                               <div>
-                                <span className="block font-bold text-white">PV Input Current</span>
+                                <span className="block font-bold text-text">PV Input Current</span>
                                 <span>{inv.max_pv_input_current_per_string || "—"} A/string</span>
                               </div>
                               <div>
-                                <span className="block font-bold text-white">Voltage Window</span>
+                                <span className="block font-bold text-text">Voltage Window</span>
                                 <span>{inv.mppt_min_voltage || "—"} - {inv.mppt_max_voltage || "—"} V</span>
                               </div>
                               <div>
-                                <span className="block font-bold text-white">Warranty</span>
+                                <span className="block font-bold text-text">Warranty</span>
                                 <span>{inv.warranty || "—"} Years</span>
                               </div>
                             </div>
@@ -1448,22 +1448,22 @@ export default function EquipmentSelection() {
 
               {/* Pagination Controls */}
               {!loadingInverters && (inverterPage > 1 || inverterHasMore) && (
-                <div className="flex-shrink-0 flex items-center justify-between border-t border-white/5 mt-auto">
-                  <span className="text-[10px] text-neutral-500 font-bold">
+                <div className="flex-shrink-0 flex items-center justify-between border-t border-border mt-auto">
+                  <span className="text-[10px] text-placeholder font-bold">
                     Page {inverterPage}
                   </span>
                   <div className="flex items-center gap-2">
                     <button
                       disabled={inverterPage === 1}
                       onClick={() => setInverterPage(p => Math.max(1, p - 1))}
-                      className="px-3 py-1.5 bg-white/5 hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-white/5 rounded-lg border border-white/5 text-[10px] font-bold transition-colors cursor-pointer"
+                      className="px-3 py-1.5 bg-card hover:bg-background disabled:opacity-30 disabled:hover:bg-card rounded-lg border border-border text-[10px] font-bold transition-colors cursor-pointer"
                     >
                       Previous
                     </button>
                     <button
                       disabled={!inverterHasMore}
                       onClick={() => setInverterPage(p => p + 1)}
-                      className="px-3 py-1.5 bg-white/5 hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-white/5 rounded-lg border border-white/5 text-[10px] font-bold transition-colors cursor-pointer"
+                      className="px-3 py-1.5 bg-card hover:bg-background disabled:opacity-30 disabled:hover:bg-card rounded-lg border border-border text-[10px] font-bold transition-colors cursor-pointer"
                     >
                       Next
                     </button>
@@ -1472,17 +1472,17 @@ export default function EquipmentSelection() {
               )}
 
               {/* Step Navigation */}
-              <div className="flex justify-between items-center mt-6 pt-4 border-t border-white/5 flex-shrink-0">
+              <div className="flex justify-between items-center mt-6 pt-4 border-t border-border flex-shrink-0">
                 <button
                   onClick={() => setActiveStep("capacity")}
-                  className="bg-white/5 hover:bg-white/10 text-white border border-white/5 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                  className="bg-card hover:bg-background text-text border border-border px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer"
                 >
                   Back to Capacity
                 </button>
                 {selectedInverter && (
                   <button
                     onClick={() => setActiveStep("accessories")}
-                    className="bg-white hover:bg-neutral-200 text-black px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1"
+                    className="bg-primary hover:opacity-90 text-white px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1"
                   >
                     <span>Next: Accessories</span>
                     <ArrowRight className="w-3.5 h-3.5" />
@@ -1497,52 +1497,52 @@ export default function EquipmentSelection() {
             <div className="flex flex-col gap-5 h-full max-w-6xl mx-auto w-full animate-in fade-in duration-200 overflow-hidden">
               <div className="flex items-end justify-between gap-4 flex-shrink-0">
                 <div className="flex flex-col gap-1">
-                  <h1 className="text-xl font-bold text-white">Accessories & Electrical Specifications</h1>
-                  <p className="text-xs text-neutral-400">Fast desktop entry for strings, cables, protection, structure, and storage.</p>
+                  <h1 className="text-xl font-bold text-text">Accessories & Electrical Specifications</h1>
+                  <p className="text-xs text-placeholder">Fast desktop entry for strings, cables, protection, structure, and storage.</p>
                 </div>
                 <div className={`rounded-xl border px-4 py-2 text-[10px] font-bold uppercase tracking-wider ${
-                  canFinish ? "bg-green-500/10 border-green-500/30 text-green-200" : "bg-amber-500/10 border-amber-500/20 text-amber-200"
+                  canFinish ? "bg-primary/10 border-primary/30 text-primary" : "bg-amber-500/10 border-amber-500/20 text-amber-200"
                 }`}>
                   {canFinish ? "Ready to continue" : "Needs attention"}
                 </div>
               </div>
 
               <div className="flex flex-col gap-5 min-h-0 flex-grow overflow-y-auto pr-2 scrollbar-thin">
-                  <section className="bg-white/5 border border-white/5 rounded-2xl p-5 flex flex-col gap-4">
-                    <div className="flex items-center gap-2 border-b border-white/5 pb-3">
+                  <section className="bg-card border border-border rounded-2xl p-5 flex flex-col gap-4">
+                    <div className="flex items-center gap-2 border-b border-border pb-3">
                       <Zap className="w-4 h-4 text-amber-500" />
-                      <span className="uppercase tracking-wider text-[10px] font-bold text-white">Strings & DC Side</span>
+                      <span className="uppercase tracking-wider text-[10px] font-bold text-text">Strings & DC Side</span>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <label className="flex flex-col gap-1.5">
-                        <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Strings</span>
-                        <input type="number" value={stringCount} onChange={(e) => setStringCount(e.target.value.replace(/[^0-9]/g, ""))} className={`bg-neutral-900 border rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none font-bold ${stringsOutOfRange ? "border-red-500/70" : "border-white/10 focus:border-white/20"}`} />
-                        {stringBounds && <span className={`text-[10px] font-bold ${stringsOutOfRange ? "text-red-400" : "text-neutral-500"}`}>Allowed {stringBounds.min}-{stringBounds.max}</span>}
+                        <span className="text-[9px] font-bold text-placeholder uppercase tracking-wider">Strings</span>
+                        <input type="number" value={stringCount} onChange={(e) => setStringCount(e.target.value.replace(/[^0-9]/g, ""))} className={`bg-background border rounded-xl px-4 py-2.5 text-xs text-text focus:outline-none font-bold ${stringsOutOfRange ? "border-red-500/70" : "border-border focus:border-primary/20"}`} />
+                        {stringBounds && <span className={`text-[10px] font-bold ${stringsOutOfRange ? "text-red-400" : "text-placeholder"}`}>Allowed {stringBounds.min}-{stringBounds.max}</span>}
                       </label>
                       <label className="flex flex-col gap-1.5">
-                        <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">DC Cable Size (mm²)</span>
-                        <input type="number" value={dcCableSize} onChange={(e) => setDcCableSize(e.target.value)} placeholder="e.g. 6" className="bg-neutral-900 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-white/20 font-bold" />
+                        <span className="text-[9px] font-bold text-placeholder uppercase tracking-wider">DC Cable Size (mm²)</span>
+                        <input type="number" value={dcCableSize} onChange={(e) => setDcCableSize(e.target.value)} placeholder="e.g. 6" className="bg-background border border-border rounded-xl px-4 py-2.5 text-xs text-text focus:outline-none focus:border-primary/20 font-bold" />
                       </label>
                       <label className="flex flex-col gap-1.5">
-                        <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">DC Cable Length (m)</span>
-                        <input type="number" value={dcCableLength} onChange={(e) => setDcCableLength(e.target.value)} placeholder="e.g. 30" className="bg-neutral-900 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-white/20 font-bold" />
+                        <span className="text-[9px] font-bold text-placeholder uppercase tracking-wider">DC Cable Length (m)</span>
+                        <input type="number" value={dcCableLength} onChange={(e) => setDcCableLength(e.target.value)} placeholder="e.g. 30" className="bg-background border border-border rounded-xl px-4 py-2.5 text-xs text-text focus:outline-none focus:border-primary/20 font-bold" />
                       </label>
                       <label className="flex flex-col gap-1.5">
-                        <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">DC Cable Brand</span>
-                        <select value={dcCableBrand} onChange={(e) => setDcCableBrand(e.target.value)} className="bg-neutral-900 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-white/20 cursor-pointer font-bold">
+                        <span className="text-[9px] font-bold text-placeholder uppercase tracking-wider">DC Cable Brand</span>
+                        <select value={dcCableBrand} onChange={(e) => setDcCableBrand(e.target.value)} className="bg-background border border-border rounded-xl px-4 py-2.5 text-xs text-text focus:outline-none focus:border-primary/20 cursor-pointer font-bold">
                           <option value="">Best practice</option>
                           {accessoryBrandOptions.dc_cable.map(brand => <option key={brand.name} value={brand.name}>{brand.name}</option>)}
                         </select>
                       </label>
                       <div className="flex flex-col gap-1.5">
-                        <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">DCDB</span>
-                        <div className="bg-neutral-900/50 border border-white/5 rounded-xl px-4 py-2.5 text-xs text-neutral-400 font-bold">
+                        <span className="text-[9px] font-bold text-placeholder uppercase tracking-wider">DCDB</span>
+                        <div className="bg-background/50 border border-border rounded-xl px-4 py-2.5 text-xs text-placeholder font-bold">
                           {stringCount ? `${stringCount} in / ${stringCount} out` : "—"}
                         </div>
                       </div>
                       <label className="flex flex-col gap-1.5">
-                        <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">DCDB Brand</span>
-                        <select value={dcdbBrand} onChange={(e) => setDcdbBrand(e.target.value)} className="bg-neutral-900 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-white/20 cursor-pointer font-bold">
+                        <span className="text-[9px] font-bold text-placeholder uppercase tracking-wider">DCDB Brand</span>
+                        <select value={dcdbBrand} onChange={(e) => setDcdbBrand(e.target.value)} className="bg-background border border-border rounded-xl px-4 py-2.5 text-xs text-text focus:outline-none focus:border-primary/20 cursor-pointer font-bold">
                           <option value="">Best practice</option>
                           {accessoryBrandOptions.dcdb.map(brand => <option key={brand.name} value={brand.name}>{brand.name}</option>)}
                         </select>
@@ -1550,36 +1550,36 @@ export default function EquipmentSelection() {
                     </div>
                   </section>
 
-                  <section className="bg-white/5 border border-white/5 rounded-2xl p-5 flex flex-col gap-4">
-                    <div className="flex items-center gap-2 border-b border-white/5 pb-3">
-                      <Zap className="w-4 h-4 text-emerald-500" />
-                      <span className="uppercase tracking-wider text-[10px] font-bold text-white">AC Side</span>
+                  <section className="bg-card border border-border rounded-2xl p-5 flex flex-col gap-4">
+                    <div className="flex items-center gap-2 border-b border-border pb-3">
+                      <Zap className="w-4 h-4 text-primary" />
+                      <span className="uppercase tracking-wider text-[10px] font-bold text-text">AC Side</span>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <label className="flex flex-col gap-1.5">
-                        <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">AC Cable Size (mm²)</span>
-                        <input type="number" value={acCableSize} onChange={(e) => setAcCableSize(e.target.value)} placeholder="e.g. 6" className="bg-neutral-900 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-white/20 font-bold" />
+                        <span className="text-[9px] font-bold text-placeholder uppercase tracking-wider">AC Cable Size (mm²)</span>
+                        <input type="number" value={acCableSize} onChange={(e) => setAcCableSize(e.target.value)} placeholder="e.g. 6" className="bg-background border border-border rounded-xl px-4 py-2.5 text-xs text-text focus:outline-none focus:border-primary/20 font-bold" />
                       </label>
                       <label className="flex flex-col gap-1.5">
-                        <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">AC Cable Length (m)</span>
-                        <input type="number" value={acCableLength} onChange={(e) => setAcCableLength(e.target.value)} placeholder="e.g. 20" className="bg-neutral-900 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-white/20 font-bold" />
+                        <span className="text-[9px] font-bold text-placeholder uppercase tracking-wider">AC Cable Length (m)</span>
+                        <input type="number" value={acCableLength} onChange={(e) => setAcCableLength(e.target.value)} placeholder="e.g. 20" className="bg-background border border-border rounded-xl px-4 py-2.5 text-xs text-text focus:outline-none focus:border-primary/20 font-bold" />
                       </label>
                       <label className="flex flex-col gap-1.5">
-                        <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">AC Cable Brand</span>
-                        <select value={acCableBrand} onChange={(e) => setAcCableBrand(e.target.value)} className="bg-neutral-900 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-white/20 cursor-pointer font-bold">
+                        <span className="text-[9px] font-bold text-placeholder uppercase tracking-wider">AC Cable Brand</span>
+                        <select value={acCableBrand} onChange={(e) => setAcCableBrand(e.target.value)} className="bg-background border border-border rounded-xl px-4 py-2.5 text-xs text-text focus:outline-none focus:border-primary/20 cursor-pointer font-bold">
                           <option value="">Best practice</option>
                           {accessoryBrandOptions.ac_cable.map(brand => <option key={brand.name} value={brand.name}>{brand.name}</option>)}
                         </select>
                       </label>
                       <div className="flex flex-col gap-1.5">
-                        <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">ACDB</span>
-                        <div className="bg-neutral-900/50 border border-white/5 rounded-xl px-4 py-2.5 text-xs text-neutral-400 font-bold">
+                        <span className="text-[9px] font-bold text-placeholder uppercase tracking-wider">ACDB</span>
+                        <div className="bg-background/50 border border-border rounded-xl px-4 py-2.5 text-xs text-placeholder font-bold">
                           1 in / 1 out
                         </div>
                       </div>
                       <label className="flex flex-col gap-1.5">
-                        <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">ACDB Brand</span>
-                        <select value={acdbBrand} onChange={(e) => setAcdbBrand(e.target.value)} className="bg-neutral-900 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-white/20 cursor-pointer font-bold">
+                        <span className="text-[9px] font-bold text-placeholder uppercase tracking-wider">ACDB Brand</span>
+                        <select value={acdbBrand} onChange={(e) => setAcdbBrand(e.target.value)} className="bg-background border border-border rounded-xl px-4 py-2.5 text-xs text-text focus:outline-none focus:border-primary/20 cursor-pointer font-bold">
                           <option value="">Best practice</option>
                           {accessoryBrandOptions.acdb.map(brand => <option key={brand.name} value={brand.name}>{brand.name}</option>)}
                         </select>
@@ -1587,59 +1587,59 @@ export default function EquipmentSelection() {
                     </div>
                   </section>
 
-                  <section className="bg-white/5 border border-white/5 rounded-2xl p-5 flex flex-col gap-4">
-                    <div className="flex items-center gap-2 border-b border-white/5 pb-3">
+                  <section className="bg-card border border-border rounded-2xl p-5 flex flex-col gap-4">
+                    <div className="flex items-center gap-2 border-b border-border pb-3">
                       <Settings className="w-4 h-4 text-violet-400" />
-                      <span className="uppercase tracking-wider text-[10px] font-bold text-white">Connectors, Structure & Storage</span>
+                      <span className="uppercase tracking-wider text-[10px] font-bold text-text">Connectors, Structure & Storage</span>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <label className="flex flex-col gap-1.5">
-                        <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">MC4 Connectors (Pcs)</span>
-                        <input type="number" value={mc4Connectors} onChange={(e) => setMc4Connectors(e.target.value)} placeholder="e.g. 12" className="bg-neutral-900 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-white/20 font-bold" />
+                        <span className="text-[9px] font-bold text-placeholder uppercase tracking-wider">MC4 Connectors (Pcs)</span>
+                        <input type="number" value={mc4Connectors} onChange={(e) => setMc4Connectors(e.target.value)} placeholder="e.g. 12" className="bg-background border border-border rounded-xl px-4 py-2.5 text-xs text-text focus:outline-none focus:border-primary/20 font-bold" />
                       </label>
                       <label className="flex flex-col gap-1.5">
-                        <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">MC4 Brand</span>
-                        <select value={mc4Brand} onChange={(e) => setMc4Brand(e.target.value)} className="bg-neutral-900 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-white/20 cursor-pointer font-bold">
+                        <span className="text-[9px] font-bold text-placeholder uppercase tracking-wider">MC4 Brand</span>
+                        <select value={mc4Brand} onChange={(e) => setMc4Brand(e.target.value)} className="bg-background border border-border rounded-xl px-4 py-2.5 text-xs text-text focus:outline-none focus:border-primary/20 cursor-pointer font-bold">
                           <option value="">Best practice</option>
                           {accessoryBrandOptions.mc4.map(brand => <option key={brand.name} value={brand.name}>{brand.name}</option>)}
                         </select>
                       </label>
                       <label className="flex flex-col gap-1.5">
-                        <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Earthing Kit & LA (Pcs)</span>
-                        <input type="number" value={earthingKit} onChange={(e) => setEarthingKit(e.target.value)} placeholder="e.g. 3" className="bg-neutral-900 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-white/20 font-bold" />
+                        <span className="text-[9px] font-bold text-placeholder uppercase tracking-wider">Earthing Kit & LA (Pcs)</span>
+                        <input type="number" value={earthingKit} onChange={(e) => setEarthingKit(e.target.value)} placeholder="e.g. 3" className="bg-background border border-border rounded-xl px-4 py-2.5 text-xs text-text focus:outline-none focus:border-primary/20 font-bold" />
                       </label>
                       <label className="flex flex-col gap-1.5">
-                        <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Earthing Brand</span>
-                        <select value={earthingKitBrand} onChange={(e) => setEarthingKitBrand(e.target.value)} className="bg-neutral-900 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-white/20 cursor-pointer font-bold">
+                        <span className="text-[9px] font-bold text-placeholder uppercase tracking-wider">Earthing Brand</span>
+                        <select value={earthingKitBrand} onChange={(e) => setEarthingKitBrand(e.target.value)} className="bg-background border border-border rounded-xl px-4 py-2.5 text-xs text-text focus:outline-none focus:border-primary/20 cursor-pointer font-bold">
                           <option value="">Best practice</option>
                           {accessoryBrandOptions.earthing_kit.map(brand => <option key={brand.name} value={brand.name}>{brand.name}</option>)}
                         </select>
                       </label>
                       <label className="flex flex-col gap-1.5">
-                        <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Structure Type</span>
-                        <input type="text" value={structureType} onChange={(e) => setStructureType(e.target.value)} placeholder="e.g. Fixed Mounting Structure" className="bg-neutral-900 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-white/20 font-bold" />
+                        <span className="text-[9px] font-bold text-placeholder uppercase tracking-wider">Structure Type</span>
+                        <input type="text" value={structureType} onChange={(e) => setStructureType(e.target.value)} placeholder="e.g. Fixed Mounting Structure" className="bg-background border border-border rounded-xl px-4 py-2.5 text-xs text-text focus:outline-none focus:border-primary/20 font-bold" />
                       </label>
                       <label className="flex flex-col gap-1.5">
-                        <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Structure Material</span>
-                        <input type="text" value={structureMaterial} onChange={(e) => setStructureMaterial(e.target.value)} placeholder="HDGI" className="bg-neutral-900 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-white/20 font-bold" />
+                        <span className="text-[9px] font-bold text-placeholder uppercase tracking-wider">Structure Material</span>
+                        <input type="text" value={structureMaterial} onChange={(e) => setStructureMaterial(e.target.value)} placeholder="HDGI" className="bg-background border border-border rounded-xl px-4 py-2.5 text-xs text-text focus:outline-none focus:border-primary/20 font-bold" />
                       </label>
                     </div>
-                    <div className="border-t border-white/5 pt-4 flex items-center justify-between gap-4">
+                    <div className="border-t border-border pt-4 flex items-center justify-between gap-4">
                       <div className="flex items-center gap-2">
                         <HardDrive className="w-4 h-4 text-teal-400" />
                         <div>
-                          <span className="block text-xs font-bold text-white">Battery Storage Backup</span>
-                          <span className="block text-[10px] text-neutral-500 font-bold">{batteryEnabled ? "Included in proposal" : "Not included"}</span>
+                          <span className="block text-xs font-bold text-text">Battery Storage Backup</span>
+                          <span className="block text-[10px] text-placeholder font-bold">{batteryEnabled ? "Included in proposal" : "Not included"}</span>
                         </div>
                       </div>
                       <div className="flex items-center gap-3">
                         {batteryEnabled && (
                           <div className="flex flex-col gap-1">
-                            <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Battery Capacity (kWh)</span>
-                            <input type="number" value={batteryKwh} onChange={(e) => setBatteryKwh(e.target.value)} placeholder="e.g. 5.12" className={`w-28 bg-neutral-900 border rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none font-bold ${batteryInvalid ? "border-red-500/70" : "border-white/10 focus:border-white/20"}`} />
+                            <span className="text-[9px] font-bold text-placeholder uppercase tracking-wider">Battery Capacity (kWh)</span>
+                            <input type="number" value={batteryKwh} onChange={(e) => setBatteryKwh(e.target.value)} placeholder="e.g. 5.12" className={`w-28 bg-background border rounded-xl px-4 py-2.5 text-xs text-text focus:outline-none font-bold ${batteryInvalid ? "border-red-500/70" : "border-border focus:border-primary/20"}`} />
                           </div>
                         )}
-                        <button onClick={() => setBatteryEnabled((v) => !v)} className={`px-4 py-2 rounded-xl border text-xs font-bold transition-all ${batteryEnabled ? "bg-white text-black border-white" : "bg-white/5 text-white border-white/10 hover:bg-white/10"}`}>
+                        <button onClick={() => setBatteryEnabled((v) => !v)} className={`px-4 py-2 rounded-xl border text-xs font-bold transition-all ${batteryEnabled ? "bg-primary text-white border-primary" : "bg-card text-text border-border hover:bg-background"}`}>
                           {batteryEnabled ? "Enabled" : "Disabled"}
                         </button>
                       </div>
@@ -1647,10 +1647,10 @@ export default function EquipmentSelection() {
                   </section>
               </div>
 
-              <div className="flex justify-start pt-4 border-t border-white/5 flex-shrink-0">
+              <div className="flex justify-start pt-4 border-t border-border flex-shrink-0">
                 <button
                   onClick={() => setActiveStep("inverter")}
-                  className="bg-white/5 hover:bg-white/10 text-white border border-white/5 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                  className="bg-card hover:bg-background text-text border border-border px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer"
                 >
                   Back to Inverters
                 </button>
@@ -1660,13 +1660,12 @@ export default function EquipmentSelection() {
 
         </main>
       </div>
-
       {/* Floating toast notification */}
       {toastMessage && (
-        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-neutral-900 border border-white/10 rounded-2xl px-5 py-3 text-xs font-bold text-white shadow-2xl z-50 animate-in fade-in slide-in-from-bottom-4 duration-300 flex items-center gap-2 select-none">
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-card border border-border rounded-2xl px-5 py-3 text-xs font-bold text-text shadow-2xl z-50 animate-in fade-in slide-in-from-bottom-4 duration-300 flex items-center gap-2 select-none">
           <span className="text-amber-500">⚠️</span>
           <span>{toastMessage}</span>
-          <button onClick={() => setToastMessage(null)} className="text-neutral-500 hover:text-white ml-2">✕</button>
+          <button onClick={() => setToastMessage(null)} className="text-placeholder hover:text-text ml-2">✕</button>
         </div>
       )}
 

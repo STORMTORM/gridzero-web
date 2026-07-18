@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { X, Box, FileText, ArrowRight, RefreshCw, ArrowLeft, Search, MapPin, LoaderCircle } from "lucide-react";
+import { X, Box, FileText, ArrowRight, RefreshCw, ArrowLeft, Search, MapPin } from "lucide-react";
 import { APIProvider, Map, useMap } from "@vis.gl/react-google-maps";
 import { toBlob } from "html-to-image";
 import * as siteVisitApi from "../api/siteVisitApi";
@@ -469,33 +469,67 @@ export default function NewProjectModal({
 			/>
 
 			{/* Modal Container */}
-			<div className="relative w-full max-w-xl bg-black rounded-3xl border border-white/10 overflow-hidden p-6 flex flex-col gap-5 animate-in fade-in duration-300 z-10 text-neutral-100 shadow-2xl">
+			<div className="relative w-full max-w-xl bg-background rounded-3xl border border-border overflow-hidden p-6 flex flex-col gap-3 animate-in fade-in duration-300 z-10 text-text shadow-2xl">
 				
 				{/* Top bar with close trigger */}
 				<div className="flex flex-row justify-between items-center flex-shrink-0">
 					<div className="flex flex-col gap-1">
-						<span className="text-[10px] font-bold text-white/60 uppercase tracking-wider">
+						<span className="text-[10px] font-bold text-placeholder uppercase tracking-wider">
 							Start a New Project
 						</span>
-						<h2 className="text-xl font-bold text-white tracking-tight">
+						<h2 className="text-xl font-bold text-text tracking-tight">
 							{view === "selection" ? "Select Project Workflow" : "Confirm Solar Site Location"}
 						</h2>
 					</div>
-					
-					{!loading && (
-						<button
-							onClick={handleClose}
-							className="text-neutral-500 hover:text-white hover:bg-neutral-900 p-2 rounded-full transition-colors cursor-pointer"
-							aria-label="Close modal"
-						>
-							<X className="w-4.5 h-4.5" />
-						</button>
+
+					{view === "map" ? (
+						<div className="bg-card border border-border p-0.5 rounded-full flex text-xs font-bold text-placeholder select-none shadow-md">
+							<button
+								type="button"
+								onClick={() => {
+									setCoordMode(false);
+									setCoordError(null);
+								}}
+								className={`px-3 py-1 rounded-full transition-all cursor-pointer ${
+									!coordMode
+										? "bg-primary text-white font-extrabold"
+										: "hover:text-text"
+								}`}
+							>
+								Search
+							</button>
+							<button
+								type="button"
+								onClick={() => {
+									setCoordMode(true);
+									setSuggestions([]);
+									setSearchError(null);
+								}}
+								className={`px-3 py-1 rounded-full transition-all cursor-pointer ${
+									coordMode
+										? "bg-primary text-white font-extrabold"
+										: "hover:text-text"
+								}`}
+							>
+								Lat / Lng
+							</button>
+						</div>
+					) : (
+						!loading && (
+							<button
+								onClick={handleClose}
+								className="text-placeholder hover:text-text hover:bg-card p-2 rounded-full transition-colors cursor-pointer"
+								aria-label="Close modal"
+							>
+								<X className="w-4.5 h-4.5" />
+							</button>
+						)
 					)}
 				</div>
 
 				{/* Error display */}
 				{error && (
-					<div className="bg-rose-950/20 border border-rose-900/50 text-rose-300 p-3 rounded-xl text-xs font-semibold">
+					<div className="bg-error/10 border border-error/20 text-error p-3 rounded-xl text-xs font-semibold">
 						{error}
 					</div>
 				)}
@@ -506,16 +540,16 @@ export default function NewProjectModal({
 						{/* Option 1: 3D Modelling + Proposal */}
 						<button
 							onClick={() => setView("map")}
-							className="group flex items-center gap-4 p-4 bg-white/5 hover:bg-white/10 rounded-2xl border border-white/10 hover:border-white/20 transition-all duration-200 text-left cursor-pointer relative overflow-hidden"
+							className="group flex items-center gap-4 p-4 bg-card hover:bg-background rounded-2xl border border-border hover:border-primary/20 transition-all duration-200 text-left cursor-pointer relative overflow-hidden"
 						>
-							<div className="w-11 h-11 bg-black rounded-xl border border-white/10 flex items-center justify-center text-white shadow transition-all">
+							<div className="w-11 h-11 bg-background rounded-xl border border-border flex items-center justify-center text-primary shadow transition-all">
 								<Box className="w-5.5 h-5.5 group-hover:scale-110 transition-transform" />
 							</div>
 							<div className="flex-1 flex items-center justify-between">
-								<span className="font-bold text-white text-sm">
+								<span className="font-bold text-text text-sm">
 									3D Modelling + Proposal
 								</span>
-								<ArrowRight className="w-4 h-4 text-neutral-500 group-hover:text-white group-hover:translate-x-1 transition-all" />
+								<ArrowRight className="w-4 h-4 text-placeholder group-hover:text-text group-hover:translate-x-1 transition-all" />
 							</div>
 						</button>
 
@@ -525,16 +559,16 @@ export default function NewProjectModal({
 								alert("Proposal Only flow requested.");
 								handleClose();
 							}}
-							className="group flex items-center gap-4 p-4 bg-white/5 hover:bg-white/10 rounded-2xl border border-white/10 hover:border-white/20 transition-all duration-200 text-left cursor-pointer relative overflow-hidden"
+							className="group flex items-center gap-4 p-4 bg-card hover:bg-background rounded-2xl border border-border hover:border-primary/20 transition-all duration-200 text-left cursor-pointer relative overflow-hidden"
 						>
-							<div className="w-11 h-11 bg-black rounded-xl border border-white/10 flex items-center justify-center text-white shadow transition-all">
+							<div className="w-11 h-11 bg-background rounded-xl border border-border flex items-center justify-center text-primary shadow transition-all">
 								<FileText className="w-5.5 h-5.5" />
 							</div>
 							<div className="flex-1 flex items-center justify-between">
-								<span className="font-bold text-white text-sm">
+								<span className="font-bold text-text text-sm">
 									Proposal Only
 								</span>
-								<ArrowRight className="w-4 h-4 text-neutral-500 group-hover:text-white group-hover:translate-x-1 transition-all" />
+								<ArrowRight className="w-4 h-4 text-placeholder group-hover:text-text group-hover:translate-x-1 transition-all" />
 							</div>
 						</button>
 					</div>
@@ -546,41 +580,10 @@ export default function NewProjectModal({
 						
 						{/* Search / Coord Panel Above Map */}
 						<div className="relative flex flex-col gap-2.5 w-full">
-							{/* Tab selector */}
-							<div className="bg-neutral-900 border border-white/10 p-0.5 rounded-full flex self-start text-[10px] font-bold text-neutral-400 select-none shadow-md">
-								<button
-									type="button"
-									onClick={() => {
-										setCoordMode(false);
-										setCoordError(null);
-									}}
-									className={`px-3 py-1 rounded-full transition-all cursor-pointer ${
-										!coordMode
-											? "bg-white text-black font-extrabold"
-											: "hover:text-white"
-									}`}
-								>
-									Search
-								</button>
-								<button
-									type="button"
-									onClick={() => {
-										setCoordMode(true);
-										setSuggestions([]);
-										setSearchError(null);
-									}}
-									className={`px-3 py-1 rounded-full transition-all cursor-pointer ${
-										coordMode
-											? "bg-white text-black font-extrabold"
-											: "hover:text-white"
-									}`}
-								>
-									Lat / Lng
-								</button>
-							</div>
+							
 
 							{coordMode ? (
-								<div className="flex gap-1.5 items-center w-full rounded-2xl shadow-md">
+								<div className="flex gap-1.5 items-center w-full bg-card border border-border rounded-2xl p-2 shadow-md">
 									<input
 										type="text"
 										value={latInput}
@@ -589,7 +592,7 @@ export default function NewProjectModal({
 											setCoordError(null);
 										}}
 										placeholder="Latitude"
-										className="bg-white/10 border border-white/10 rounded-xl px-3 py-2 text-xs text-white placeholder-neutral-500 w-full focus:outline-none focus:border-white/20"
+										className="bg-background border border-border rounded-xl px-3 py-2 text-xs text-text placeholder-placeholder w-full focus:outline-none focus:border-primary/20"
 									/>
 									<input
 										type="text"
@@ -599,7 +602,7 @@ export default function NewProjectModal({
 											setCoordError(null);
 										}}
 										placeholder="Longitude"
-										className="bg-white/10 border border-white/10 rounded-xl px-3 py-2 text-xs text-white placeholder-neutral-500 w-full focus:outline-none focus:border-white/20"
+										className="bg-background border border-border rounded-xl px-3 py-2 text-xs text-text placeholder-placeholder w-full focus:outline-none focus:border-primary/20"
 										onKeyDown={(e) => {
 											if (e.key === "Enter") handleGoCoords();
 										}}
@@ -607,24 +610,24 @@ export default function NewProjectModal({
 									<button
 										type="button"
 										onClick={handleGoCoords}
-										className="bg-white hover:bg-neutral-200 text-black px-4 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer active:scale-95 flex-shrink-0"
+										className="bg-primary hover:opacity-90 text-white px-4 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer active:scale-95 flex-shrink-0"
 									>
 										Go
 									</button>
 								</div>
 							) : (
 								<div className="relative w-full">
-									<div className="flex items-center bg-neutral-900 border border-white/10 rounded-2xl p-2 shadow-md w-full gap-2">
-										<Search className="w-4 h-4 text-neutral-500 ml-1 flex-shrink-0" />
+									<div className="flex items-center bg-card border border-border rounded-2xl p-2 shadow-md w-full gap-2">
+										<Search className="w-4 h-4 text-placeholder ml-1 flex-shrink-0" />
 										<input
 											type="text"
 											value={searchQuery}
 											onChange={(e) => setSearchQuery(e.target.value)}
 											placeholder="Search address or landmarks"
-											className="bg-transparent text-xs text-white placeholder-neutral-500 w-full focus:outline-none"
+											className="bg-transparent text-xs text-text placeholder-placeholder w-full focus:outline-none"
 										/>
 										{loadingSuggestions ? (
-											<LoaderCircle className="w-3.5 h-3.5 animate-spin text-neutral-500 mr-1 flex-shrink-0" />
+											<RefreshCw className="w-3.5 h-3.5 animate-spin text-placeholder mr-1 flex-shrink-0" />
 										) : searchQuery.length > 0 ? (
 											<button
 												type="button"
@@ -633,7 +636,7 @@ export default function NewProjectModal({
 													setSuggestions([]);
 													setSearchError(null);
 												}}
-												className="text-neutral-500 hover:text-white mr-1 text-xs flex-shrink-0 cursor-pointer"
+												className="text-placeholder hover:text-text mr-1 text-xs flex-shrink-0 cursor-pointer"
 											>
 												✕
 											</button>
@@ -642,24 +645,24 @@ export default function NewProjectModal({
 
 									{/* Suggestion Dropdown */}
 									{(suggestions.length > 0 || searchError) && (
-										<div className="absolute top-full left-0 right-0 mt-1 bg-neutral-950/95 border border-white/10 rounded-2xl shadow-2xl max-h-[180px] overflow-y-auto z-30 flex flex-col">
+										<div className="absolute top-full left-0 right-0 mt-1 bg-card border border-border rounded-2xl shadow-2xl max-h-[180px] overflow-y-auto z-30 flex flex-col">
 											{suggestions.length > 0 ? (
 												suggestions.map((item: any) => (
 													<button
 														key={item.place_id}
 														type="button"
 														onClick={() => selectSuggestion(item)}
-														className="w-full text-left px-4 py-2.5 hover:bg-white/5 transition-colors border-b border-white/5 last:border-0 flex items-center gap-3 cursor-pointer"
+														className="w-full text-left px-4 py-2.5 hover:bg-background transition-colors border-b border-border/50 last:border-0 flex items-center gap-3 cursor-pointer"
 													>
-														<div className="w-7 h-7 bg-white/5 rounded-full flex items-center justify-center text-white flex-shrink-0">
+														<div className="w-7 h-7 bg-background rounded-full flex items-center justify-center text-primary flex-shrink-0">
 															<MapPin className="w-3.5 h-3.5" />
 														</div>
 														<div className="flex flex-col overflow-hidden">
-															<span className="text-xs font-bold text-white truncate">
+															<span className="text-xs font-bold text-text truncate">
 																{item.structured_formatting?.main_text || item.description}
 															</span>
 															{item.structured_formatting?.secondary_text && (
-																<span className="text-[10px] text-neutral-400 truncate">
+																<span className="text-[10px] text-placeholder truncate">
 																	{item.structured_formatting.secondary_text}
 																</span>
 															)}
@@ -667,7 +670,7 @@ export default function NewProjectModal({
 													</button>
 												))
 											) : (
-												<div className="px-4 py-3 text-xs text-neutral-400 select-text">
+												<div className="px-4 py-3 text-xs text-placeholder select-text">
 													{searchError}
 												</div>
 											)}
@@ -676,14 +679,14 @@ export default function NewProjectModal({
 								</div>
 							)}
 							{coordError && (
-								<div className="bg-rose-950/20 border border-rose-900/30 text-rose-400 px-3 py-1.5 rounded-xl text-[10px] font-bold self-start mt-0.5 select-text shadow-md">
+								<div className="bg-error/10 border border-error/20 text-error px-3 py-1.5 rounded-xl text-[10px] font-bold self-start mt-0.5 select-text shadow-md">
 									{coordError}
 								</div>
 							)}
 						</div>
 
 						{/* Google Map Area Wrapper */}
-						<div className="w-full aspect-square bg-black rounded-3xl relative overflow-hidden border border-white/10 shadow-lg">
+						<div className="w-full aspect-square bg-card rounded-3xl relative overflow-hidden border border-border shadow-lg">
 							<div ref={mapElementRef} className="absolute inset-0">
 								<APIProvider apiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY || ""} libraries={["places"]}>
 									<Map
@@ -707,7 +710,7 @@ export default function NewProjectModal({
 							{!loading && (
 								<button
 									onClick={() => setView("selection")}
-									className="flex-1 py-3 border border-white/20 hover:bg-white/10 text-neutral-400 hover:text-white font-bold text-xs rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5"
+									className="flex-1 py-3 border border-border hover:bg-card text-placeholder hover:text-text font-bold text-xs rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5"
 								>
 									<ArrowLeft className="w-3.5 h-3.5" />
 									<span>Back</span>
@@ -716,11 +719,11 @@ export default function NewProjectModal({
 							<button
 								onClick={handleConfirmLocation}
 								disabled={loading}
-								className="flex-grow py-3 bg-white hover:bg-neutral-200 disabled:bg-white/20 text-black font-bold text-xs rounded-xl shadow transition-colors flex items-center justify-center gap-2 cursor-pointer border border-transparent"
+								className="flex-grow py-3 bg-primary hover:opacity-90 disabled:bg-primary/20 text-white font-bold text-xs rounded-xl shadow transition-colors flex items-center justify-center gap-2 cursor-pointer border border-transparent"
 							>
 								{loading ? (
 									<>
-										<RefreshCw className="w-3.5 h-3.5 animate-spin text-black" />
+										<RefreshCw className="w-3.5 h-3.5 animate-spin text-white" />
 										<span>Initializing Workspace...</span>
 									</>
 								) : (

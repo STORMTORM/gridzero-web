@@ -3,6 +3,7 @@ import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { RefreshCw } from "lucide-react";
 import ProjectTopbar from "../../components/ProjectTopbar";
 import UnifiedDesignStep from "../../features/shared/components/UnifiedDesignStep";
+import WorkspaceSettingsModal from "../../features/shared/components/WorkspaceSettingsModal";
 import type { RoofData, PlacedPanelGroup } from "../../features/shared/types";
 import type { LocalObject } from "../../utils/design/types";
 import { useProject } from "../../features/shared/hooks/useProject";
@@ -32,6 +33,17 @@ export default function DesignWorkspace() {
 
 	// UI State Indicators
 	const [_saving, setSaving] = useState(false);
+
+	const [layoutMode, setLayoutMode] = useState<"split" | "toggle">(() => {
+		return (localStorage.getItem("workspace_layout_mode") as "split" | "toggle") || "split";
+	});
+	const [activeViewport, setActiveViewport] = useState<"2d" | "3d">("2d");
+	const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+
+	const handleSetLayoutMode = (mode: "split" | "toggle") => {
+		setLayoutMode(mode);
+		localStorage.setItem("workspace_layout_mode", mode);
+	};
 
 	// React Query Server States
 	const { data: projectData } = useProject(id);
@@ -259,10 +271,10 @@ export default function DesignWorkspace() {
 
 	if (loading) {
 		return (
-			<div className="flex-grow flex items-center justify-center bg-black h-screen w-screen overflow-hidden">
+			<div className="flex-grow flex items-center justify-center bg-background h-screen w-screen overflow-hidden">
 				<div className="flex flex-col items-center gap-3">
-					<RefreshCw className="w-8 h-8 text-white animate-spin" />
-					<span className="text-sm font-semibold text-neutral-400 animate-pulse">Loading...</span>
+					<RefreshCw className="w-8 h-8 text-text animate-spin" />
+					<span className="text-sm font-semibold text-placeholder animate-pulse">Loading...</span>
 				</div>
 			</div>
 		);
@@ -280,13 +292,14 @@ export default function DesignWorkspace() {
 	};
 
 	return (
-		<div className="flex flex-col h-screen w-screen bg-black overflow-hidden text-neutral-100 font-sans select-none">
+		<div className="flex flex-col h-screen w-screen bg-background overflow-hidden text-text font-sans select-none">
 			
 			{/* Project Workspace header */}
 			<ProjectTopbar
 				projectName={projectName}
 				currentStage={currentStageNumber}
 				saving={_saving}
+				onOpenSettings={() => setIsSettingsOpen(true)}
 			/>
 
 			{/* Main Split Layout Panel */}
@@ -303,8 +316,18 @@ export default function DesignWorkspace() {
 					onSaveStatusChange={setSaving}
 					sceneData={designData}
 					onContinue={handleContinue}
+					layoutMode={layoutMode}
+					activeViewport={activeViewport}
+					setActiveViewport={setActiveViewport}
 				/>
 			</div>
+
+			<WorkspaceSettingsModal
+				isOpen={isSettingsOpen}
+				onClose={() => setIsSettingsOpen(false)}
+				layoutMode={layoutMode}
+				setLayoutMode={handleSetLayoutMode}
+			/>
 
 		</div>
 	);

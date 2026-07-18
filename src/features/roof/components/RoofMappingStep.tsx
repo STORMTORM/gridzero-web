@@ -45,10 +45,10 @@ export default function RoofMappingStep({
 			<div className="flex flex-col gap-6">
 				{/* Title Info */}
 				<div>
-					<h3 className="text-sm font-bold text-white flex items-center gap-2">
+					<h3 className="text-sm font-bold text-text flex items-center gap-2">
 						<span>2D Design Controls</span>
 					</h3>
-					<p className="text-[11px] text-neutral-500 font-medium mt-1">
+					<p className="text-[11px] text-placeholder font-medium mt-1">
 						Map out boundaries and setup structural parapet options.
 					</p>
 				</div>
@@ -61,7 +61,7 @@ export default function RoofMappingStep({
 								setIsDrawing(true);
 								setSelectedRoofId(null);
 							}}
-							className="flex-1 py-2.5 bg-white hover:bg-neutral-200 text-black text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow"
+							className="flex-1 py-2.5 bg-primary hover:opacity-90 text-white text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow"
 						>
 							<PenTool className="w-3.5 h-3.5" />
 							<span>Draw Roof</span>
@@ -71,7 +71,7 @@ export default function RoofMappingStep({
 							<button
 								onClick={undoLastPoint}
 								disabled={currentPoints.length === 0}
-								className="flex-1 py-2.5 bg-white/10 hover:bg-white/20 disabled:opacity-30 disabled:hover:bg-transparent text-neutral-200 text-xs font-bold rounded-xl border border-white/10 transition-all flex items-center justify-center gap-1 cursor-pointer"
+								className="flex-1 py-2.5 bg-background hover:bg-background/80 disabled:opacity-30 disabled:hover:bg-transparent text-text text-xs font-bold rounded-xl border border-border transition-all flex items-center justify-center gap-1 cursor-pointer"
 								title="Undo Last Point"
 							>
 								<Undo className="w-3.5 h-3.5" />
@@ -79,7 +79,7 @@ export default function RoofMappingStep({
 							</button>
 							<button
 								onClick={cancelDrawing}
-								className="flex-1 py-2.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-450 text-xs font-bold rounded-xl border border-rose-500/15 transition-all cursor-pointer"
+								className="flex-1 py-2.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-455 text-xs font-bold rounded-xl border border-rose-500/15 transition-all cursor-pointer"
 							>
 								Cancel
 							</button>
@@ -89,13 +89,13 @@ export default function RoofMappingStep({
 
 				{/* List of roofs */}
 				<div className="flex flex-col gap-2.5">
-					<span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Roofs Layout ({roofs.length})</span>
+					<span className="text-[10px] font-bold text-placeholder uppercase tracking-wider">Roofs Layout ({roofs.length})</span>
 					{roofs.length === 0 ? (
-						<div className="border border-dashed border-white/10 rounded-2xl p-6 text-center text-xs text-neutral-500">
+						<div className="border border-dashed border-border rounded-2xl p-6 text-center text-xs text-placeholder">
 							No roofs drawn yet. Click "Draw Roof" to outline structural zones on the map.
 						</div>
 					) : (
-						<div className="flex flex-col gap-2 h-52 overflow-y-auto bg-white/5  p-2 border rounded-xl border-white/5">
+						<div className="flex flex-col gap-2 h-52 overflow-y-auto bg-card p-2 border rounded-xl border-border">
 							{roofs.map((r) => {
 								const isSelected = r.id === selectedRoofId;
 								return (
@@ -104,8 +104,8 @@ export default function RoofMappingStep({
 										onClick={() => setSelectedRoofId(r.id)}
 										className={`p-3 rounded-xl border transition-all cursor-pointer flex items-center justify-between ${
 											isSelected
-												? "bg-white/10 border-white text-white"
-												: "bg-white/5 border-white/5 text-neutral-400 hover:border-white/10 hover:text-white"
+												? "bg-primary/10 border-primary text-primary"
+												: "bg-card border-border/50 text-placeholder hover:border-border hover:text-text"
 										}`}
 									>
 										<div className="flex flex-col gap-0.5">
@@ -121,12 +121,12 @@ export default function RoofMappingStep({
 
 				{/* Selected Roof attributes form */}
 				{selectedRoof && (
-					<div className="border-t border-white/10 pt-5 flex flex-col gap-5 bg-transparent animate-in slide-in-from-bottom duration-250">
+					<div className="border-t border-border pt-5 flex flex-col gap-5 bg-transparent animate-in slide-in-from-bottom duration-250">
 						<div className="flex justify-between items-center">
-							<span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Roof Parameters</span>
+							<span className="text-[10px] font-bold text-placeholder uppercase tracking-wider">Roof Parameters</span>
 							<button
 								onClick={deleteSelectedRoof}
-								className="p-1 hover:bg-rose-500/10 text-neutral-500 hover:text-rose-455 rounded-lg transition-colors cursor-pointer"
+								className="p-1 hover:bg-rose-500/10 text-placeholder hover:text-rose-455 rounded-lg transition-colors cursor-pointer"
 								title="Delete Selected Roof"
 							>
 								<Trash2 className="w-4 h-4" />
@@ -135,20 +135,20 @@ export default function RoofMappingStep({
 
 						{/* Name field */}
 						<div className="flex flex-col gap-1.5">
-							<label className="text-[11px] font-semibold text-neutral-400">Roof Name</label>
+							<label className="text-[11px] font-semibold text-placeholder">Roof Name</label>
 							<input
 								type="text"
 								value={selectedRoof.name}
 								onChange={(e) => updateSelectedRoof({ name: e.target.value })}
-								className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs font-bold text-white focus:outline-none focus:border-white transition-colors"
+								className="w-full bg-background border border-border rounded-xl px-3 py-2 text-xs font-bold text-text focus:outline-none focus:border-primary transition-colors"
 							/>
 						</div>
 
 						{/* Elevation height slider */}
 						<div className="flex flex-col gap-2">
-							<div className="flex justify-between items-center text-[11px] font-semibold text-neutral-400">
+							<div className="flex justify-between items-center text-[11px] font-semibold text-placeholder">
 								<span>Elevation / Height</span>
-								<span className="text-white font-bold">{selectedRoof.height}m</span>
+								<span className="text-text font-bold">{selectedRoof.height}m</span>
 							</div>
 							<input
 								type="range"
@@ -157,16 +157,16 @@ export default function RoofMappingStep({
 								step="0.5"
 								value={selectedRoof.height}
 								onChange={(e) => updateSelectedRoof({ height: parseFloat(e.target.value) })}
-								className="w-full accent-white cursor-pointer opacity-80 hover:opacity-100 transition-opacity"
+								className="w-full accent-primary cursor-pointer opacity-80 hover:opacity-100 transition-opacity"
 							/>
 						</div>
 
 						{/* Parapet configurations */}
-						<div className="border-t border-white/5 pt-4 flex flex-col gap-4 bg-white/5 p-4 rounded-2xl border">
+						<div className="border-t border-border pt-4 flex flex-col gap-4 bg-card p-4 rounded-2xl border border-border">
 							<div className="flex justify-between items-center">
 								<div className="flex flex-col gap-0.5">
 									<span className="text-xs font-bold">Parapet Wall</span>
-									<span className="text-[10px] text-neutral-500">Enable protective parapet edge boundary</span>
+									<span className="text-[10px] text-placeholder">Enable protective parapet edge boundary</span>
 								</div>
 								<label className="relative inline-flex items-center cursor-pointer select-none">
 									<input
@@ -175,17 +175,17 @@ export default function RoofMappingStep({
 										onChange={(e) => updateSelectedRoof({ parapetEnabled: e.target.checked })}
 										className="sr-only peer"
 									/>
-									<div className="w-9 h-5 bg-neutral-800 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-neutral-500 after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:bg-white peer-checked:bg-white/20 border border-white/10"></div>
+									<div className="w-9 h-5 bg-background rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-neutral-500 after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:bg-white peer-checked:bg-primary border border-border"></div>
 								</label>
 							</div>
 
 							{selectedRoof.parapetEnabled && (
 								<div className="flex flex-col gap-4 pt-2">
 									{/* Same dimensions toggle */}
-									<div className="flex justify-between items-center bg-white/5 p-3 rounded-xl border border-white/5">
+									<div className="flex justify-between items-center bg-card p-3 rounded-xl border border-border/50">
 										<div className="flex flex-col gap-0.5">
 											<span className="text-xs font-bold">Same dimensions for all walls</span>
-											<span className="text-[10px] text-neutral-500">Apply uniform settings to all edges</span>
+											<span className="text-[10px] text-placeholder">Apply uniform settings to all edges</span>
 										</div>
 										<label className="relative inline-flex items-center cursor-pointer select-none">
 											<input
@@ -204,7 +204,7 @@ export default function RoofMappingStep({
 												}}
 												className="sr-only peer"
 											/>
-											<div className="w-9 h-5 bg-neutral-800 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-neutral-500 after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:bg-white peer-checked:bg-white/20 border border-white/10"></div>
+											<div className="w-9 h-5 bg-background rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-neutral-500 after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:bg-white peer-checked:bg-primary border border-border"></div>
 										</label>
 									</div>
 
@@ -212,9 +212,9 @@ export default function RoofMappingStep({
 										<div className="flex flex-col gap-4">
 											{/* Wall height */}
 											<div className="flex flex-col gap-1.5">
-												<div className="flex justify-between items-center text-[11px] font-semibold text-neutral-400">
+												<div className="flex justify-between items-center text-[11px] font-semibold text-placeholder">
 													<span>Wall Height</span>
-													<span className="text-white font-bold">{selectedRoof.parapetHeight}m</span>
+													<span className="text-text font-bold">{selectedRoof.parapetHeight}m</span>
 												</div>
 												<input
 													type="range"
@@ -230,15 +230,15 @@ export default function RoofMappingStep({
 															parapetEdges: newEdges,
 														});
 													}}
-													className="w-full accent-white cursor-pointer"
+													className="w-full accent-primary cursor-pointer"
 												/>
 											</div>
 
 											{/* Wall thickness */}
 											<div className="flex flex-col gap-1.5">
-												<div className="flex justify-between items-center text-[11px] font-semibold text-neutral-400">
+												<div className="flex justify-between items-center text-[11px] font-semibold text-placeholder">
 													<span>Wall Thickness</span>
-													<span className="text-white font-bold">{selectedRoof.parapetThickness}m</span>
+													<span className="text-text font-bold">{selectedRoof.parapetThickness}m</span>
 												</div>
 												<input
 													type="range"
@@ -254,17 +254,17 @@ export default function RoofMappingStep({
 															parapetEdges: newEdges,
 														});
 													}}
-													className="w-full accent-white cursor-pointer"
+													className="w-full accent-primary cursor-pointer"
 												/>
 											</div>
 
 											{/* Wall setback */}
 											<div className="flex flex-col gap-1.5">
-												<div className="flex justify-between items-center text-[11px] font-semibold text-neutral-400">
+												<div className="flex justify-between items-center text-[11px] font-semibold text-placeholder">
 													<span>Setback (inside edge)</span>
-													<span className="text-white font-bold">{selectedRoof.parapetSetback}m</span>
+													<span className="text-text font-bold">{selectedRoof.parapetSetback}m</span>
 												</div>
-												<p className="text-[9px] text-neutral-500 leading-normal">
+												<p className="text-[9px] text-placeholder leading-normal">
 													Setback defines a safety buffer boundary distance inside the roof edge where solar panel layouts are restricted.
 												</p>
 												<input
@@ -281,17 +281,17 @@ export default function RoofMappingStep({
 															parapetEdges: newEdges,
 														});
 													}}
-													className="w-full accent-white cursor-pointer"
+													className="w-full accent-primary cursor-pointer"
 												/>
 											</div>
 										</div>
 									) : (
 										<div className="flex flex-col gap-2 max-h-[250px] overflow-y-auto pr-1">
-											<span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Edge Overrides</span>
+											<span className="text-[10px] font-bold text-placeholder uppercase tracking-wider">Edge Overrides</span>
 											{edges.map((edge, edgeIdx) => {
 												const expanded = expandedEdgeIdx === edgeIdx;
 												return (
-													<div key={edgeIdx} className={`p-3 rounded-xl border transition-all ${edge.enabled ? "bg-white/5 border-white/10 text-white" : "bg-white/0 border-white/5 opacity-55 text-neutral-455"}`}>
+													<div key={edgeIdx} className={`p-3 rounded-xl border transition-all ${edge.enabled ? "bg-card border-border text-text" : "bg-transparent border-border/55 opacity-55 text-placeholder"}`}>
 														{/* Edge Header */}
 														<div className="flex items-center justify-between">
 															<div className="flex items-center gap-3">
@@ -303,14 +303,14 @@ export default function RoofMappingStep({
 																		newEdges[edgeIdx] = { ...edge, enabled: e.target.checked };
 																		updateSelectedRoof({ parapetEdges: newEdges });
 																	}}
-																	className="w-3.5 h-3.5 accent-white cursor-pointer"
+																	className="w-3.5 h-3.5 accent-primary cursor-pointer"
 																/>
 																<span className="text-xs font-bold">Edge {edgeIdx + 1}</span>
 															</div>
 															{edge.enabled && (
 																<button
 																	onClick={() => setExpandedEdgeIdx(expanded ? null : edgeIdx)}
-																	className="text-[10px] text-neutral-400 hover:text-white font-bold cursor-pointer"
+																	className="text-[10px] text-placeholder hover:text-text font-bold cursor-pointer"
 																>
 																	{expanded ? "Collapse" : "Edit"}
 																</button>
@@ -319,12 +319,12 @@ export default function RoofMappingStep({
 
 														{/* Edge Parameters Panel */}
 														{expanded && edge.enabled && (
-															<div className="flex flex-col gap-3 mt-3 pt-3 border-t border-white/5 animate-in slide-in-from-top-1 duration-150">
+															<div className="flex flex-col gap-3 mt-3 pt-3 border-t border-border animate-in slide-in-from-top-1 duration-150">
 																{/* Height Slider */}
 																<div className="flex flex-col gap-1">
-																	<div className="flex justify-between items-center text-[10px] font-semibold text-neutral-400">
+																	<div className="flex justify-between items-center text-[10px] font-semibold text-placeholder">
 																		<span>Height</span>
-																		<span className="text-white font-bold">{edge.height}m</span>
+																		<span className="text-text font-bold">{edge.height}m</span>
 																	</div>
 																	<input
 																		type="range"
@@ -337,15 +337,15 @@ export default function RoofMappingStep({
 																			newEdges[edgeIdx] = { ...edge, height: parseFloat(e.target.value) };
 																			updateSelectedRoof({ parapetEdges: newEdges });
 																		}}
-																		className="w-full accent-white cursor-pointer"
+																		className="w-full accent-primary cursor-pointer"
 																	/>
 																</div>
 
 																{/* Thickness Slider */}
 																<div className="flex flex-col gap-1">
-																	<div className="flex justify-between items-center text-[10px] font-semibold text-neutral-400">
+																	<div className="flex justify-between items-center text-[10px] font-semibold text-placeholder">
 																		<span>Thickness</span>
-																		<span className="text-white font-bold">{edge.thickness}m</span>
+																		<span className="text-text font-bold">{edge.thickness}m</span>
 																	</div>
 																	<input
 																		type="range"
@@ -358,15 +358,15 @@ export default function RoofMappingStep({
 																			newEdges[edgeIdx] = { ...edge, thickness: parseFloat(e.target.value) };
 																			updateSelectedRoof({ parapetEdges: newEdges });
 																		}}
-																		className="w-full accent-white cursor-pointer"
+																		className="w-full accent-primary cursor-pointer"
 																	/>
 																</div>
 
 																{/* Setback Slider */}
 																<div className="flex flex-col gap-1">
-																	<div className="flex justify-between items-center text-[10px] font-semibold text-neutral-400">
+																	<div className="flex justify-between items-center text-[10px] font-semibold text-placeholder">
 																		<span>Setback</span>
-																		<span className="text-white font-bold">{edge.setback}m</span>
+																		<span className="text-text font-bold">{edge.setback}m</span>
 																	</div>
 																	<input
 																		type="range"
@@ -379,7 +379,7 @@ export default function RoofMappingStep({
 																			newEdges[edgeIdx] = { ...edge, setback: parseFloat(e.target.value) };
 																			updateSelectedRoof({ parapetEdges: newEdges });
 																		}}
-																		className="w-full accent-white cursor-pointer"
+																		className="w-full accent-primary cursor-pointer"
 																	/>
 																</div>
 															</div>
@@ -397,10 +397,10 @@ export default function RoofMappingStep({
 			</div>
 
 			{/* Continue button */}
-			<div className="border-t border-white/10 pt-4">
+			<div className="border-t border-border pt-4">
 				<button
 					onClick={onContinue}
-					className="w-full py-3 bg-white hover:bg-neutral-200 text-black text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5"
+					className="w-full py-3 bg-primary hover:opacity-90 text-white text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5"
 				>
 					<Check className="w-4 h-4" />
 					<span>Save & Continue</span>

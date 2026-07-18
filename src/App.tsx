@@ -16,7 +16,7 @@ export default function App() {
 	const [isNewProjectModalOpen, setIsNewProjectModalOpen] = useState(false);
 
 	return (
-		<div className="h-screen w-screen bg-black text-neutral-200 font-sans relative flex flex-col overflow-hidden">
+		<div className="h-screen w-screen bg-background text-text font-sans relative flex flex-col overflow-hidden">
 			<Routes>
 				{/* Public Login Page */}
 				<Route path="/login" element={<Login />} />
@@ -25,7 +25,7 @@ export default function App() {
 				<Route
 					element={
 						<ProtectedRoute>
-							<div className="flex h-screen w-screen overflow-hidden bg-black">
+							<div className="flex h-screen w-screen overflow-hidden bg-background">
 								<Sidebar
 									activeTab={activeTab}
 									onTabChange={setActiveTab}
@@ -55,7 +55,7 @@ export default function App() {
 				<Route
 					element={
 						<ProtectedRoute>
-							<div className="flex h-screen w-screen overflow-hidden bg-black">
+							<div className="flex h-screen w-screen overflow-hidden bg-background">
 								<main className="flex-1 flex flex-col overflow-hidden mx-auto w-full">
 									<Outlet />
 								</main>

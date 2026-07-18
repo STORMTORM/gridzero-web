@@ -10,151 +10,7 @@
   --color-text: #1C1C1E;
   --color-border: #C7C7CC;
   --color-error: #FF3B30;
-  --color-placeholder: #8E8E93;
-}
-
-/* Premium Light Theme Overrides (matching phone light theme) */
-:root {
-  background-color: #F2F2F7;
-  color: #1C1C1E;
-}
-
-body {
-  background-color: #F2F2F7 !important;
-  color: #1C1C1E !important;
-}
-
-/* Background mappings */
-.bg-black,
-.bg-neutral-950,
-.bg-neutral-950\/80,
-.bg-neutral-950\/85,
-.bg-neutral-950\/90,
-.bg-neutral-950\/95 {
-  background-color: #F2F2F7 !important;
-}
-
-.bg-neutral-900,
-.bg-neutral-900\/90,
-.bg-neutral-900\/95,
-.bg-white\/5 {
-  background-color: #FFFFFF !important;
-}
-
-.bg-white\/10 {
-  background-color: #E5E5EA !important;
-}
-
-/* Text color mappings */
-.text-white,
-.text-neutral-100,
-.text-neutral-200,
-.text-neutral-300,
-.text-neutral-350,
-.text-slate-100,
-.text-slate-200 {
-  color: #1C1C1E !important;
-}
-
-.text-neutral-400,
-.text-neutral-500,
-.text-neutral-600,
-.text-white\/60,
-.text-white\/50,
-.text-neutral-500\/80 {
-  color: #8E8E93 !important;
-}
-
-.text-black {
-  color: #FFFFFF !important;
-}
-
-/* Border color mappings */
-.border-white\/10,
-.border-white\/5,
-.border-neutral-800,
-.border-neutral-900,
-.border-white\/20 {
-  border-color: #E5E5EA !important;
-}
-
-.divide-white\/10 > * + *,
-.divide-white\/5 > * + *,
-.divide-neutral-800 > * + *,
-.divide-neutral-900 > * + * {
-  border-color: #E5E5EA !important;
-}
-
-/* Input Fields styling */
-input,
-select,
-textarea {
-  background-color: #FFFFFF !important;
-  color: #1C1C1E !important;
-  border-color: #E5E5EA !important;
-}
-
-input::placeholder,
-textarea::placeholder {
-  color: #8E8E93 !important;
-}
-
-/* Primary buttons & Action buttons (e.g. bg-white text-black should be primary dark green with white text) */
-button.bg-white,
-a.bg-white {
-  background-color: #06250e !important;
-  color: #FFFFFF !important;
-  border-color: transparent !important;
-}
-button.bg-white:hover,
-a.bg-white:hover {
-  background-color: #0c3e1a !important;
-}
-
-/* Make icons and text inside primary buttons white */
-button.bg-white svg,
-button.bg-white span,
-button.bg-white .text-black {
-  color: #FFFFFF !important;
-}
-
-/* Secondary outline buttons (bg-white/10 text-neutral-300) */
-button.bg-white\/10,
-a.bg-white\/10 {
-  background-color: #E5E5EA !important;
-  color: #1C1C1E !important;
-  border: 1px solid #C7C7CC !important;
-}
-button.bg-white\/10:hover,
-a.bg-white\/10:hover {
-  background-color: #D1D1D6 !important;
-}
-
-/* Tab Active states: bg-white/10 border-white/10 text-white */
-.bg-white\/10.border-white\/10.text-white {
-  background-color: #FFFFFF !important;
-  border-color: #06250e !important;
-  color: #06250e !important;
-}
-
-/* Specific Accent colors */
-.text-primary,
-.text-accent,
-.text-emerald-400,
-.text-emerald-500,
-.text-green-400,
-.text-green-500 {
-  color: #06250e !important;
-}
-
-/* Hover background mappings */
-.hover\:bg-white\/5:hover,
-.hover\:bg-neutral-800:hover {
-  background-color: #F2F2F7 !important;
-}
-
-.hover\:bg-white\/10:hover {
-  background-color: #E5E5EA !important;
+  --color-placeholder: #6C6C70;
 }
 
 /* Premium Custom Scrollbars */
@@ -166,17 +22,17 @@ a.bg-white\/10:hover {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.12) !important;
+  background: rgba(255, 255, 255, 0.12);
   border-radius: 99px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 0, 0, 0.28) !important;
+  background: rgba(255, 255, 255, 0.28);
 }
 
 /* Thin horizontal scrollbar for brands row */
 .scrollbar-thin {
   scrollbar-width: thin !important;
-  scrollbar-color: rgba(0, 0, 0, 0.25) transparent !important;
+  scrollbar-color: rgba(255, 255, 255, 0.25) transparent !important;
 }
 .scrollbar-thin::-webkit-scrollbar {
   height: 6px !important;
@@ -186,9 +42,9 @@ a.bg-white\/10:hover {
   background: transparent !important;
 }
 .scrollbar-thin::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.25) !important;
+  background: rgba(255, 255, 255, 0.25) !important;
   border-radius: 99px !important;
 }
 .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 0, 0, 0.45) !important;
+  background: rgba(255, 255, 255, 0.45) !important;
 }

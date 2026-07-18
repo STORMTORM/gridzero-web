@@ -147,35 +147,35 @@ export default function Login() {
 	};
 
 	return (
-		<div className="min-h-screen flex flex-col md:flex-row bg-black font-sans text-neutral-100">
+		<div className="min-h-screen flex flex-col md:flex-row bg-background font-sans text-text">
 			
 			{/* LEFT PANEL: Branding & Visuals */}
-			<div className="w-full md:w-1/2 flex flex-col items-center justify-center bg-white/5 p-12 border-b md:border-b-0 md:border-r border-white/10 min-h-[40vh] md:min-h-screen">
+			<div className="w-full md:w-1/2 flex flex-col items-center justify-center bg-card p-12 border-b md:border-b-0 md:border-r border-border min-h-[40vh] md:min-h-screen">
 				<div className="flex flex-col items-center text-center">
 					{/* Official Logo Image */}
 					<img src="https://gridzero.in/gridzero-logo.png" alt="GridZero Logo" className="w-24 h-24 object-contain" />
 					{/* Logo Name & Slogan */}
-					<h1 className="text-4xl font-extrabold text-white tracking-tight mt-6">
+					<h1 className="text-4xl font-extrabold text-text tracking-tight mt-6">
 						GridZero
 					</h1>
-					<p className="text-neutral-400 text-xs mt-2 uppercase tracking-widest font-semibold">
+					<p className="text-placeholder text-xs mt-2 uppercase tracking-widest font-semibold">
 						Solar Workspace Cockpit
 					</p>
 				</div>
 			</div>
 
 			{/* RIGHT PANEL: Authentication Form */}
-			<div className="flex-grow flex items-center justify-center bg-black p-8 md:p-12 min-h-[60vh] md:min-h-screen">
+			<div className="flex-grow flex items-center justify-center bg-background p-8 md:p-12 min-h-[60vh] md:min-h-screen">
 				
 				{/* Login Card wrapper */}
-				<div className="w-full max-w-[420px] bg-white/5 border border-white/10 p-10 rounded-2xl shadow-2xl flex flex-col gap-6 relative z-10 animate-in fade-in duration-300">
+				<div className="w-full max-w-[420px] bg-card border border-border p-10 rounded-2xl shadow-2xl flex flex-col gap-6 relative z-10 animate-in fade-in duration-300">
 					
 					{/* Header label info */}
 					<div className="flex flex-col gap-1.5">
-						<h2 className="text-2xl font-bold text-white tracking-tight">
+						<h2 className="text-2xl font-bold text-text tracking-tight">
 							Login
 						</h2>
-						<p className="text-xs text-neutral-400 font-medium leading-relaxed">
+						<p className="text-xs text-placeholder font-medium leading-relaxed">
 							{step === "phone" 
 								? "Enter your registered mobile number to continue."
 								: "Enter the 6-digit verification code sent to your mobile number."}
@@ -195,10 +195,10 @@ export default function Login() {
 						<form onSubmit={handleSendOtp} className="flex flex-col gap-5">
 							<div className="flex gap-2">
 								{/* Country Flag Dropdown */}
-								<div className="flex items-center gap-1 bg-white/10 border border-white/10 px-3.5 py-3.5 rounded-xl text-xs font-bold text-neutral-350 select-none">
+								<div className="flex items-center gap-1 bg-background border border-border px-3.5 py-3.5 rounded-xl text-xs font-bold text-text select-none">
 									<span>🇮🇳</span>
 									<span className="ml-1">+91</span>
-									<ChevronDown className="w-3.5 h-3.5 text-neutral-500" />
+									<ChevronDown className="w-3.5 h-3.5 text-placeholder" />
 								</div>
 
 								{/* Mobile Input field */}
@@ -209,17 +209,17 @@ export default function Login() {
 									placeholder="Mobile Number"
 									required
 									disabled={loading}
-									className="flex-grow bg-white/5 border border-white/10 px-4 py-3.5 rounded-xl text-xs font-bold text-white placeholder-neutral-600 focus:outline-none focus:border-white focus:ring-1 focus:ring-white/10 transition-all"
+									className="flex-grow bg-background border border-border px-4 py-3.5 rounded-xl text-xs font-bold text-text placeholder-placeholder focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all"
 								/>
 							</div>
 
 							<button
 								type="submit"
 								disabled={loading || phone.length !== 10}
-								className="w-full py-3.5 bg-white hover:bg-neutral-200 disabled:bg-white/20 text-black font-bold text-xs tracking-wider uppercase rounded-xl transition-all cursor-pointer flex items-center justify-center"
+								className="w-full py-3.5 bg-primary hover:opacity-90 disabled:bg-primary/20 text-white font-bold text-xs tracking-wider uppercase rounded-xl transition-all cursor-pointer flex items-center justify-center"
 							>
 								{loading ? (
-									<RefreshCw className="w-4 h-4 animate-spin text-black" />
+									<RefreshCw className="w-4 h-4 animate-spin text-white" />
 								) : (
 									"Send OTP"
 								)}
@@ -242,7 +242,7 @@ export default function Login() {
 										onChange={(e) => handleOtpChange(index, e.target.value)}
 										onKeyDown={(e) => handleOtpKeyDown(index, e)}
 										disabled={loading}
-										className="aspect-square bg-white/5 border border-white/10 rounded-xl text-center text-base font-extrabold text-white focus:outline-none focus:border-white focus:ring-1 focus:ring-white/10 transition-all"
+										className="aspect-square bg-background border border-border rounded-xl text-center text-base font-extrabold text-text focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all"
 									/>
 								))}
 							</div>
@@ -251,33 +251,33 @@ export default function Login() {
 								<button
 									type="submit"
 									disabled={loading || otp.join("").length !== 6}
-									className="w-full py-3.5 bg-white hover:bg-neutral-200 disabled:bg-white/20 text-black font-bold text-xs tracking-wider uppercase rounded-xl transition-all cursor-pointer flex items-center justify-center"
+									className="w-full py-3.5 bg-primary hover:opacity-90 disabled:bg-primary/20 text-white font-bold text-xs tracking-wider uppercase rounded-xl transition-all cursor-pointer flex items-center justify-center"
 								>
 									{loading ? (
-										<RefreshCw className="w-4 h-4 animate-spin text-black" />
+										<RefreshCw className="w-4 h-4 animate-spin text-white" />
 									) : (
 										"Verify OTP"
 									)}
 								</button>
 
-								<div className="flex items-center justify-between text-[11px] font-semibold text-neutral-400 px-1">
+								<div className="flex items-center justify-between text-[11px] font-semibold text-placeholder px-1">
 									<button
 										type="button"
 										onClick={() => setStep("phone")}
-										className="text-neutral-500 hover:text-neutral-300 transition-colors cursor-pointer"
+										className="text-placeholder hover:text-text transition-colors cursor-pointer"
 									>
 										Edit Phone
 									</button>
 
 									{timer > 0 ? (
 										<span>
-											Resend in <strong className="text-white">{timer}s</strong>
+											Resend in <strong className="text-text">{timer}s</strong>
 										</span>
 									) : (
 										<button
 											type="button"
 											onClick={handleResendCode}
-											className="text-white hover:text-neutral-300 hover:underline cursor-pointer"
+											className="text-primary hover:underline cursor-pointer"
 										>
 											Resend Code
 										</button>

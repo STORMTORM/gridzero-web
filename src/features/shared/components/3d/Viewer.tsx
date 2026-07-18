@@ -130,7 +130,7 @@ export default function Viewer({ data: propData, sitevisitId: propSitevisitId, r
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, dprCap));
     renderer.shadowMap.enabled = quality !== "low";
     renderer.shadowMap.type = quality === "high" ? THREE.PCFSoftShadowMap : THREE.PCFShadowMap;
-    renderer.setClearColor(0xf2f2f7);
+    renderer.setClearColor(0x021021);
     container.appendChild(renderer.domElement);
     rendererRef.current = renderer;
 
@@ -335,7 +335,7 @@ export default function Viewer({ data: propData, sitevisitId: propSitevisitId, r
 
       const gridSize = Math.max(W, H);
       const divisions = Math.round(gridSize);
-      const grid = new THREE.GridHelper(gridSize, divisions, 0xb0b0b0, 0xd0d0d0);
+      const grid = new THREE.GridHelper(gridSize, divisions, 0x333333, 0x222222);
       grid.position.set(W / 2, 0.01, H / 2);
       grid.visible = !showGround;
       dynamicGroup.add(grid);

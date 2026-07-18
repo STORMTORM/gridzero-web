@@ -43,57 +43,57 @@ export default function PanelPlacementStep({
 				
 				{/* Title */}
 				<div>
-					<h3 className="text-sm font-bold text-white flex items-center gap-2">
-						<Layers className="w-4 h-4 text-neutral-400" />
+					<h3 className="text-sm font-bold text-text flex items-center gap-2">
+						<Layers className="w-4 h-4 text-placeholder" />
 						<span>2D Panel Placement</span>
 					</h3>
-					<p className="text-[11px] text-neutral-500 font-medium mt-1">
+					<p className="text-[11px] text-placeholder font-medium mt-1">
 						Place solar structures, define rows/columns, and set orientations.
 					</p>
 				</div>
 
 				{/* Target vs placed panel counts */}
-				<div className="bg-neutral-950/40 border border-white/5 rounded-2xl p-4 flex flex-col gap-2 text-xs">
-					<span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Target vs Placed Modules</span>
+				<div className="bg-background/40 border border-border rounded-2xl p-4 flex flex-col gap-2 text-xs">
+					<span className="text-[9px] font-bold text-placeholder uppercase tracking-wider">Target vs Placed Modules</span>
 					<div className="flex justify-between items-center mt-1">
-						<span className="text-neutral-400">Target Count:</span>
-						<span className="text-sm font-bold text-white">{targetPanelCount || 0} Panels</span>
+						<span className="text-placeholder">Target Count:</span>
+						<span className="text-sm font-bold text-text">{targetPanelCount || 0} Panels</span>
 					</div>
 					<div className="flex justify-between items-center">
-						<span className="text-neutral-400">Placed Count:</span>
+						<span className="text-placeholder">Placed Count:</span>
 						<span className={`text-sm font-bold ${
-							overLimit ? "text-red-400" : placedPanelCount >= targetPanelCount && targetPanelCount > 0 ? "text-emerald-400" : "text-amber-400"
+							overLimit ? "text-red-400" : placedPanelCount >= targetPanelCount && targetPanelCount > 0 ? "text-primary" : "text-amber-400"
 						}`}>
 							{placedPanelCount} Panels{overLimit ? " ⚠ Over limit" : ""}
 						</span>
 					</div>
-					<div className="h-1.5 bg-black/40 rounded-full overflow-hidden mt-2">
+					<div className="h-1.5 bg-background/40 rounded-full overflow-hidden mt-2">
 						<div
-							className="h-full bg-white rounded-full transition-all"
+							className="h-full bg-primary rounded-full transition-all"
 							style={{ width: `${targetPanelCount ? Math.min(100, (placedPanelCount / targetPanelCount) * 100) : 0}%` }}
 						/>
 					</div>
-					<div className="flex justify-between items-center text-[10px] font-bold text-neutral-500">
+					<div className="flex justify-between items-center text-[10px] font-bold text-placeholder">
 						<span>Remaining</span>
 						<span>{remainingPanelSlots === Infinity ? "Open" : `${remainingPanelSlots} Panels`}</span>
 					</div>
 				</div>
 
 				{/* Table Configuration & Placement controls */}
-				<div className="bg-white/5 border border-white/5 rounded-2xl p-4 flex flex-col gap-3">
-					<span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Add Structure Table</span>
+				<div className="bg-card border border-border rounded-2xl p-4 flex flex-col gap-3">
+					<span className="text-[9px] font-bold text-placeholder uppercase tracking-wider">Add Structure Table</span>
 					{!isPlacingGroup ? (
 						<button
 							onClick={openAddConfigModal}
 							disabled={overLimit}
-							className="w-full py-2.5 bg-white hover:bg-neutral-200 disabled:opacity-30 disabled:cursor-not-allowed text-black text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow"
+							className="w-full py-2.5 bg-primary hover:opacity-90 disabled:opacity-30 disabled:cursor-not-allowed text-white text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow"
 						>
 							<Grid3X3 className="w-3.5 h-3.5" />
 							<span>Configure Grid Layout</span>
 						</button>
 					) : (
 						<div className="flex flex-col gap-2">
-							<div className="text-[10px] text-teal-400 font-bold bg-teal-500/10 border border-teal-500/15 rounded-xl px-3 py-2 text-center animate-pulse">
+							<div className="text-[10px] text-primary font-bold bg-primary/10 border border-primary/20 rounded-xl px-3 py-2 text-center animate-pulse">
 								{pendingDuplicateGroup ? "Tapping roof to place duplicated table..." : "Tapping roof to place table..."}
 							</div>
 							<button
@@ -108,14 +108,14 @@ export default function PanelPlacementStep({
 
 				{/* Selected structure configurations card */}
 				{selectedGroup ? (
-					<div className="bg-white/5 border border-white/5 rounded-2xl p-5 flex flex-col gap-4">
-						<span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Table Configuration</span>
+					<div className="bg-card border border-border rounded-2xl p-5 flex flex-col gap-4">
+						<span className="text-[9px] font-bold text-placeholder uppercase tracking-wider">Table Configuration</span>
 
 						{/* Edit layout grid */}
 						<button
 							type="button"
 							onClick={openEditConfigModal}
-							className="w-full py-2 bg-teal-500/10 hover:bg-teal-500/20 text-teal-400 border border-teal-500/15 text-[11px] font-bold rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5"
+							className="w-full py-2 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 text-[11px] font-bold rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5"
 						>
 							<Layers className="w-3.5 h-3.5" />
 							<span>Configure Grid & Cells</span>
@@ -123,9 +123,9 @@ export default function PanelPlacementStep({
 
 						{/* Rotation Azimuth angle slider */}
 						<div className="flex flex-col gap-2">
-							<div className="flex justify-between items-center text-[9px] font-bold text-neutral-500 uppercase tracking-wider">
+							<div className="flex justify-between items-center text-[9px] font-bold text-placeholder uppercase tracking-wider">
 								<span>Table Angle</span>
-								<span className="text-white font-bold text-[10px]">{selectedGroup.table_angle || 0}°</span>
+								<span className="text-text font-bold text-[10px]">{selectedGroup.table_angle || 0}°</span>
 							</div>
 							<input
 								type="range"
@@ -134,29 +134,29 @@ export default function PanelPlacementStep({
 								step="1"
 								value={selectedGroup.table_angle || 0}
 								onChange={(e) => updateSelectedGroup({ table_angle: parseInt(e.target.value) || 0 })}
-								className="w-full accent-white cursor-pointer"
+								className="w-full accent-primary cursor-pointer"
 							/>
 						</div>
 
 						{/* Tilt and Pillars */}
 						<div className="grid grid-cols-2 gap-3">
 							<label className="flex flex-col gap-1.5">
-								<span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Tilt Angle</span>
+								<span className="text-[9px] font-bold text-placeholder uppercase tracking-wider">Tilt Angle</span>
 								<input
 									type="number"
 									min="0"
 									max="45"
 									value={selectedGroup.tilt_angle ?? 0}
 									onChange={(e) => updateSelectedGroup({ tilt_angle: Math.max(0, Math.min(45, parseInt(e.target.value) || 0)) })}
-									className="bg-neutral-900 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-white/20 w-full font-bold"
+									className="bg-background border border-border rounded-xl px-3 py-2 text-xs text-text focus:outline-none focus:border-primary w-full font-bold"
 								/>
 							</label>
 							<label className="flex flex-col gap-1.5">
-								<span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Pillars</span>
+								<span className="text-[9px] font-bold text-placeholder uppercase tracking-wider">Pillars</span>
 								<select
 									value={selectedGroup.pillar_count ?? 2}
 									onChange={(e) => updateSelectedGroup({ pillar_count: parseInt(e.target.value) || 2 })}
-									className="bg-neutral-900 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-white/20 w-full font-bold font-sans"
+									className="bg-background border border-border rounded-xl px-3 py-2 text-xs text-text focus:outline-none focus:border-primary w-full font-bold font-sans"
 								>
 									<option value={2}>2 Pillar</option>
 									<option value={3}>3 Pillar</option>
@@ -165,8 +165,8 @@ export default function PanelPlacementStep({
 						</div>
 
 						{/* Advanced Settings Accordion */}
-						<details className="group/details border-t border-white/5 pt-3">
-							<summary className="flex justify-between items-center text-[10px] font-bold text-neutral-400 cursor-pointer select-none uppercase tracking-wider hover:text-white transition-colors list-none">
+						<details className="group/details border-t border-border pt-3">
+							<summary className="flex justify-between items-center text-[10px] font-bold text-placeholder cursor-pointer select-none uppercase tracking-wider hover:text-text transition-colors list-none">
 								<span>Advanced Settings</span>
 								<span className="text-xs transition-transform group-open/details:rotate-180">▼</span>
 							</summary>
@@ -174,23 +174,23 @@ export default function PanelPlacementStep({
 								{/* Front & Back Pillar Heights */}
 								<div className="grid grid-cols-2 gap-3">
 									<label className="flex flex-col gap-1">
-										<span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Front Pillar (m)</span>
+										<span className="text-[9px] font-bold text-placeholder uppercase tracking-wider">Front Pillar (m)</span>
 										<input
 											type="number"
 											step="0.01"
 											value={selectedGroup.front_pillar_height ?? 1.22}
 											onChange={(e) => updateSelectedGroup({ front_pillar_height: parseFloat(e.target.value) || 0 })}
-											className="bg-neutral-900 border border-white/10 rounded-xl px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-white/20 w-full"
+											className="bg-background border border-border rounded-xl px-2.5 py-1.5 text-xs text-text focus:outline-none focus:border-primary w-full"
 										/>
 									</label>
 									<label className="flex flex-col gap-1">
-										<span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Back Pillar (m)</span>
+										<span className="text-[9px] font-bold text-placeholder uppercase tracking-wider">Back Pillar (m)</span>
 										<input
 											type="number"
 											step="0.01"
 											value={selectedGroup.back_pillar_height ?? 2.13}
 											onChange={(e) => updateSelectedGroup({ back_pillar_height: parseFloat(e.target.value) || 0 })}
-											className="bg-neutral-900 border border-white/10 rounded-xl px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-white/20 w-full"
+											className="bg-background border border-border rounded-xl px-2.5 py-1.5 text-xs text-text focus:outline-none focus:border-primary w-full"
 										/>
 									</label>
 								</div>
@@ -198,23 +198,23 @@ export default function PanelPlacementStep({
 								{/* Row Gap & Col Gap */}
 								<div className="grid grid-cols-2 gap-3">
 									<label className="flex flex-col gap-1">
-										<span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Row Gap N-S (m)</span>
+										<span className="text-[9px] font-bold text-placeholder uppercase tracking-wider">Row Gap N-S (m)</span>
 										<input
 											type="number"
 											step="0.1"
 											value={selectedGroup.row_gap ?? 1.6}
 											onChange={(e) => updateSelectedGroup({ row_gap: parseFloat(e.target.value) || 0 })}
-											className="bg-neutral-900 border border-white/10 rounded-xl px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-white/20 w-full"
+											className="bg-background border border-border rounded-xl px-2.5 py-1.5 text-xs text-text focus:outline-none focus:border-primary w-full"
 										/>
 									</label>
 									<label className="flex flex-col gap-1">
-										<span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Col Gap E-W (m)</span>
+										<span className="text-[9px] font-bold text-placeholder uppercase tracking-wider">Col Gap E-W (m)</span>
 										<input
 											type="number"
 											step="0.1"
 											value={selectedGroup.col_gap ?? 0}
 											onChange={(e) => updateSelectedGroup({ col_gap: parseFloat(e.target.value) || 0 })}
-											className="bg-neutral-900 border border-white/10 rounded-xl px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-white/20 w-full"
+											className="bg-background border border-border rounded-xl px-2.5 py-1.5 text-xs text-text focus:outline-none focus:border-primary w-full"
 										/>
 									</label>
 								</div>
@@ -222,23 +222,23 @@ export default function PanelPlacementStep({
 								{/* Rafter & Purlin Overhangs */}
 								<div className="grid grid-cols-2 gap-3">
 									<label className="flex flex-col gap-1">
-										<span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Rafter Overhang (m)</span>
+										<span className="text-[9px] font-bold text-placeholder uppercase tracking-wider">Rafter Overhang (m)</span>
 										<input
 											type="number"
 											step="0.01"
 											value={selectedGroup.rafter_overhang ?? 0.1}
 											onChange={(e) => updateSelectedGroup({ rafter_overhang: parseFloat(e.target.value) || 0 })}
-											className="bg-neutral-900 border border-white/10 rounded-xl px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-white/20 w-full"
+											className="bg-background border border-border rounded-xl px-2.5 py-1.5 text-xs text-text focus:outline-none focus:border-primary w-full"
 										/>
 									</label>
 									<label className="flex flex-col gap-1">
-										<span className="text-[9px] font-bold text-neutral-500 uppercase tracking-wider">Purlin Overhang (m)</span>
+										<span className="text-[9px] font-bold text-placeholder uppercase tracking-wider">Purlin Overhang (m)</span>
 										<input
 											type="number"
 											step="0.01"
 											value={selectedGroup.purlin_overhang ?? 0.1}
 											onChange={(e) => updateSelectedGroup({ purlin_overhang: parseFloat(e.target.value) || 0 })}
-											className="bg-neutral-900 border border-white/10 rounded-xl px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-white/20 w-full"
+											className="bg-background border border-border rounded-xl px-2.5 py-1.5 text-xs text-text focus:outline-none focus:border-primary w-full"
 										/>
 									</label>
 								</div>
@@ -246,33 +246,33 @@ export default function PanelPlacementStep({
 								{/* Concrete Base Dimensions */}
 								<div className="grid grid-cols-3 gap-2">
 									<label className="flex flex-col gap-1">
-										<span className="text-[8px] font-bold text-neutral-500 uppercase tracking-wider">Base H (m)</span>
+										<span className="text-[8px] font-bold text-placeholder uppercase tracking-wider">Base H (m)</span>
 										<input
 											type="number"
 											step="0.01"
 											value={selectedGroup.base_height ?? 0.3}
 											onChange={(e) => updateSelectedGroup({ base_height: parseFloat(e.target.value) || 0 })}
-											className="bg-neutral-900 border border-white/10 rounded-xl px-2 py-1.5 text-[11px] text-white focus:outline-none focus:border-white/20 w-full"
+											className="bg-background border border-border rounded-xl px-2 py-1.5 text-[11px] text-text focus:outline-none focus:border-primary w-full"
 										/>
 									</label>
 									<label className="flex flex-col gap-1">
-										<span className="text-[8px] font-bold text-neutral-500 uppercase tracking-wider">Base L (m)</span>
+										<span className="text-[8px] font-bold text-placeholder uppercase tracking-wider">Base L (m)</span>
 										<input
 											type="number"
 											step="0.01"
 											value={selectedGroup.base_length ?? 0.3}
 											onChange={(e) => updateSelectedGroup({ base_length: parseFloat(e.target.value) || 0 })}
-											className="bg-neutral-900 border border-white/10 rounded-xl px-2 py-1.5 text-[11px] text-white focus:outline-none focus:border-white/20 w-full"
+											className="bg-background border border-border rounded-xl px-2 py-1.5 text-[11px] text-text focus:outline-none focus:border-primary w-full"
 										/>
 									</label>
 									<label className="flex flex-col gap-1">
-										<span className="text-[8px] font-bold text-neutral-500 uppercase tracking-wider">Base W (m)</span>
+										<span className="text-[8px] font-bold text-placeholder uppercase tracking-wider">Base W (m)</span>
 										<input
 											type="number"
 											step="0.01"
 											value={selectedGroup.base_width ?? 0.3}
 											onChange={(e) => updateSelectedGroup({ base_width: parseFloat(e.target.value) || 0 })}
-											className="bg-neutral-900 border border-white/10 rounded-xl px-2 py-1.5 text-[11px] text-white focus:outline-none focus:border-white/20 w-full"
+											className="bg-background border border-border rounded-xl px-2 py-1.5 text-[11px] text-text focus:outline-none focus:border-primary w-full"
 										/>
 									</label>
 								</div>
@@ -283,7 +283,7 @@ export default function PanelPlacementStep({
 						<div className="flex gap-2 mt-2">
 							<button
 								onClick={duplicateSelectedGroup}
-								className="flex-1 py-2 bg-white/5 hover:bg-white/10 text-neutral-300 text-xs font-bold rounded-xl border border-white/10 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+								className="flex-1 py-2 bg-card hover:bg-background text-text text-xs font-bold rounded-xl border border-border transition-all flex items-center justify-center gap-1.5 cursor-pointer"
 							>
 								<Copy className="w-3.5 h-3.5" />
 								<span>Duplicate</span>
@@ -298,7 +298,7 @@ export default function PanelPlacementStep({
 						</div>
 					</div>
 				) : (
-					<div className="border border-dashed border-white/10 rounded-2xl p-6 text-center text-xs text-neutral-500">
+					<div className="border border-dashed border-border rounded-2xl p-6 text-center text-xs text-placeholder">
 						No structure selected. Tap an action above to place tables, or select a table on the roof to edit.
 					</div>
 				)}
@@ -306,11 +306,11 @@ export default function PanelPlacementStep({
 			</div>
 
 			{/* Continue button */}
-			<div className="flex-shrink-0 pt-4 border-t border-white/5">
+			<div className="flex-shrink-0 pt-4 border-t border-border">
 				<button
 					onClick={onContinue}
 					disabled={!canContinue}
-					className="w-full py-3 bg-white hover:bg-neutral-200 disabled:opacity-30 disabled:cursor-not-allowed text-black text-xs font-bold rounded-xl transition-all cursor-pointer text-center"
+					className="w-full py-3 bg-primary hover:opacity-90 disabled:opacity-30 disabled:cursor-not-allowed text-white text-xs font-bold rounded-xl transition-all cursor-pointer text-center"
 				>
 					Save and Continue
 				</button>

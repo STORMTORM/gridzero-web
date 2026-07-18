@@ -129,10 +129,10 @@ export default function Dashboard({
 
 	if (loading) {
 		return (
-			<div className="flex-grow flex items-center justify-center bg-black min-h-[calc(100vh-4rem)]">
+			<div className="flex-grow flex items-center justify-center bg-background min-h-[calc(100vh-4rem)]">
 				<div className="flex flex-col items-center gap-3">
-					<RefreshCw className="w-8 h-8 text-white animate-spin" />
-					<span className="text-sm font-semibold text-neutral-400 animate-pulse">
+					<RefreshCw className="w-8 h-8 text-primary animate-spin" />
+					<span className="text-sm font-semibold text-placeholder animate-pulse">
 						Loading project cockpit...
 					</span>
 				</div>
@@ -142,26 +142,26 @@ export default function Dashboard({
 
 	if (error) {
 		return (
-			<div className="flex items-center justify-center h-full text-white">
+			<div className="flex items-center justify-center h-full text-text">
 				Failed to load projects.
 			</div>
 		);
 	}
 
 	return (
-		<div className="flex flex-col gap-6 p-6 md:p-8 h-full bg-black text-neutral-100 overflow-hidden w-full">
+		<div className="flex flex-col gap-6 p-6 md:p-8 h-full bg-background text-text overflow-hidden w-full">
 			{/* Dashboard Title Header */}
 			<div className="flex flex-col md:flex-row md:items-center justify-between gap-4 flex-shrink-0">
 				<div className="flex flex-col gap-0.5">
-					<h1 className="text-2xl font-bold text-white tracking-tight">
+					<h1 className="text-2xl font-bold text-text tracking-tight">
 						Project Dashboard
 					</h1>
 				</div>
 				<button
 					onClick={onNewProjectClick}
-					className="bg-white hover:bg-neutral-200 text-black text-xs font-bold px-4 py-2.5 rounded-xl transition-all duration-200 flex items-center gap-2 shadow cursor-pointer self-start md:self-auto border border-transparent"
+					className="bg-primary hover:opacity-90 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition-all duration-200 flex items-center gap-2 shadow cursor-pointer self-start md:self-auto border border-transparent"
 				>
-					<Plus className="w-3.5 h-3.5 text-black" />
+					<Plus className="w-3.5 h-3.5 text-white" />
 					<span>New Project</span>
 				</button>
 			</div>
@@ -169,58 +169,58 @@ export default function Dashboard({
 			{/* Stats Grid */}
 			<div className="grid grid-cols-1 md:grid-cols-3 gap-5 flex-shrink-0">
 				{/* Stat 1 */}
-				<div className="bg-white/5 p-5 rounded-2xl border border-white/10 shadow flex items-center gap-4 hover:border-white/20 transition-all duration-300">
-					<div className="w-10 h-10 rounded-xl bg-white/10 border border-white/10 flex items-center justify-center text-white">
+				<div className="bg-card p-5 rounded-2xl border border-border shadow flex items-center gap-4 hover:border-primary/20 transition-all duration-300">
+					<div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
 						<Layers className="w-4.5 h-4.5" />
 					</div>
 					<div className="flex flex-col">
-						<span className="text-xl font-bold text-white">
+						<span className="text-xl font-bold text-text">
 							{activeDesigns}
 						</span>
-						<span className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider mt-0.5">
+						<span className="text-[10px] text-placeholder font-bold uppercase tracking-wider mt-0.5">
 							Active Projects
 						</span>
 					</div>
 				</div>
 
 				{/* Stat 2 */}
-				<div className="bg-white/5 p-5 rounded-2xl border border-white/10 shadow flex items-center gap-4 hover:border-white/20 transition-all duration-300">
-					<div className="w-10 h-10 rounded-xl bg-white/10 border border-white/10 flex items-center justify-center text-white">
+				<div className="bg-card p-5 rounded-2xl border border-border shadow flex items-center gap-4 hover:border-primary/20 transition-all duration-300">
+					<div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
 						<Zap className="w-4.5 h-4.5" />
 					</div>
 					<div className="flex flex-col">
-						<span className="text-xl font-bold text-white">
+						<span className="text-xl font-bold text-text">
 							{totalCapacity} kWp
 						</span>
-						<span className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider mt-0.5">
+						<span className="text-[10px] text-placeholder font-bold uppercase tracking-wider mt-0.5">
 							Total Capacity
 						</span>
 					</div>
 				</div>
 
 				{/* Stat 3 */}
-				<div className="bg-white/5 p-5 rounded-2xl border border-white/10 shadow flex items-center gap-4 hover:border-white/20 transition-all duration-300">
-					<div className="w-10 h-10 rounded-xl bg-white/10 border border-white/10 flex items-center justify-center text-white">
+				<div className="bg-card p-5 rounded-2xl border border-border shadow flex items-center gap-4 hover:border-primary/20 transition-all duration-300">
+					<div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
 						<FileText className="w-4.5 h-4.5" />
 					</div>
 					<div className="flex flex-col">
-						<span className="text-xl font-bold text-white">
+						<span className="text-xl font-bold text-text">
 							{draftProposals}
 						</span>
-						<span className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider mt-0.5">
+						<span className="text-[10px] text-placeholder font-bold uppercase tracking-wider mt-0.5">
 							Draft Proposals
 						</span>
 					</div>
 				</div>
 			</div>
 
-			{/* Project List Dark Card container */}
-			<div className="bg-white/5 rounded-3xl border border-white/10 shadow flex-grow flex flex-col justify-between p-6 overflow-hidden">
+			{/* Project List Card container */}
+			<div className="bg-card rounded-3xl border border-border shadow flex-grow flex flex-col justify-between p-6 overflow-hidden">
 				{/* Top Search & Actions Bar */}
-				<div className="flex flex-col sm:flex-row justify-between items-center gap-4 border-b border-white/10 pb-4 flex-shrink-0">
+				<div className="flex flex-col sm:flex-row justify-between items-center gap-4 border-b border-border pb-4 flex-shrink-0">
 					{/* Search input */}
-					<div className="w-full sm:max-w-md flex items-center gap-2.5 bg-white/5 border border-white/10 px-3.5 py-2 rounded-xl">
-						<Search className="w-4 h-4 text-neutral-500" />
+					<div className="w-full sm:max-w-md flex items-center gap-2.5 bg-background border border-border px-3.5 py-2 rounded-xl">
+						<Search className="w-4 h-4 text-placeholder" />
 						<input
 							type="text"
 							value={search}
@@ -229,32 +229,20 @@ export default function Dashboard({
 								setCurrentPage(1);
 							}}
 							placeholder="Search project name, customer..."
-							className="w-full text-xs font-semibold text-neutral-200 placeholder-neutral-500 bg-transparent focus:outline-none"
+							className="w-full text-xs font-semibold text-text placeholder-placeholder bg-transparent focus:outline-none"
 						/>
 					</div>
-
-					{/* Header Actions Buttons */}
-					{/* <div className="w-full sm:w-auto flex items-center gap-3 justify-end">
-						<button className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 text-xs font-bold text-neutral-300 border border-white/10 rounded-xl transition-all cursor-pointer">
-							<SlidersHorizontal className="w-3.5 h-3.5 text-neutral-400" />
-							<span>Filters</span>
-						</button>
-						<button className="flex items-center gap-2 px-4 py-2 bg-white hover:bg-neutral-200 text-xs font-bold text-black border border-transparent rounded-xl transition-all cursor-pointer">
-							<Download className="w-3.5 h-3.5 text-black" />
-							<span>Export</span>
-						</button>
-					</div> */}
 				</div>
 
 				{/* Table Area wrapper */}
 				<div className="flex-grow overflow-hidden min-h-0 py-2 flex flex-col justify-stretch">
 					{paginatedProjects.length === 0 ? (
 						<div className="py-12 flex flex-col items-center justify-center text-center">
-							<Layers className="w-12 h-12 text-neutral-700 mb-4 animate-pulse" />
-							<h3 className="text-sm font-bold text-neutral-400">
+							<Layers className="w-12 h-12 text-placeholder mb-4 animate-pulse" />
+							<h3 className="text-sm font-bold text-placeholder">
 								No matching projects found
 							</h3>
-							<p className="text-xs text-neutral-500 mt-1 max-w-xs">
+							<p className="text-xs text-placeholder mt-1 max-w-xs">
 								Refine your query or click "New Project" to
 								register a new solar coordinate workspace.
 							</p>
@@ -262,7 +250,7 @@ export default function Dashboard({
 					) : (
 						<div className="w-full flex-grow flex flex-col justify-stretch min-h-0">
 							{/* Header Row */}
-							<div className="flex-shrink-0 flex items-center border-b border-white/10 text-[10px] font-bold uppercase tracking-wider text-neutral-400 pb-4 pt-3 px-5">
+							<div className="flex-shrink-0 flex items-center border-b border-border text-[10px] font-bold uppercase tracking-wider text-placeholder pb-4 pt-3 px-5">
 								<div className="w-[19%] font-semibold">Project</div>
 								<div className="w-[14%] font-semibold">Customer</div>
 								<div className="w-[12%] font-semibold">Phone</div>
@@ -275,16 +263,13 @@ export default function Dashboard({
 							{/* Data Rows Container */}
 							<div className="flex-grow flex flex-col justify-stretch min-h-0">
 								{paginatedProjects.map((project) => {
-									const isReady = project.stage >= 8;
-									const isPending = project.stage === 1;
-
 									return (
 										<div
 											key={project.id}
-											className="flex-1 flex items-center border-b border-white/5 hover:bg-white/5 transition-colors text-xs text-neutral-300 px-5"
+											className="flex-1 flex items-center border-b border-border/55 hover:bg-background transition-colors text-xs text-text px-5"
 										>
 											{/* 1. Project Name */}
-											<div className="w-[19%] font-bold text-white truncate pr-2">
+											<div className="w-[19%] font-bold text-text truncate pr-2">
 												<button
 													onClick={() =>
 														onOpenProject?.(project)
@@ -296,24 +281,24 @@ export default function Dashboard({
 											</div>
 
 											{/* 2. Customer Name */}
-											<div className="w-[14%] font-medium text-neutral-250 truncate pr-2">
+											<div className="w-[14%] font-medium text-text truncate pr-2">
 												{project.customer}
 											</div>
 												
-											<div className="w-[12%] text-neutral-400 truncate pr-2">
+											<div className="w-[12%] text-placeholder truncate pr-2">
 												{formatPhone(project.phone)}
 											</div>
 											
 											{/* 4. Address */}
 											<div
-												className="w-[21%] text-neutral-400 truncate pr-2"
+												className="w-[21%] text-placeholder truncate pr-2"
 												title={project.address}
 											>
 												{project.address}
 											</div>
 
 											{/* 5. Created Date */}
-											<div className="w-[11%] text-neutral-400 truncate">
+											<div className="w-[11%] text-placeholder truncate">
 												{formatDate(project.date)}
 											</div>
 
@@ -321,11 +306,7 @@ export default function Dashboard({
 											<div className="w-[19%]">
 												<span
 													className={`border text-[9px] font-extrabold px-2.5 py-0.5 rounded tracking-wide uppercase ${
-														isReady
-															? "bg-white/20 text-white border-white/25"
-															: isPending
-																? "bg-neutral-900 text-neutral-400 border-neutral-850"
-																: "bg-white/10 text-white border-white/15"
+														"bg-primary/10 text-primary border-primary/20"
 													}`}
 												>
 													{project.status.replaceAll("_", " ")}
@@ -338,7 +319,7 @@ export default function Dashboard({
 													onClick={() =>
 														onOpenProject?.(project)
 													}
-													className="text-neutral-500 hover:text-white transition-colors cursor-pointer focus:outline-none"
+													className="text-placeholder hover:text-primary transition-colors cursor-pointer focus:outline-none"
 													title="Open Workspace"
 												>
 													<Pencil className="w-3.5 h-3.5" />
@@ -349,7 +330,7 @@ export default function Dashboard({
 															project.id,
 														)
 													}
-													className="text-neutral-500 hover:text-rose-400 transition-colors cursor-pointer focus:outline-none"
+													className="text-placeholder hover:text-error transition-colors cursor-pointer focus:outline-none"
 													title="Delete Project"
 												>
 													<Trash2 className="w-3.5 h-3.5" />
@@ -365,7 +346,7 @@ export default function Dashboard({
 
 				{/* Bottom Pagination Bar */}
 				{totalResults > 0 && (
-					<div className="flex flex-col sm:flex-row justify-between items-center gap-4 pt-4 border-t border-white/10 text-xs text-neutral-400 flex-shrink-0">
+					<div className="flex flex-col sm:flex-row justify-between items-center gap-4 pt-4 border-t border-border text-xs text-placeholder flex-shrink-0">
 						<span>
 							Showing {startIndex + 1}-{endIndex} of{" "}
 							{totalResults} results
@@ -376,7 +357,7 @@ export default function Dashboard({
 							<button
 								onClick={() => setCurrentPage(1)}
 								disabled={activePage === 1}
-								className="p-1.5 hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-transparent rounded-lg text-neutral-400 hover:text-white transition-all cursor-pointer disabled:cursor-not-allowed"
+								className="p-1.5 hover:bg-background disabled:opacity-30 disabled:hover:bg-transparent rounded-lg text-placeholder hover:text-text transition-all cursor-pointer disabled:cursor-not-allowed"
 							>
 								<ChevronsLeft className="w-4 h-4" />
 							</button>
@@ -385,7 +366,7 @@ export default function Dashboard({
 									setCurrentPage((p) => Math.max(1, p - 1))
 								}
 								disabled={activePage === 1}
-								className="p-1.5 hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-transparent rounded-lg text-neutral-400 hover:text-white transition-all cursor-pointer disabled:cursor-not-allowed"
+								className="p-1.5 hover:bg-background disabled:opacity-30 disabled:hover:bg-transparent rounded-lg text-placeholder hover:text-text transition-all cursor-pointer disabled:cursor-not-allowed"
 							>
 								<ChevronLeft className="w-4 h-4" />
 							</button>
@@ -408,15 +389,15 @@ export default function Dashboard({
 									return (
 										<div key={pageNum} className="flex items-center gap-1.5">
 											{showGap ? (
-												<span className="text-neutral-600 px-1">...</span>
+												<span className="text-placeholder px-1">...</span>
 											) : null}
 
 											<button
 												onClick={() => setCurrentPage(pageNum)}
 												className={`w-7 h-7 flex items-center justify-center font-bold text-xs rounded-lg transition-all cursor-pointer ${
 													isActive
-														? "bg-white text-black"
-														: "hover:bg-white/10 text-neutral-400 hover:text-white"
+														? "bg-primary text-white"
+														: "hover:bg-background text-placeholder hover:text-text"
 												}`}
 											>
 												{pageNum}
@@ -432,14 +413,14 @@ export default function Dashboard({
 									)
 								}
 								disabled={activePage === totalPages}
-								className="p-1.5 hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-transparent rounded-lg text-neutral-400 hover:text-white transition-all cursor-pointer disabled:cursor-not-allowed"
+								className="p-1.5 hover:bg-background disabled:opacity-30 disabled:hover:bg-transparent rounded-lg text-placeholder hover:text-text transition-all cursor-pointer disabled:cursor-not-allowed"
 							>
 								<ChevronRight className="w-4 h-4" />
 							</button>
 							<button
 								onClick={() => setCurrentPage(totalPages)}
 								disabled={activePage === totalPages}
-								className="p-1.5 hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-transparent rounded-lg text-neutral-400 hover:text-white transition-all cursor-pointer disabled:cursor-not-allowed"
+								className="p-1.5 hover:bg-background disabled:opacity-30 disabled:hover:bg-transparent rounded-lg text-placeholder hover:text-text transition-all cursor-pointer disabled:cursor-not-allowed"
 							>
 								<ChevronsRight className="w-4 h-4" />
 							</button>
