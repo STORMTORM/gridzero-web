@@ -5,7 +5,7 @@ import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { Hand, RotateCw } from "lucide-react";
 import { fetch3DData } from "../../../../utils/design/api";
 import type { SceneData, QualityLevel } from "../../../../utils/design/types";
-import { sunDirectionENU, sunToScene, updateSunLight, getSunAzimuthDeg } from "../../../../utils/design/sunEngine";
+import { sunDirectionENU, sunENUFromPath, sunToScene, updateSunLight, getSunAzimuthDeg } from "../../../../utils/design/sunEngine";
 import { makeCoordConverter, buildGround, buildRoofs, buildRoofOverlays, buildObjects, buildWalls, buildPanels, buildTrees, buildTaggedObjects, preloadModels } from "../../../../utils/design/sceneBuilder";
 import { runPanelAnalysis, applyPanelColors, restorePanelColors } from "../../../../utils/design/shadowAnalysis";
 import ControlPanel from "./ControlPanel";
@@ -211,7 +211,7 @@ export default function Viewer({ data: propData, sitevisitId: propSitevisitId, r
     scene.add(sunLight.target);
     sunLightRef.current = sunLight;
 
-    const enu = sunDirectionENU(lat, 4, initialT);
+    const enu = sunENUFromPath(data?.sun_path, 4, 15, initialT) ?? sunDirectionENU(lat, 4, initialT);
     const sunDir = sunToScene(enu, angleSouth);
     updateSunLight(sunLight, sunDir, new THREE.Vector3(W / 2, 0, H / 2), diag / 2);
 
@@ -423,7 +423,7 @@ export default function Viewer({ data: propData, sitevisitId: propSitevisitId, r
     const angleSouth = data.angle_south_vertical_deg || 90;
     const W = data.width_meters, H = data.height_meters;
     const diag = Math.sqrt(W * W + H * H);
-    const enu = sunDirectionENU(lat, month, timeOfDay);
+    const enu = sunENUFromPath(data?.sun_path, month, 15, timeOfDay) ?? sunDirectionENU(lat, month, timeOfDay);
     const sunDir = sunToScene(enu, angleSouth);
     if (enu[2] > 0.01) {
       sunLightRef.current.visible = true;

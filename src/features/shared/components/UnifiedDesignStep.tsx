@@ -10,6 +10,7 @@ import { ThreeDViewport } from "./ThreeDViewport";
 import type { SceneData, LocalObject } from "../../../utils/design/types";
 import type { RoofData, PlacedPanelGroup, DragState } from "../types";
 import { getPanelsInGroup, isPointInPolygon } from "../../../utils/design/coords";
+import { CATEGORY_DEFAULTS } from "../constants";
 
 // Import individual hooks directly
 import { useSelection } from "../hooks/useSelection";
@@ -237,12 +238,89 @@ export default function UnifiedDesignStep({
 		return overlapping;
 	}, [stage, panelGroups, objects, panelPlacement.panelSpec]);
 
+	const helperText = useMemo(() => {
+		if (stage === DesignStage.Roof) {
+			if (roofEditor.isDrawingRoofs) {
+				const pts = roofEditor.currentPoints.length;
+				if (pts === 0) return "Zoom and tap on any corner of the roof.";
+				if (pts < 3) return "Tap on the next adjoining corner. Click Undo in the sidebar to go back one corner.";
+				return "Click on the first point to close and complete the roof.";
+			}
+			if (selection.selectedRoofId !== null) {
+				return "Configure the parapet wall and height for the selected roof in the sidebar.";
+			}
+			return roofs.length > 0
+				? "Repeat this process for all remaining roofs, then click Save and Continue."
+				: "Click \"Draw Roof\" in the sidebar to start mapping the roof.";
+		}
+
+		if (stage === DesignStage.Obstruction) {
+			if (objectEditor.objectDrawingMode !== "none") {
+				if (objectEditor.objectDrawingMode === "wall") {
+					return objectEditor.wallStartPoint
+						? "Click on the map to place the end point of the wall."
+						: "Click on the map to place the start point of the wall.";
+				}
+				if (objectEditor.objectDrawingMode === "polygon") {
+					const pts = roofEditor.currentPoints.length;
+					if (pts === 0) return "Zoom and click on the roof to place the first corner of the polygon.";
+					if (pts < 3) return "Click on the next adjoining corner of the polygon.";
+					return "Click on the first point to close and place the polygon.";
+				}
+				const config = CATEGORY_DEFAULTS[objectEditor.objectDrawingMode];
+				const isOnRoof = config ? config.on_roof : true;
+				return isOnRoof
+					? "Zoom and click on an available area on the roof to place the object."
+					: "Zoom and click on an available area outside the roof to place the object.";
+			}
+			if (selection.selectedObjectId !== null) {
+				return "Drag to reposition, rotate, or adjust the selected object's parameters in the sidebar.";
+			}
+			const nonWallObjects = objects.filter((o) => o.type !== "wall");
+			return nonWallObjects.length > 0
+				? "Repeat this process for all remaining objects, then click Save and Continue."
+				: "Select an object category and click a shape to start placing obstructions.";
+		}
+
+		if (stage === DesignStage.PanelPlacement) {
+			if (panelPlacement.pendingDuplicateGroup) {
+				return "Zoom and click on an available area on the roof to place the copied table.";
+			}
+			if (panelPlacement.isPlacingGroup) {
+				return "Zoom and click on an available area on the roof to place the configured table.";
+			}
+			if (selection.selectedGroupId !== null) {
+				return "Drag to reposition, or modify the selected panel table parameters in the sidebar.";
+			}
+			return panelGroups.length > 0
+				? "Repeat this process for all remaining panel layouts, then click Save and Continue."
+				: "Click “Configure Grid Layout” to start adding panels.";
+		}
+
+		return null;
+	}, [
+		stage,
+		roofs,
+		objects,
+		panelGroups,
+		roofEditor.isDrawingRoofs,
+		roofEditor.currentPoints,
+		selection.selectedRoofId,
+		selection.selectedObjectId,
+		selection.selectedGroupId,
+		objectEditor.objectDrawingMode,
+		objectEditor.wallStartPoint,
+		panelPlacement.isPlacingGroup,
+		panelPlacement.pendingDuplicateGroup,
+	]);
+
 	return (
 		<div className="flex-grow w-full flex flex-col md:flex-row overflow-hidden relative">
 
 			{/* Column 1: 2D drawing canvas */}
 			{stage !== DesignStage.Snapshot && (
 				<CanvasViewport
+					helperText={helperText}
 					viewportRef={viewport.viewportRef}
 					innerContainerRef={viewport.innerContainerRef}
 					scale={viewport.scale}
@@ -344,6 +422,7 @@ export default function UnifiedDesignStep({
 						duplicateSelectedGroup={panelPlacement.duplicateSelectedGroup}
 						updateSelectedGroup={panelPlacement.updateSelectedGroup}
 						onContinue={panelPlacement.handlePlacementContinue}
+						pendingDuplicateGroup={panelPlacement.pendingDuplicateGroup}
 					/>
 				)}
 				{stage === DesignStage.Snapshot && (

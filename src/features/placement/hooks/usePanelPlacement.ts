@@ -39,6 +39,14 @@ export function usePanelPlacement({
 }: PanelPlacementParams) {
 	const [isPlacingGroup, setIsPlacingGroup] = useState(false);
 	const [pendingDuplicateGroup, setPendingDuplicateGroup] = useState<PlacedPanelGroup | null>(null);
+
+	// Reset pending duplicate if placement mode is turned off
+	useEffect(() => {
+		if (!isPlacingGroup) {
+			setPendingDuplicateGroup(null);
+		}
+	}, [isPlacingGroup]);
+
 	const [targetPanelCount, setTargetPanelCount] = useState(0);
 	const [placementConfig, setPlacementConfig] = useState<PlacementConfig>(DEFAULT_PLACEMENT_CONFIG);
 	const [showConfigModal, setShowConfigModal] = useState(false);

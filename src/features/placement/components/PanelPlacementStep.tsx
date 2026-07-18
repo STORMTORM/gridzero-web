@@ -15,6 +15,7 @@ interface PanelPlacementStepProps {
 	duplicateSelectedGroup: () => void;
 	updateSelectedGroup: (updates: Partial<PanelGroup>) => void;
 	onContinue: () => void;
+	pendingDuplicateGroup?: PanelGroup | null;
 }
 
 export default function PanelPlacementStep({
@@ -31,6 +32,7 @@ export default function PanelPlacementStep({
 	duplicateSelectedGroup,
 	updateSelectedGroup,
 	onContinue,
+	pendingDuplicateGroup,
 }: PanelPlacementStepProps) {
 	const overLimit = targetPanelCount > 0 && placedPanelCount > targetPanelCount;
 	const canContinue = !!panelSpec && placedPanelCount > 0 && !overLimit;
@@ -92,7 +94,7 @@ export default function PanelPlacementStep({
 					) : (
 						<div className="flex flex-col gap-2">
 							<div className="text-[10px] text-teal-400 font-bold bg-teal-500/10 border border-teal-500/15 rounded-xl px-3 py-2 text-center animate-pulse">
-								Tapping roof to place table...
+								{pendingDuplicateGroup ? "Tapping roof to place duplicated table..." : "Tapping roof to place table..."}
 							</div>
 							<button
 								onClick={() => setIsPlacingGroup(false)}

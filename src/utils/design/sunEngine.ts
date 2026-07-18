@@ -1,6 +1,34 @@
 import * as THREE from "three";
+import type { SunPath } from "./types";
 
 const DEG = Math.PI / 180;
+
+/**
+ * Look up the sun's ENU direction from the backend-precomputed table (pvlib).
+ * Returns null when the table is absent or the requested day isn't present, so
+ * callers can fall back to sunDirectionENU().
+ *
+ * dayOfMonth must be a precomputed day (the 15th). hourOfDay is snapped to the
+ * nearest 15-min slot: index = round((hour - start_hour) * 4), clamped to the
+ * available range (06:00..19:00).
+ */
+export function sunENUFromPath(
+  sp: SunPath | null | undefined,
+  month: number,
+  dayOfMonth: number,
+  hourOfDay: number
+): [number, number, number] | null {
+  if (!sp?.enu) return null;
+  const label = `${String(month).padStart(2, "0")}-${String(dayOfMonth).padStart(2, "0")}`;
+  const rows = sp.enu[label];
+  if (!rows || rows.length === 0) return null;
+  let slot = Math.round((hourOfDay - (sp.start_hour ?? 0)) * 4);
+  if (slot < 0) slot = 0;
+  else if (slot > rows.length - 1) slot = rows.length - 1;
+  const v = rows[slot];
+  return v ? [v[0], v[1], v[2]] : null;
+}
+
 
 /**
  * Compute sun direction in ENU (East-North-Up) for a given latitude, month, and hour.

@@ -43,6 +43,7 @@ interface CanvasViewportProps {
 	handleCanvasClick: (e: React.MouseEvent) => void;
 	zoomIn2D: () => void;
 	zoomOut2D: () => void;
+	helperText?: string | null;
 }
 
 export const CanvasViewport: React.FC<CanvasViewportProps> = ({
@@ -84,6 +85,7 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({
 	handleCanvasClick,
 	zoomIn2D,
 	zoomOut2D,
+	helperText,
 }) => {
 	return (
 		<div
@@ -145,9 +147,9 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({
 				/>
 			</div>
 
-			{stage === "placement" && isPlacingGroup && (
-				<div className="absolute top-6 left-1/2 -translate-x-1/2 bg-black/75 border border-white/10 rounded-2xl px-4 py-2 text-[11px] font-bold text-white shadow-xl z-30 pointer-events-none">
-					Tap inside a clear roof area to place the configured table
+			{helperText && (
+				<div className="absolute top-6 left-1/2 -translate-x-1/2 bg-neutral-900/95 border border-white/10 rounded-2xl px-5 py-2.5 text-[11px] font-bold text-neutral-200 shadow-xl z-30 pointer-events-none text-center max-w-[92%] animate-in fade-in slide-in-from-top-4 duration-200">
+					{helperText}
 				</div>
 			)}
 

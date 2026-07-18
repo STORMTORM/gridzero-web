@@ -110,12 +110,24 @@ export interface SalesmanOverlay {
   phone?: string | null;
 }
 
+export interface SunPath {
+  year: number;
+  tz: string;
+  interval_min: number;
+  start_hour: number;
+  end_hour: number;
+  days: string[];
+  slots: string[];
+  enu: Record<string, [number, number, number][]>;
+}
+
 export interface SceneData {
   image_link: string;
   width_meters: number;
   height_meters: number;
   coordinates: [number, number][];
   angle_south_vertical_deg: number;
+  sun_path?: SunPath | null;
   roofs: Record<string, RoofData>;
   objects: {
     wall: Record<string, ObjectData>;
