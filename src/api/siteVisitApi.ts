@@ -321,3 +321,18 @@ export async function updateProfile(payload: any) {
 	const res = await api.put("/auth/profile", payload);
 	return res.data;
 }
+
+export async function getPlacesAutocomplete(input: string, sessiontoken: string) {
+	const res = await api.get("/visit/places/autocomplete", {
+		params: { input, sessiontoken },
+	});
+	return res.data;
+}
+
+export async function getPlacesDetails(placeId: string, sessiontoken: string) {
+	const res = await api.get("/visit/places/details", {
+		params: { place_id: placeId, sessiontoken },
+	});
+	return res.data;
+}
+
