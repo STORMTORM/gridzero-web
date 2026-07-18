@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { PenTool, Check, Trash2, Undo } from "lucide-react";
+import { PenTool, Check, Trash2, Undo, Pen } from "lucide-react";
 import type { RoofData } from "../../shared/types";
 
 interface RoofMappingStepProps {
@@ -45,12 +45,9 @@ export default function RoofMappingStep({
 			<div className="flex flex-col gap-6">
 				{/* Title Info */}
 				<div>
-					<h3 className="text-sm font-bold text-text flex items-center gap-2">
-						<span>2D Design Controls</span>
+					<h3 className="text-xl font-bold text-text flex items-center gap-2">
+						<span>Roof Layout Settings</span>
 					</h3>
-					<p className="text-[11px] text-placeholder font-medium mt-1">
-						Map out boundaries and setup structural parapet options.
-					</p>
 				</div>
 
 				{/* Drawing toggle buttons */}
@@ -63,7 +60,7 @@ export default function RoofMappingStep({
 							}}
 							className="flex-1 py-2.5 bg-primary hover:opacity-90 text-white text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow"
 						>
-							<PenTool className="w-3.5 h-3.5" />
+							<Pen className="w-3.5 h-3.5" />
 							<span>Draw Roof</span>
 						</button>
 					) : (
