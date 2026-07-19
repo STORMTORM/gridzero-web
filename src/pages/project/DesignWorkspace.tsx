@@ -10,6 +10,13 @@ import { useProject } from "../../features/shared/hooks/useProject";
 import { useDesign } from "../../features/shared/hooks/useDesign";
 import { calculateArea } from "../../utils/design/coords";
 
+interface UndoRedoHandlers {
+	undo: () => void;
+	redo: () => void;
+	canUndo: boolean;
+	canRedo: boolean;
+}
+
 export default function DesignWorkspace() {
 	const { id } = useParams<{ id: string }>();
 	const navigate = useNavigate();
@@ -39,6 +46,7 @@ export default function DesignWorkspace() {
 	});
 	const [activeViewport, setActiveViewport] = useState<"2d" | "3d">("2d");
 	const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+	const [undoRedo, setUndoRedo] = useState<UndoRedoHandlers | null>(null);
 
 	const handleSetLayoutMode = (mode: "split" | "toggle") => {
 		setLayoutMode(mode);
@@ -300,6 +308,7 @@ export default function DesignWorkspace() {
 				currentStage={currentStageNumber}
 				saving={_saving}
 				onOpenSettings={() => setIsSettingsOpen(true)}
+				undoRedo={undoRedo || undefined}
 			/>
 
 			{/* Main Split Layout Panel */}
@@ -319,6 +328,7 @@ export default function DesignWorkspace() {
 					layoutMode={layoutMode}
 					activeViewport={activeViewport}
 					setActiveViewport={setActiveViewport}
+					onRegisterUndoRedo={setUndoRedo}
 				/>
 			</div>
 

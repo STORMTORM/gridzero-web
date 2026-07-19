@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { DesignStage } from "../enums";
 import RoofMappingStep from "../../roof/components/RoofMappingStep";
 import ObstructionMappingStep from "../../obstructions/components/ObstructionMappingStep";
@@ -11,6 +11,7 @@ import type { SceneData, LocalObject } from "../../../utils/design/types";
 import type { RoofData, PlacedPanelGroup, DragState } from "../types";
 import { getPanelsInGroup, isPointInPolygon } from "../../../utils/design/coords";
 import { CATEGORY_DEFAULTS } from "../constants";
+import { useHistoryState } from "../hooks/useHistoryState";
 
 // Import individual hooks directly
 import { useSelection } from "../hooks/useSelection";
@@ -22,6 +23,13 @@ import { usePanelPlacement } from "../../placement/hooks/usePanelPlacement";
 import { useKeyboard } from "../hooks/useKeyboard";
 import { useSceneBuilder } from "../hooks/useSceneBuilder";
 import { useCanvasInteraction } from "../hooks/useCanvasInteraction";
+
+interface UndoRedoHandlers {
+	undo: () => void;
+	redo: () => void;
+	canUndo: boolean;
+	canRedo: boolean;
+}
 
 interface UnifiedDesignStepProps {
 	sitevisitId: string;
@@ -38,6 +46,7 @@ interface UnifiedDesignStepProps {
 	layoutMode?: "split" | "toggle";
 	activeViewport?: "2d" | "3d";
 	setActiveViewport?: (v: "2d" | "3d") => void;
+	onRegisterUndoRedo?: (handlers: UndoRedoHandlers) => void;
 }
 
 export default function UnifiedDesignStep({
@@ -55,14 +64,52 @@ export default function UnifiedDesignStep({
 	layoutMode = "split",
 	activeViewport = "2d",
 	setActiveViewport,
+	onRegisterUndoRedo,
 }: UnifiedDesignStepProps) {
 
 	// ────────────────────────────────────────────────────────────────────────
-	// CORE DATA STATES (Synchronous single source of truth)
+	// CORE DATA STATES (Synchronous single source of truth with History Stack)
 	// ────────────────────────────────────────────────────────────────────────
-	const [roofs, setRoofs] = useState<RoofData[]>(initialRoofs);
-	const [objects, setObjects] = useState<LocalObject[]>(initialObjects);
-	const [panelGroups, setPanelGroups] = useState<PlacedPanelGroup[]>(initialPanelGroups);
+	const {
+		state: docState,
+		setState: setDocState,
+		undo: undoDoc,
+		redo: redoDoc,
+		canUndo: canUndoDoc,
+		canRedo: canRedoDoc,
+		reset: resetDoc,
+	} = useHistoryState({
+		roofs: initialRoofs,
+		objects: initialObjects,
+		panelGroups: initialPanelGroups,
+	});
+
+	const roofs = docState.roofs;
+	const objects = docState.objects;
+	const panelGroups = docState.panelGroups;
+
+	// Setter adapters to maintain compatibility
+	const setRoofs = useCallback((newRoofs: RoofData[] | ((prev: RoofData[]) => RoofData[])) => {
+		setDocState((prev) => ({
+			...prev,
+			roofs: typeof newRoofs === "function" ? newRoofs(prev.roofs) : newRoofs,
+		}));
+	}, [setDocState]);
+
+	const setObjects = useCallback((newObjects: LocalObject[] | ((prev: LocalObject[]) => LocalObject[])) => {
+		setDocState((prev) => ({
+			...prev,
+			objects: typeof newObjects === "function" ? newObjects(prev.objects) : newObjects,
+		}));
+	}, [setDocState]);
+
+	const setPanelGroups = useCallback((newGroups: PlacedPanelGroup[] | ((prev: PlacedPanelGroup[]) => PlacedPanelGroup[])) => {
+		setDocState((prev) => ({
+			...prev,
+			panelGroups: typeof newGroups === "function" ? newGroups(prev.panelGroups) : newGroups,
+		}));
+	}, [setDocState]);
+
 	const [loadedSitevisitId, setLoadedSitevisitId] = useState<string | null>(null);
 	
 	const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -73,12 +120,14 @@ export default function UnifiedDesignStep({
 	// Sync initial collections from server props only on first load/project switch
 	useEffect(() => {
 		if (sitevisitId !== loadedSitevisitId) {
-			setRoofs(initialRoofs);
-			setObjects(initialObjects);
-			setPanelGroups(initialPanelGroups);
+			resetDoc({
+				roofs: initialRoofs,
+				objects: initialObjects,
+				panelGroups: initialPanelGroups,
+			});
 			setLoadedSitevisitId(sitevisitId);
 		}
-	}, [initialRoofs, initialObjects, initialPanelGroups, sitevisitId, loadedSitevisitId]);
+	}, [initialRoofs, initialObjects, initialPanelGroups, sitevisitId, loadedSitevisitId, resetDoc]);
 
 	// 1. Selection Hook
 	const selection = useSelection();
@@ -184,6 +233,31 @@ export default function UnifiedDesignStep({
 		panelPlacement,
 		autoSave,
 	});
+
+	// Expose Undo/Redo handlers to parent workspace
+	useEffect(() => {
+		if (onRegisterUndoRedo) {
+			const isDrawingActive = roofEditor.isDrawingRoofs || objectEditor.objectDrawingMode === "polygon";
+			onRegisterUndoRedo({
+				undo: isDrawingActive ? roofEditor.undoLastRoofPoint : undoDoc,
+				redo: isDrawingActive ? roofEditor.redoLastRoofPoint : redoDoc,
+				canUndo: isDrawingActive ? roofEditor.canUndoPoint : canUndoDoc,
+				canRedo: isDrawingActive ? roofEditor.canRedoPoint : canRedoDoc,
+			});
+		}
+	}, [
+		onRegisterUndoRedo,
+		roofEditor.isDrawingRoofs,
+		objectEditor.objectDrawingMode,
+		roofEditor.undoLastRoofPoint,
+		roofEditor.redoLastRoofPoint,
+		roofEditor.canUndoPoint,
+		roofEditor.canRedoPoint,
+		undoDoc,
+		redoDoc,
+		canUndoDoc,
+		canRedoDoc,
+	]);
 
 	// Compute which object IDs are overlapped by any panel (only in placement stage)
 	const overlappingObjectIds = useMemo(() => {
@@ -402,7 +476,7 @@ export default function UnifiedDesignStep({
 			)}
 
 			{/* Column 3: Design Sidebar step component */}
-			<div className="w-full md:w-[380px] bg-card/60 p-6 flex flex-col justify-between flex-shrink-0 border-l border-border gap-6 overflow-y-auto z-20 font-sans text-text">
+			<div className="w-full md:w-[380px] bg-card/60 p-6 flex flex-col justify-between flex-shrink-0 border-l border-border gap-6 overflow-hidden h-full z-20 font-sans text-text">
 				{stage === DesignStage.Roof && (
 					<RoofMappingStep
 						roofs={roofs}
@@ -410,8 +484,6 @@ export default function UnifiedDesignStep({
 						setSelectedRoofId={selection.setSelectedRoofId}
 						isDrawing={roofEditor.isDrawingRoofs}
 						setIsDrawing={roofEditor.setIsDrawingRoofs}
-						currentPoints={roofEditor.currentPoints}
-						undoLastPoint={roofEditor.undoLastRoofPoint}
 						cancelDrawing={roofEditor.cancelRoofDrawing}
 						deleteSelectedRoof={roofEditor.deleteSelectedRoof}
 						updateSelectedRoof={roofEditor.updateSelectedRoof}

@@ -57,8 +57,8 @@ export default function ObstructionMappingStep({
 	const activeCategories = activeTab === "on_roof" ? onRoofCategories : offRoofCategories;
 
 	return (
-		<div className="h-full flex flex-col justify-between">
-			<div className="flex flex-col gap-6">
+		<div className="flex flex-col h-full justify-between overflow-hidden">
+			<div className="flex flex-col gap-6 flex-grow overflow-y-auto pr-1 pb-4">
 				{/* Title */}
 				<div>
 					<h3 className="text-sm font-bold text-text flex items-center gap-2">
@@ -417,7 +417,7 @@ export default function ObstructionMappingStep({
 			</div>
 
 			{/* Bottom Action bar */}
-			<div className="border-t border-border pt-4 flex gap-3">
+			<div className="border-t border-border pt-4 mt-auto flex-shrink-0 flex gap-3">
 				<button
 					onClick={onContinue}
 					className="flex-grow py-3 bg-primary text-white font-bold text-xs rounded-xl shadow-lg hover:opacity-90 transition-all flex items-center justify-center gap-1.5 cursor-pointer"

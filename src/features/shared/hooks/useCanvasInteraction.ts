@@ -332,8 +332,8 @@ export function useCanvasInteraction({
 		if (isFirstPointClose && roofEditor.currentPoints.length >= 3) {
 			const newRoof: RoofData = {
 				id: generateUUID("roof"),
-				name: `Roof Boundary ${roofs.length + 1}`,
-				height: 3.5,
+				name: `Roof ${roofs.length + 1}`,
+				height: 3.0,
 				points: roofEditor.currentPoints,
 				area: calculateArea(roofEditor.currentPoints),
 				parapetEnabled: true,

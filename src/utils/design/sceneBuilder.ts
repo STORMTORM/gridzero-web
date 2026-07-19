@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import type { SceneData, ObjectData, PanelPlacement } from "./types";
+import { isPointInPolygon } from "./coords";
 
 const DEG = Math.PI / 180;
 // const ROD_SECTION = 0.03;
@@ -731,7 +732,10 @@ export function buildPanels(data: SceneData, conv: CoordConverter): THREE.Group 
     const purlinOvh = panel.purlin_overhang ?? 0.2;
     const sx = conv.panelToX(panel.center_x);
     const sz = conv.panelToZ(panel.center_y);
-    const roofH = panel.roof_idx >= 0 && panel.roof_idx < roofArr.length ? roofArr[panel.roof_idx].height : 0;
+    const containingRoof = roofArr.find((r) => r.roof && isPointInPolygon([panel.center_x, panel.center_y], r.roof));
+    const roofH = containingRoof 
+      ? containingRoof.height 
+      : (panel.roof_idx >= 0 && panel.roof_idx < roofArr.length ? roofArr[panel.roof_idx].height : 0);
 
     const outerGroup = new THREE.Group();
     outerGroup.position.set(sx, roofH + ph, sz);
@@ -935,7 +939,10 @@ export function buildPanels(data: SceneData, conv: CoordConverter): THREE.Group 
     const gcx = avgX + lcx * cosTaC - lcz * sinTaC;
     const gcz = avgZ + lcx * sinTaC + lcz * cosTaC;
 
-    const roofH = panels[0].roof_idx >= 0 && panels[0].roof_idx < roofArr.length ? roofArr[panels[0].roof_idx].height : 0;
+    const containingRoof = roofArr.find((r) => r.roof && isPointInPolygon([panels[0].center_x, panels[0].center_y], r.roof));
+    const roofH = containingRoof 
+      ? containingRoof.height 
+      : (panels[0].roof_idx >= 0 && panels[0].roof_idx < roofArr.length ? roofArr[panels[0].roof_idx].height : 0);
     const outerGroup = new THREE.Group();
     const cosTA = Math.cos(tableAngleRad), sinTA = Math.sin(tableAngleRad);
 

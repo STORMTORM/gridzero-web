@@ -38,8 +38,8 @@ export default function PanelPlacementStep({
 	const canContinue = !!panelSpec && placedPanelCount > 0 && !overLimit;
 
 	return (
-		<div className="h-full flex flex-col justify-between">
-			<div className="flex flex-col gap-5 font-sans">
+		<div className="flex flex-col h-full justify-between overflow-hidden">
+			<div className="flex flex-col gap-5 font-sans flex-grow overflow-y-auto pr-1 pb-4">
 				
 				{/* Title */}
 				<div>
@@ -306,7 +306,7 @@ export default function PanelPlacementStep({
 			</div>
 
 			{/* Continue button */}
-			<div className="flex-shrink-0 pt-4 border-t border-border">
+			<div className="flex-shrink-0 pt-4 border-t border-border mt-auto">
 				<button
 					onClick={onContinue}
 					disabled={!canContinue}

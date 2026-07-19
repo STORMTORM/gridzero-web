@@ -242,8 +242,8 @@ export default function SnapshotsStep({
 	}
 
 	return (
-		<div className="h-full flex flex-col justify-between font-sans text-text">
-			<div className="flex flex-col gap-4">
+		<div className="flex flex-col h-full justify-between overflow-hidden font-sans text-text">
+			<div className="flex flex-col gap-4 flex-grow overflow-y-auto pr-1 pb-4">
 				{/* Step title & navigation */}
 				<div className="flex items-center justify-between">
 					<div className="flex flex-col gap-0.5">

@@ -1,5 +1,6 @@
 import { useState, useCallback } from "react";
 import type { RoofData } from "../../shared/types";
+import { useHistoryState } from "../../shared/hooks/useHistoryState";
 
 interface RoofEditorParams {
 	roofs: RoofData[];
@@ -18,7 +19,15 @@ export function useRoofEditor({
 	saveRoofDesign,
 	saveRoofDesignDebounced,
 }: RoofEditorParams) {
-	const [currentPoints, setCurrentPoints] = useState<[number, number][]>([]);
+	const {
+		state: currentPoints,
+		setState: setCurrentPoints,
+		undo: undoPoints,
+		redo: redoPoints,
+		canUndo: canUndoPoint,
+		canRedo: canRedoPoint,
+		reset: resetPoints,
+	} = useHistoryState<[number, number][]>([]);
 	const [isDrawingRoofs, setIsDrawingRoofs] = useState(false);
 
 	const deleteSelectedRoof = useCallback(() => {
@@ -37,15 +46,17 @@ export function useRoofEditor({
 	}, [roofs, selectedRoofId, setRoofs, saveRoofDesignDebounced]);
 
 	const undoLastRoofPoint = useCallback(() => {
-		if (currentPoints.length > 0) {
-			setCurrentPoints((prev) => prev.slice(0, -1));
-		}
-	}, [currentPoints]);
+		undoPoints();
+	}, [undoPoints]);
+
+	const redoLastRoofPoint = useCallback(() => {
+		redoPoints();
+	}, [redoPoints]);
 
 	const cancelRoofDrawing = useCallback(() => {
 		setIsDrawingRoofs(false);
-		setCurrentPoints([]);
-	}, []);
+		resetPoints([]);
+	}, [resetPoints]);
 
 	return {
 		currentPoints,
@@ -55,6 +66,10 @@ export function useRoofEditor({
 		deleteSelectedRoof,
 		updateSelectedRoof,
 		undoLastRoofPoint,
+		redoLastRoofPoint,
+		canUndoPoint,
+		canRedoPoint,
+		resetPoints,
 		cancelRoofDrawing,
 	};
 }

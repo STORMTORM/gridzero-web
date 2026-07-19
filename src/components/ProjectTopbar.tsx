@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { ChevronRight, ArrowLeft, Settings } from "lucide-react";
+import { ChevronRight, ArrowLeft, Settings, Undo, Redo } from "lucide-react";
 
 interface ProjectTopbarProps {
 	projectName: string;
@@ -8,6 +8,12 @@ interface ProjectTopbarProps {
 	savingStatus?: string;
 	onContinue?: () => void;
 	onOpenSettings?: () => void;
+	undoRedo?: {
+		undo: () => void;
+		redo: () => void;
+		canUndo: boolean;
+		canRedo: boolean;
+	};
 }
 
 const STAGE_BREADCRUMBS: Record<number, string> = {
@@ -28,6 +34,7 @@ export default function ProjectTopbar({
 	savingStatus,
 	onContinue,
 	onOpenSettings,
+	undoRedo,
 }: ProjectTopbarProps) {
 	const navigate = useNavigate();
 
@@ -82,6 +89,28 @@ export default function ProjectTopbar({
 						<span className="text-[10px] font-extrabold text-text uppercase tracking-widest">
 							{savingStatus || "SAVING"}
 						</span>
+					</div>
+				)}
+
+				{/* Undo/Redo Buttons */}
+				{undoRedo && (
+					<div className="flex items-center gap-4 bg-card border border-border px-2 pt-0.5 rounded-xl flex-shrink-0 shadow-sm">
+						<button
+							onClick={undoRedo.undo}
+							disabled={!undoRedo.canUndo}
+							className="rounded-lg text-placeholder hover:text-text hover:bg-background disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-placeholder transition-all cursor-pointer disabled:cursor-not-allowed"
+							title="Undo"
+						>
+							<Undo className="w-5 aspect-square" />
+						</button>
+						<button
+							onClick={undoRedo.redo}
+							disabled={!undoRedo.canRedo}
+							className="rounded-lg text-placeholder hover:text-text hover:bg-background disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-placeholder transition-all cursor-pointer disabled:cursor-not-allowed"
+							title="Redo"
+						>
+							<Redo className="w-5 aspect-square" />
+						</button>
 					</div>
 				)}
 
