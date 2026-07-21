@@ -1,4 +1,4 @@
-import { X, AlertTriangle, Check } from "lucide-react";
+import { X, AlertTriangle } from "lucide-react";
 
 interface SaveRoofPointsModalProps {
 	isOpen: boolean;

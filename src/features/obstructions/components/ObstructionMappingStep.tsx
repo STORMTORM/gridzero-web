@@ -44,10 +44,10 @@ export default function ObstructionMappingStep({
 		e.stopPropagation();
 		setSelectedObjectId(obj.id);
 		setEditingObjectId(obj.id);
-		setTempObjectName(obj.name);
+		setTempObjectName(obj.name || "");
 	};
 
-	const handleSaveName = (objId: string) => {
+	const handleSaveName = () => {
 		if (tempObjectName.trim()) {
 			updateSelectedObject({ name: tempObjectName.trim() });
 		}
@@ -200,10 +200,10 @@ export default function ObstructionMappingStep({
 													type="text"
 													value={tempObjectName}
 													onChange={(e) => setTempObjectName(e.target.value)}
-													onBlur={() => handleSaveName(obj.id)}
+													onBlur={() => handleSaveName()}
 													onKeyDown={(e) => {
 														if (e.key === "Enter") {
-															handleSaveName(obj.id);
+															handleSaveName();
 														} else if (e.key === "Escape") {
 															setEditingObjectId(null);
 														}

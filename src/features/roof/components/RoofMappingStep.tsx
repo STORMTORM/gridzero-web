@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Trash2, Pen, ChevronUp, ChevronDown, AlertTriangle } from "lucide-react";
+import { Trash2, Pen, ChevronUp, ChevronDown } from "lucide-react";
 import type { RoofData } from "../../shared/types";
 import { useUnit } from "../../shared/contexts/UnitContext";
 
