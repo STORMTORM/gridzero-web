@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Trash2, Pen, ChevronUp, ChevronDown } from "lucide-react";
+import { Trash2, Pen, ChevronUp, ChevronDown, AlertTriangle } from "lucide-react";
 import type { RoofData } from "../../shared/types";
 import { useUnit } from "../../shared/contexts/UnitContext";
 
@@ -13,6 +13,9 @@ interface RoofMappingStepProps {
 	deleteSelectedRoof: () => void;
 	updateSelectedRoof: (updates: Partial<RoofData>) => void;
 	onContinue: () => void;
+	unsavedRoofId?: string | null;
+	onSaveRoofPoints?: () => void;
+	onCancelRoofPoints?: () => void;
 }
 
 export default function RoofMappingStep({
@@ -25,6 +28,9 @@ export default function RoofMappingStep({
 	deleteSelectedRoof,
 	updateSelectedRoof,
 	onContinue,
+	unsavedRoofId,
+	onSaveRoofPoints,
+	onCancelRoofPoints,
 }: RoofMappingStepProps) {
 
 	const { unit, mToUnit, unitToM, formatVal } = useUnit();
@@ -111,6 +117,34 @@ export default function RoofMappingStep({
 						<div className="flex justify-between items-center">
 							<span className="text-[10px] font-bold text-placeholder uppercase tracking-wider">Roof Parameters</span>
 						</div>
+
+						{selectedRoofId === unsavedRoofId && (
+							<div className="bg-card border border-border rounded-2xl p-4 flex flex-col gap-3.5 animate-in fade-in duration-200 shadow-sm relative overflow-hidden">								
+								<div className="flex gap-2.5 items-start pl-1">
+									<div className="flex flex-col gap-0.5 text-[11px] leading-relaxed">
+										<span className="font-extrabold text-text">Unsaved Boundary Changes</span>
+										<span className="text-placeholder font-medium">The shape of this roof has been modified. Saving will re-calculate and delete overlapping objects/panels.</span>
+									</div>
+								</div>
+								
+								<div className="grid grid-cols-2 gap-2 pl-1">
+									<button
+										type="button"
+										onClick={onCancelRoofPoints}
+										className="py-2 bg-background hover:bg-border border border-border text-text font-bold rounded-xl text-[11px] transition-all cursor-pointer"
+									>
+										Cancel
+									</button>
+									<button
+										type="button"
+										onClick={onSaveRoofPoints}
+										className="py-2 bg-primary hover:opacity-90 text-white font-bold rounded-xl text-[11px] transition-all cursor-pointer shadow-[0_4px_12px_rgba(167,206,56,0.15)]"
+									>
+										Save Changes
+									</button>
+								</div>
+							</div>
+						)}
 
 						{/* Name field with Delete button */}
 						<div className="flex flex-col gap-1.5">
@@ -393,7 +427,7 @@ export default function RoofMappingStep({
 			{/* Continue button */}
 			<div className="border-t border-border pt-4 mt-auto flex-shrink-0">
 				<button
-					onClick={onContinue}
+					onClick={unsavedRoofId ? onSaveRoofPoints : onContinue}
 					className="w-full py-3 bg-primary hover:opacity-90 text-white text-sm font-bold rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5"
 				>
 					<span>Next</span>

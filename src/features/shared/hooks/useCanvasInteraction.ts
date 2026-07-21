@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useRef } from "react";
 import type { RoofData, PlacedPanelGroup, DragState } from "../types";
 import type { LocalObject } from "../../../utils/design/types";
 import { dragService } from "../services/dragService";
@@ -35,6 +35,7 @@ interface CanvasInteractionParams {
 	objectEditor: any;
 	panelPlacement: any;
 	autoSave: any;
+	onRoofVertexDragged?: (roofId: string, originalPoints: [number, number][]) => void;
 }
 
 export function useCanvasInteraction({
@@ -54,9 +55,13 @@ export function useCanvasInteraction({
 	objectEditor,
 	panelPlacement,
 	autoSave,
+	onRoofVertexDragged,
 }: CanvasInteractionParams) {
 	
+	const wasDraggingRef = useRef(false);
+
 	const handleMouseDown = useCallback((e: React.MouseEvent) => {
+		wasDraggingRef.current = false;
 		viewport.handleMouseDown(e);
 	}, [viewport]);
 
@@ -73,6 +78,7 @@ export function useCanvasInteraction({
 		}
 
 		if (activeDrag) {
+			wasDraggingRef.current = true;
 			const dx = mx - activeDrag.startMousePos[0];
 			const dy = my - activeDrag.startMousePos[1];
 			const orig = activeDrag.originalState;
@@ -115,7 +121,11 @@ export function useCanvasInteraction({
 				const origRoof = activeDrag.originalState;
 				const didMove = roof && origRoof && JSON.stringify(roof.points) !== JSON.stringify(origRoof.points);
 				if (didMove) {
-					autoSave.saveRoofDesign(roofs);
+					if (onRoofVertexDragged) {
+						onRoofVertexDragged(roof.id, origRoof.points);
+					} else {
+						autoSave.saveRoofDesign(roofs);
+					}
 				}
 			} else if (activeDrag.type === "object") {
 				const obj = objects.find((o) => o.id === activeDrag.targetId);
@@ -203,7 +213,7 @@ export function useCanvasInteraction({
 			}
 			setActiveDrag(null);
 		}
-	}, [viewport, activeDrag, roofs, objects, panelGroups, panelPlacement.panelSpec, autoSave, setObjects, setPanelGroups, setToastMessage, setActiveDrag]);
+	}, [viewport, activeDrag, roofs, objects, panelGroups, panelPlacement.panelSpec, autoSave, setObjects, setPanelGroups, setToastMessage, setActiveDrag, onRoofVertexDragged]);
 
 	const handleMouseLeave = useCallback(() => {
 		viewport.setIsPanning(false);
@@ -212,6 +222,7 @@ export function useCanvasInteraction({
 
 	const startDraggingRoofVertex = useCallback((e: React.MouseEvent, roofId: string, ptIdx: number) => {
 		e.stopPropagation();
+		wasDraggingRef.current = false;
 		if (roofEditor.isDrawingRoofs || stage !== "roof") return;
 		selection.setSelectedRoofId(roofId);
 		const roof = roofs.find((r) => r.id === roofId);
@@ -227,6 +238,7 @@ export function useCanvasInteraction({
 
 	const startDraggingObject = useCallback((e: React.MouseEvent, objId: string) => {
 		e.stopPropagation();
+		wasDraggingRef.current = false;
 		if (objectEditor.objectDrawingMode !== "none" || stage !== "obstruction") return;
 		selection.setSelectedObjectId(objId);
 		const obj = objects.find((o) => o.id === objId);
@@ -241,6 +253,7 @@ export function useCanvasInteraction({
 
 	const startDraggingObjectVertex = useCallback((e: React.MouseEvent, objId: string, vIdx: number) => {
 		e.stopPropagation();
+		wasDraggingRef.current = false;
 		if (objectEditor.objectDrawingMode !== "none" || stage !== "obstruction") return;
 		const obj = objects.find((o) => o.id === objId);
 		if (!obj) return;
@@ -255,6 +268,7 @@ export function useCanvasInteraction({
 
 	const startDraggingGroup = useCallback((e: React.MouseEvent, gId: string) => {
 		e.stopPropagation();
+		wasDraggingRef.current = false;
 		if (panelPlacement.isPlacingGroup || stage !== "placement") return;
 		selection.setSelectedGroupId(gId);
 		const group = panelGroups.find((g) => g.id === gId);
@@ -507,6 +521,10 @@ export function useCanvasInteraction({
 	}, [roofs, objects, objectEditor, roofEditor, selection, autoSave, setObjects, setToastMessage]);
 
 	const handleCanvasClick = useCallback((e: React.MouseEvent) => {
+		if (wasDraggingRef.current) {
+			wasDraggingRef.current = false;
+			return;
+		}
 		const [mx, my] = viewport.getMouseMeters(e);
 
 		if (!roofEditor.isDrawingRoofs && objectEditor.objectDrawingMode === "none" && !panelPlacement.isPlacingGroup) {

@@ -85,7 +85,7 @@ export default function SVGCanvas({
 	overlappingObjectIds,
 }: SVGCanvasProps) {
 
-	const inv = 1 / scale;
+	const inv = 1.2 / scale;
 	const { formatVal } = useUnit();
 
 	return (
@@ -162,9 +162,9 @@ export default function SVGCanvas({
 							if (angle > 90) angle -= 180;
 							if (angle < -90) angle += 180;
 							
-							const fontSize = 1.6 * inv;
-							const bgHeight = 2.5 * inv;
-							const bgWidth = (labelText.length + 1.2) * inv;
+							const fontSize = 1.7 * inv;
+							const bgHeight = 3 * inv;
+							const bgWidth = (labelText.length + 2) * inv;
 							
 							return (
 								<g key={idx} transform={`translate(${mx}, ${my}) rotate(${angle})`}>

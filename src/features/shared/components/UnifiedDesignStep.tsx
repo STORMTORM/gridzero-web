@@ -12,6 +12,8 @@ import type { RoofData, PlacedPanelGroup, DragState } from "../types";
 import { getPanelsInGroup, isPointInPolygon } from "../../../utils/design/coords";
 import { CATEGORY_DEFAULTS } from "../constants";
 import { useHistoryState } from "../hooks/useHistoryState";
+import SaveRoofPointsModal from "./SaveRoofPointsModal";
+import DeleteRoofConfirmModal from "./DeleteRoofConfirmModal";
 
 // Import individual hooks directly
 import { useSelection } from "../hooks/useSelection";
@@ -120,8 +122,14 @@ export default function UnifiedDesignStep({
 	}, [setDocState]);
 
 	const [loadedSitevisitId, setLoadedSitevisitId] = useState<string | null>(null);
-	
 	const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+	const [unsavedRoofId, setUnsavedRoofId] = useState<string | null>(null);
+	const [originalPoints, setOriginalPoints] = useState<[number, number][] | null>(null);
+	const [isSavePointsModalOpen, setIsSavePointsModalOpen] = useState(false);
+
+	const [roofToDeleteId, setRoofToDeleteId] = useState<string | null>(null);
+	const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
 
 	// Dragging states
 	const [activeDrag, setActiveDrag] = useState<DragState | null>(null);
@@ -135,6 +143,11 @@ export default function UnifiedDesignStep({
 				panelGroups: initialPanelGroups,
 			});
 			setLoadedSitevisitId(sitevisitId);
+			setUnsavedRoofId(null);
+			setOriginalPoints(null);
+			setIsSavePointsModalOpen(false);
+			setRoofToDeleteId(null);
+			setIsDeleteConfirmOpen(false);
 		}
 	}, [initialRoofs, initialObjects, initialPanelGroups, sitevisitId, loadedSitevisitId, resetDoc]);
 
@@ -245,6 +258,106 @@ export default function UnifiedDesignStep({
 		panelSpec: panelPlacement.panelSpec,
 	});
 
+	const handleRoofVertexDragged = useCallback((roofId: string, origPoints: [number, number][]) => {
+		setUnsavedRoofId((prev) => {
+			if (!prev) {
+				setOriginalPoints(origPoints);
+				return roofId;
+			}
+			return prev;
+		});
+	}, []);
+
+	const handleRoofPointsCancel = useCallback(() => {
+		if (!unsavedRoofId || !originalPoints) return;
+		const reverted = roofs.map((r) => {
+			if (r.id === unsavedRoofId) {
+				return { ...r, points: originalPoints };
+			}
+			return r;
+		});
+		setRoofs(reverted, { forcePush: true });
+		setUnsavedRoofId(null);
+		setOriginalPoints(null);
+	}, [roofs, unsavedRoofId, originalPoints, setRoofs]);
+
+	const handleRoofPointsSaveClick = useCallback(() => {
+		setIsSavePointsModalOpen(true);
+	}, []);
+
+	const handleConfirmSaveRoofPoints = useCallback(() => {
+		if (!unsavedRoofId) return;
+
+		const roof = roofs.find(r => r.id === unsavedRoofId);
+		if (roof) {
+			autoSave.saveRoofDesign(roofs);
+
+			const updatedObjects = objects.filter(obj => {
+				const matchesId = obj.roof_id === unsavedRoofId;
+				const isInside = isPointInPolygon([obj.center_x, obj.center_y], roof.points);
+				return !matchesId && !isInside;
+			});
+			const updatedPanelGroups = panelGroups.filter(g => {
+				const isInside = isPointInPolygon([g.center_x, g.center_y], roof.points);
+				return !isInside;
+			});
+
+			if (updatedObjects.length !== objects.length) {
+				setObjects(updatedObjects, { forcePush: true });
+				autoSave.saveObjectsDesign(updatedObjects);
+			}
+			if (updatedPanelGroups.length !== panelGroups.length) {
+				setPanelGroups(updatedPanelGroups, { forcePush: true });
+				autoSave.savePanelsDesign(updatedPanelGroups);
+			}
+		}
+
+		setUnsavedRoofId(null);
+		setOriginalPoints(null);
+		setIsSavePointsModalOpen(false);
+	}, [roofs, objects, panelGroups, unsavedRoofId, setObjects, setPanelGroups, autoSave]);
+
+	const handleRequestDeleteRoof = useCallback(() => {
+		if (selection.selectedRoofId) {
+			setRoofToDeleteId(selection.selectedRoofId);
+			setIsDeleteConfirmOpen(true);
+		}
+	}, [selection.selectedRoofId]);
+
+	const handleConfirmDeleteRoof = useCallback(() => {
+		if (roofToDeleteId) {
+			selection.setSelectedRoofId(roofToDeleteId);
+			roofEditor.deleteSelectedRoof();
+			setRoofToDeleteId(null);
+			setIsDeleteConfirmOpen(false);
+		}
+	}, [roofToDeleteId, roofEditor, selection]);
+
+	useEffect(() => {
+		const handleKeyDown = (e: KeyboardEvent) => {
+			if (e.key === "Delete" || e.key === "Backspace") {
+				const activeEl = document.activeElement;
+				if (
+					activeEl &&
+					(activeEl.tagName === "INPUT" ||
+						activeEl.tagName === "TEXTAREA" ||
+						activeEl.hasAttribute("contenteditable"))
+				) {
+					return;
+				}
+
+				if (stage === "roof" && selection.selectedRoofId) {
+					e.preventDefault();
+					setRoofToDeleteId(selection.selectedRoofId);
+					setIsDeleteConfirmOpen(true);
+				}
+			}
+		};
+
+		window.addEventListener("keydown", handleKeyDown);
+		return () => window.removeEventListener("keydown", handleKeyDown);
+	}, [stage, selection.selectedRoofId]);
+
 	// 9. Canvas Interaction Hook (mouse dragging/clicking logic)
 	const interaction = useCanvasInteraction({
 		sitevisitId,
@@ -264,6 +377,7 @@ export default function UnifiedDesignStep({
 		objectEditor,
 		panelPlacement,
 		autoSave,
+		onRoofVertexDragged: handleRoofVertexDragged,
 	});
 
 	const autoSaveRef = useRef(autoSave);
@@ -550,9 +664,12 @@ export default function UnifiedDesignStep({
 						isDrawing={roofEditor.isDrawingRoofs}
 						setIsDrawing={roofEditor.setIsDrawingRoofs}
 						cancelDrawing={roofEditor.cancelRoofDrawing}
-						deleteSelectedRoof={roofEditor.deleteSelectedRoof}
+						deleteSelectedRoof={handleRequestDeleteRoof}
 						updateSelectedRoof={roofEditor.updateSelectedRoof}
 						onContinue={onContinue || (() => {})}
+						unsavedRoofId={unsavedRoofId}
+						onSaveRoofPoints={handleRoofPointsSaveClick}
+						onCancelRoofPoints={handleRoofPointsCancel}
 					/>
 				)}
 				{stage === DesignStage.Obstruction && (
@@ -619,6 +736,22 @@ export default function UnifiedDesignStep({
 				onConfirm={panelPlacement.handleConfigConfirm}
 				panelSpec={panelPlacement.panelSpec}
 				mode={panelPlacement.configModalMode}
+			/>
+
+			<SaveRoofPointsModal
+				isOpen={isSavePointsModalOpen}
+				onClose={() => setIsSavePointsModalOpen(false)}
+				onConfirm={handleConfirmSaveRoofPoints}
+			/>
+
+			<DeleteRoofConfirmModal
+				isOpen={isDeleteConfirmOpen}
+				onClose={() => {
+					setIsDeleteConfirmOpen(false);
+					setRoofToDeleteId(null);
+				}}
+				onConfirm={handleConfirmDeleteRoof}
+				roofName={roofs.find((r) => r.id === roofToDeleteId)?.name}
 			/>
 
 		</div>
