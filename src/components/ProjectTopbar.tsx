@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { ChevronRight, ArrowLeft, Settings, Undo, Redo } from "lucide-react";
+import { useUnit } from "../features/shared/contexts/UnitContext";
 
 interface ProjectTopbarProps {
 	projectName: string;
@@ -18,13 +19,13 @@ interface ProjectTopbarProps {
 
 const STAGE_BREADCRUMBS: Record<number, string> = {
 	1: "Customer Details",
-	2: "Roof Layout",
+	2: "Roof Mapping",
 	3: "Obstruction Mapping",
-	4: "Panel Selection",
-	5: "Panel Placement",
-	6: "Snapshots",
-	7: "Pricing",
-	8: "Proposal",
+	4: "System Sizing",
+	5: "2D Panel Placement",
+	6: "3D Visualisation",
+	7: "Pricing & Payback",
+	8: "Final Checklist",
 };
 
 export default function ProjectTopbar({
@@ -37,6 +38,7 @@ export default function ProjectTopbar({
 	undoRedo,
 }: ProjectTopbarProps) {
 	const navigate = useNavigate();
+	const { unit, setUnit } = useUnit();
 
 	return (
 		<div className="bg-background border-b border-border px-6 py-3 flex-shrink-0 flex flex-row items-center justify-between gap-4 z-10 select-none h-14 overflow-hidden">
@@ -94,7 +96,7 @@ export default function ProjectTopbar({
 
 				{/* Undo/Redo Buttons */}
 				{undoRedo && (
-					<div className="flex items-center gap-4 bg-card border border-border px-2 pt-0.5 rounded-xl flex-shrink-0 shadow-sm">
+					<div className="flex items-center gap-4 bg-card border border-border px-2 rounded-xl flex-shrink-0 shadow-sm">
 						<button
 							onClick={undoRedo.undo}
 							disabled={!undoRedo.canUndo}
@@ -113,6 +115,26 @@ export default function ProjectTopbar({
 						</button>
 					</div>
 				)}
+
+				{/* Unit Toggle (m / ft) */}
+				<div className="flex items-center bg-card border border-border p-0.5 rounded-xl flex-shrink-0 shadow-sm overflow-hidden">
+					<button
+						onClick={() => setUnit("m")}
+						className={`px-2.5 py-0.5 rounded-xl text-xs font-extrabold uppercase transition-all cursor-pointer ${
+							unit === "m" ? "bg-primary text-white shadow-sm" : "text-placeholder hover:text-text"
+						}`}
+					>
+						m
+					</button>
+					<button
+						onClick={() => setUnit("ft")}
+						className={`px-2.5 py-0.5 rounded-xl text-xs font-extrabold uppercase transition-all cursor-pointer ${
+							unit === "ft" ? "bg-primary text-white shadow-sm" : "text-placeholder hover:text-text"
+						}`}
+					>
+						ft
+					</button>
+				</div>
 
 				{/* Settings button */}
 				{onOpenSettings && (

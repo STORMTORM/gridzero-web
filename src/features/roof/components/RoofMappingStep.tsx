@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Trash2, Pen, ChevronUp, ChevronDown } from "lucide-react";
 import type { RoofData } from "../../shared/types";
+import { useUnit } from "../../shared/contexts/UnitContext";
 
 interface RoofMappingStepProps {
 	roofs: RoofData[];
@@ -26,6 +27,7 @@ export default function RoofMappingStep({
 	onContinue,
 }: RoofMappingStepProps) {
 
+	const { unit, mToUnit, unitToM, formatVal } = useUnit();
 	const selectedRoof = roofs.find((r) => r.id === selectedRoofId);
 	const [expandedEdgeIdx, setExpandedEdgeIdx] = useState<number | null>(null);
 
@@ -79,7 +81,7 @@ export default function RoofMappingStep({
 							No roofs drawn yet. Click "Draw Roof" to outline structural zones on the map.
 						</div>
 					) : (
-						<div className="flex flex-col gap-2 h-52 overflow-y-auto scrollbar-none bg-card p-2 border rounded-xl border-border">
+						<div className="flex flex-col gap-2 max-h-52 overflow-y-auto scrollbar-none bg-card p-2 border rounded-xl border-border">
 							{roofs.map((r) => {
 								const isSelected = r.id === selectedRoofId;
 								return (
@@ -94,7 +96,7 @@ export default function RoofMappingStep({
 									>
 										<div className="flex flex-col gap-0.5">
 											<span className="text-xs font-bold">{r.name}</span>
-											<span className="text-[10px] text-neutral-500">Area: {r.area.toFixed(1)} m² · Height: {r.height}m</span>
+											<span className="text-[10px] text-neutral-500">Area: {(unit === "ft" ? r.area * 10.76391 : r.area).toFixed(1)} {unit === "ft" ? "sq ft" : "m²"} · Height: {formatVal(r.height, 1)}</span>
 										</div>
 									</div>
 								);
@@ -134,15 +136,15 @@ export default function RoofMappingStep({
 						<div className="flex flex-col gap-2">
 							<div className="flex justify-between items-center text-[11px] font-semibold text-placeholder">
 								<span>Roof Height From Ground</span>
-								<span className="text-text font-bold">{selectedRoof.height}m</span>
+								<span className="text-text font-bold">{formatVal(selectedRoof.height, 1)}</span>
 							</div>
 							<input
 								type="range"
-								min="1"
-								max="50"
-								step="0.5"
-								value={selectedRoof.height}
-								onChange={(e) => updateSelectedRoof({ height: parseFloat(e.target.value) })}
+								min={unit === "ft" ? 3 : 1}
+								max={unit === "ft" ? 165 : 50}
+								step={unit === "ft" ? 1 : 0.5}
+								value={Math.round(mToUnit(selectedRoof.height) * 10) / 10}
+								onChange={(e) => updateSelectedRoof({ height: unitToM(parseFloat(e.target.value)) })}
 								className="w-full accent-primary cursor-pointer opacity-80 hover:opacity-100 transition-opacity"
 							/>
 						</div>
@@ -200,16 +202,17 @@ export default function RoofMappingStep({
 											<div className="flex flex-col gap-1.5">
 												<div className="flex justify-between items-center text-[11px] font-semibold text-placeholder">
 													<span>Wall Height</span>
-													<span className="text-text font-bold">{selectedRoof.parapetHeight}m</span>
+													<span className="text-text font-bold">{formatVal(selectedRoof.parapetHeight, 1)}</span>
 												</div>
 												<input
 													type="range"
-													min="0.1"
-													max="3.0"
-													step="0.1"
-													value={selectedRoof.parapetHeight}
+													min={unit === "ft" ? 0.3 : 0.1}
+													max={unit === "ft" ? 10.0 : 3.0}
+													step={0.1}
+													value={Math.round(mToUnit(selectedRoof.parapetHeight) * 10) / 10}
 													onChange={(e) => {
-														const h = parseFloat(e.target.value);
+														const v = parseFloat(e.target.value);
+														const h = unitToM(v);
 														const newEdges = edges.map(edge => ({ ...edge, height: h }));
 														updateSelectedRoof({
 															parapetHeight: h,
@@ -224,16 +227,17 @@ export default function RoofMappingStep({
 											<div className="flex flex-col gap-1.5">
 												<div className="flex justify-between items-center text-[11px] font-semibold text-placeholder">
 													<span>Wall Width</span>
-													<span className="text-text font-bold">{selectedRoof.parapetThickness}m</span>
+													<span className="text-text font-bold">{formatVal(selectedRoof.parapetThickness, 1)}</span>
 												</div>
 												<input
 													type="range"
-													min="0.1"
-													max="2.0"
-													step="0.1"
-													value={selectedRoof.parapetThickness}
+													min={unit === "ft" ? 0.3 : 0.1}
+													max={unit === "ft" ? 6.5 : 2.0}
+													step={0.1}
+													value={Math.round(mToUnit(selectedRoof.parapetThickness) * 10) / 10}
 													onChange={(e) => {
-														const t = parseFloat(e.target.value);
+														const v = parseFloat(e.target.value);
+														const t = unitToM(v);
 														const newEdges = edges.map(edge => ({ ...edge, thickness: t }));
 														updateSelectedRoof({
 															parapetThickness: t,
@@ -248,16 +252,17 @@ export default function RoofMappingStep({
 											<div className="flex flex-col gap-1.5">
 												<div className="flex justify-between items-center text-[11px] font-semibold text-placeholder">
 													<span>Setback (inside roof)</span>
-													<span className="text-text font-bold">{selectedRoof.parapetSetback}m</span>
+													<span className="text-text font-bold">{formatVal(selectedRoof.parapetSetback, 1)}</span>
 												</div>
 												<input
 													type="range"
-													min="0"
-													max="5.0"
-													step="0.1"
-													value={selectedRoof.parapetSetback}
+													min={0}
+													max={unit === "ft" ? 16.5 : 5.0}
+													step={0.1}
+													value={Math.round(mToUnit(selectedRoof.parapetSetback) * 10) / 10}
 													onChange={(e) => {
-														const s = parseFloat(e.target.value);
+														const v = parseFloat(e.target.value);
+														const s = unitToM(v);
 														const newEdges = edges.map(edge => ({ ...edge, setback: s }));
 														updateSelectedRoof({
 															parapetSetback: s,
@@ -293,7 +298,7 @@ export default function RoofMappingStep({
 																<span className="text-xs font-bold">Edge {edgeIdx + 1}</span>
 															</div>
 															<div className="flex flex-row gap-2 items-center">
-																<span className="text-xs pl-2 text-placeholder font-medium">{edgeLength.toFixed(1)}m</span>
+																<span className="text-xs pl-2 text-placeholder font-medium">{formatVal(edgeLength, 1)}</span>
 																{edge.enabled && (
 																	<button
 																		onClick={() => setExpandedEdgeIdx(expanded ? null : edgeIdx)}
@@ -313,17 +318,17 @@ export default function RoofMappingStep({
 																<div className="flex flex-col gap-1">
 																	<div className="flex justify-between items-center text-[10px] font-semibold text-placeholder">
 																		<span>Height</span>
-																		<span className="text-text font-bold">{edge.height}m</span>
+																		<span className="text-text font-bold">{formatVal(edge.height, 1)}</span>
 																	</div>
 																	<input
 																		type="range"
-																		min="0.1"
-																		max="3.0"
-																		step="0.1"
-																		value={edge.height}
+																		min={unit === "ft" ? 0.3 : 0.1}
+																		max={unit === "ft" ? 10.0 : 3.0}
+																		step={0.1}
+																		value={Math.round(mToUnit(edge.height) * 10) / 10}
 																		onChange={(e) => {
 																			const newEdges = [...edges];
-																			newEdges[edgeIdx] = { ...edge, height: parseFloat(e.target.value) };
+																			newEdges[edgeIdx] = { ...edge, height: unitToM(parseFloat(e.target.value)) };
 																			updateSelectedRoof({ parapetEdges: newEdges });
 																		}}
 																		className="w-full accent-primary cursor-pointer"
@@ -334,17 +339,17 @@ export default function RoofMappingStep({
 																<div className="flex flex-col gap-1">
 																	<div className="flex justify-between items-center text-[10px] font-semibold text-placeholder">
 																		<span>Thickness</span>
-																		<span className="text-text font-bold">{edge.thickness}m</span>
+																		<span className="text-text font-bold">{formatVal(edge.thickness, 1)}</span>
 																	</div>
 																	<input
 																		type="range"
-																		min="0.05"
-																		max="1.0"
-																		step="0.01"
-																		value={edge.thickness}
+																		min={unit === "ft" ? 0.15 : 0.05}
+																		max={unit === "ft" ? 3.3 : 1.0}
+																		step={unit === "ft" ? 0.05 : 0.01}
+																		value={Math.round(mToUnit(edge.thickness) * 100) / 100}
 																		onChange={(e) => {
 																			const newEdges = [...edges];
-																			newEdges[edgeIdx] = { ...edge, thickness: parseFloat(e.target.value) };
+																			newEdges[edgeIdx] = { ...edge, thickness: unitToM(parseFloat(e.target.value)) };
 																			updateSelectedRoof({ parapetEdges: newEdges });
 																		}}
 																		className="w-full accent-primary cursor-pointer"
@@ -355,17 +360,17 @@ export default function RoofMappingStep({
 																<div className="flex flex-col gap-1">
 																	<div className="flex justify-between items-center text-[10px] font-semibold text-placeholder">
 																		<span>Setback</span>
-																		<span className="text-text font-bold">{edge.setback}m</span>
+																		<span className="text-text font-bold">{formatVal(edge.setback, 1)}</span>
 																	</div>
 																	<input
 																		type="range"
-																		min="0"
-																		max="5.0"
-																		step="0.1"
-         																value={edge.setback}
+																		min={0}
+         																max={unit === "ft" ? 16.5 : 5.0}
+																		step={0.1}
+																		value={Math.round(mToUnit(edge.setback) * 10) / 10}
 																		onChange={(e) => {
 																			const newEdges = [...edges];
-																			newEdges[edgeIdx] = { ...edge, setback: parseFloat(e.target.value) };
+																			newEdges[edgeIdx] = { ...edge, setback: unitToM(parseFloat(e.target.value)) };
 																			updateSelectedRoof({ parapetEdges: newEdges });
 																		}}
 																		className="w-full accent-primary cursor-pointer"

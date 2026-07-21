@@ -2,14 +2,15 @@ import React from "react";
 import type { RoofData, PlacedPanelGroup } from "../types";
 import type { LocalObject, PanelSpec } from "../../../utils/design/types";
 import { getPanelsInGroup } from "../../../utils/design/coords";
+import { useUnit } from "../contexts/UnitContext";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // VISUAL STYLING VARIABLES (Tweak handles, lines, and thicknesses here!)
 // ─────────────────────────────────────────────────────────────────────────────
-const ROOF_VERTEX_RADIUS = 0.8;             // Radius of selected roof vertex dots
-const ROOF_LINE_STROKE_WIDTH = 0.25;          // Default roof boundary outline width
-const ROOF_LINE_SELECTED_STROKE_WIDTH = 0.3; // Selected active roof boundary outline width
-const VERTEX_HANDLE_STROKE_WIDTH = 0.3;      // White circle handles stroke thickness
+const ROOF_VERTEX_RADIUS = 1.2;             // Radius of selected roof vertex dots
+const ROOF_LINE_STROKE_WIDTH = 0.4;          // Default roof boundary outline width
+const ROOF_LINE_SELECTED_STROKE_WIDTH = 0.45; // Selected active roof boundary outline width
+const VERTEX_HANDLE_STROKE_WIDTH = 0.4;      // White circle handles stroke thickness
 
 const OBSTACLE_STROKE_WIDTH = 0.5;           // Default obstacle border outline width
 const OBSTACLE_SELECTED_STROKE_WIDTH = 0.8;  // Selected obstacle border outline width
@@ -27,6 +28,7 @@ const DRAFT_VERTEX_STROKE_WIDTH = 0.3;       // Active drawing vertex handle str
 interface SVGCanvasProps {
 	widthMeters: number;
 	heightMeters: number;
+	scale: number;
 	stage: string;
 	roofs: RoofData[];
 	selectedRoofId: string | null;
@@ -59,6 +61,7 @@ interface SVGCanvasProps {
 export default function SVGCanvas({
 	widthMeters,
 	heightMeters,
+	scale,
 	stage,
 	roofs,
 	selectedRoofId,
@@ -82,6 +85,9 @@ export default function SVGCanvas({
 	overlappingObjectIds,
 }: SVGCanvasProps) {
 
+	const inv = 1 / scale;
+	const { formatVal } = useUnit();
+
 	return (
 		<svg className="absolute inset-0 w-full h-full select-none z-10" viewBox="0 0 100 100" preserveAspectRatio="none">
 			
@@ -95,50 +101,101 @@ export default function SVGCanvas({
 				
 				const isSelected = selectedRoofId === r.id;
 
-				if (stage === "roof") {
-					return (
-						<g key={r.id}>
-							{/* Roof polygon shape */}
+				return (
+					<g key={r.id}>
+						{stage === "roof" ? (
+							/* Roof polygon shape */
 							<polygon
 								points={pointsStr}
-								fill={isSelected ? "rgba(34,197,94,0.15)" : "rgba(34,197,94,0.07)"}
-								stroke={isSelected ? "#4ade80" : "#22c55e"}
-								strokeWidth={isSelected ? ROOF_LINE_SELECTED_STROKE_WIDTH : ROOF_LINE_STROKE_WIDTH}
+								fill={isSelected ? "rgba(167, 206, 56, 0.5)" : "rgba(167, 206, 56, 0.3)"}
+								stroke="#a7ce38"
+								strokeWidth={(isSelected ? ROOF_LINE_SELECTED_STROKE_WIDTH : ROOF_LINE_STROKE_WIDTH) * inv}
 								className="cursor-pointer pointer-events-auto"
 								onClick={(e) => {
 									e.stopPropagation();
 									if (!isDrawingRoofs) setSelectedRoofId(r.id);
 								}}
 							/>
-							{/* Draggable corner handles (only when selected in Stage 2) */}
-							{isSelected && !isDrawingRoofs && r.points.map((p, idx) => (
-								<circle
-									key={idx}
-									cx={(p[0] / widthMeters) * 100}
-									cy={(p[1] / heightMeters) * 100}
-									r={ROOF_VERTEX_RADIUS}
-									fill="#ffffff"
-									stroke="#000000"
-									strokeWidth={VERTEX_HANDLE_STROKE_WIDTH}
-									className="vertex-handle cursor-move pointer-events-auto"
-									onMouseDown={(e) => startDraggingRoofVertex(e, r.id, idx)}
-								/>
-							))}
-						</g>
-					);
-				} else {
-					// Read-only guide outline in Stage 3
-					return (
-						<polygon
-							key={r.id}
-							points={pointsStr}
-							fill="rgba(34,197,94,0.07)"
-							stroke="#22c55e"
-							strokeWidth={ROOF_LINE_STROKE_WIDTH}
-							className="pointer-events-none"
-						/>
-					);
-				}
+						) : (
+							/* Read-only guide outline in other stages */
+							<polygon
+								points={pointsStr}
+								fill="rgba(167, 206, 56, 0.3)"
+								stroke="#a7ce38"
+								strokeWidth={ROOF_LINE_STROKE_WIDTH * inv}
+								className="pointer-events-none"
+							/>
+						)}
+
+						{/* Draggable corner handles (only when selected in Stage 2) */}
+						{stage === "roof" && isSelected && !isDrawingRoofs && r.points.map((p, idx) => (
+							<circle
+								key={idx}
+								cx={(p[0] / widthMeters) * 100}
+								cy={(p[1] / heightMeters) * 100}
+								r={ROOF_VERTEX_RADIUS * inv}
+								fill="#a7ce38"
+								stroke="#ffffff"
+								strokeWidth={VERTEX_HANDLE_STROKE_WIDTH * inv}
+								className="vertex-handle cursor-move pointer-events-auto"
+								onMouseDown={(e) => startDraggingRoofVertex(e, r.id, idx)}
+							/>
+						))}
+
+						{/* Edge Length Labels (only when selected) */}
+						{isSelected && r.points.map((p, idx) => {
+							const nextIdx = (idx + 1) % r.points.length;
+							const nextP = r.points[nextIdx];
+							
+							const x1 = (p[0] / widthMeters) * 100;
+							const y1 = (p[1] / heightMeters) * 100;
+							const x2 = (nextP[0] / widthMeters) * 100;
+							const y2 = (nextP[1] / heightMeters) * 100;
+							
+							const mx = (x1 + x2) / 2;
+							const my = (y1 + y2) / 2;
+							
+							const len = Math.sqrt((nextP[0] - p[0]) ** 2 + (nextP[1] - p[1]) ** 2);
+							const labelText = formatVal(len, 1);
+							
+							let angle = Math.atan2(y2 - y1, x2 - x1) * (180 / Math.PI);
+							if (angle > 90) angle -= 180;
+							if (angle < -90) angle += 180;
+							
+							const fontSize = 1.6 * inv;
+							const bgHeight = 2.5 * inv;
+							const bgWidth = (labelText.length + 1.2) * inv;
+							
+							return (
+								<g key={idx} transform={`translate(${mx}, ${my}) rotate(${angle})`}>
+									<rect
+										x={-bgWidth / 2}
+										y={-bgHeight / 2}
+										width={bgWidth}
+										height={bgHeight}
+										rx={0.5 * inv}
+										fill="#0f172a"
+										fillOpacity={0.9}
+										stroke="#a7ce38"
+										strokeWidth={0.18 * inv}
+									/>
+									<text
+										x={0}
+										y={0}
+										fill="#ffffff"
+										fontSize={fontSize}
+										fontWeight="bold"
+										textAnchor="middle"
+										dominantBaseline="central"
+										className="select-none pointer-events-none font-sans"
+									>
+										{labelText}
+									</text>
+								</g>
+							);
+						})}
+					</g>
+				);
 			})}
 
 			{/* ──────────────────────────────────────────────────────────────────
@@ -179,7 +236,7 @@ export default function SVGCanvas({
 							transform={`rotate(${obj.angle}, ${xPx}, ${yPx})`}
 							fill={fillColor}
 							stroke={isOverlapping ? strokeColor : undefined}
-							strokeWidth={isOverlapping ? OBSTACLE_STROKE_WIDTH : undefined}
+							strokeWidth={isOverlapping ? OBSTACLE_STROKE_WIDTH * inv : undefined}
 							className={isPlacementStage ? "pointer-events-none" : "object-handle cursor-move pointer-events-auto"}
 							{...(isPlacementStage ? {} : {
 								onMouseDown: (e: React.MouseEvent) => startDraggingObject(e, obj.id),
@@ -209,7 +266,7 @@ export default function SVGCanvas({
 							r={rPx}
 							fill={circleFill}
 							stroke={circleStroke}
-							strokeWidth={isSelected ? OBSTACLE_SELECTED_STROKE_WIDTH : OBSTACLE_STROKE_WIDTH}
+							strokeWidth={(isSelected ? OBSTACLE_SELECTED_STROKE_WIDTH : OBSTACLE_STROKE_WIDTH) * inv}
 							className={isPlacementStage ? "pointer-events-none" : "object-handle cursor-move pointer-events-auto"}
 							{...(isPlacementStage ? {} : {
 								onMouseDown: (e: React.MouseEvent) => startDraggingObject(e, obj.id),
@@ -235,7 +292,7 @@ export default function SVGCanvas({
 									x2={x2}
 									y2={y2}
 									stroke="transparent"
-									strokeWidth="2.5"
+									strokeWidth={2.5 * inv}
 									className="object-handle cursor-move pointer-events-auto"
 									onMouseDown={(e) => startDraggingObject(e, obj.id)}
 									onClick={(e) => { e.stopPropagation(); setSelectedObjectId(obj.id); }}
@@ -248,7 +305,7 @@ export default function SVGCanvas({
 								x2={x2}
 								y2={y2}
 								stroke={strokeColor}
-								strokeWidth={isSelected ? WALL_SELECTED_STROKE_WIDTH : WALL_STROKE_WIDTH}
+								strokeWidth={(isSelected ? WALL_SELECTED_STROKE_WIDTH : WALL_STROKE_WIDTH) * inv}
 							/>
 							{/* Draggable wall endpoints */}
 							{isSelected && (
@@ -256,20 +313,20 @@ export default function SVGCanvas({
 									<circle
 										cx={x1}
 										cy={y1}
-										r={WALL_VERTEX_RADIUS}
+										r={WALL_VERTEX_RADIUS * inv}
 										fill="#ffffff"
 										stroke="#000000"
-										strokeWidth={VERTEX_HANDLE_STROKE_WIDTH}
+										strokeWidth={VERTEX_HANDLE_STROKE_WIDTH * inv}
 										className="vertex-handle cursor-move pointer-events-auto"
 										onMouseDown={(e) => startDraggingObjectVertex(e, obj.id, 0)}
 									/>
 									<circle
 										cx={x2}
 										cy={y2}
-										r={WALL_VERTEX_RADIUS}
+										r={WALL_VERTEX_RADIUS * inv}
 										fill="#ffffff"
 										stroke="#000000"
-										strokeWidth={VERTEX_HANDLE_STROKE_WIDTH}
+										strokeWidth={VERTEX_HANDLE_STROKE_WIDTH * inv}
 										className="vertex-handle cursor-move pointer-events-auto"
 										onMouseDown={(e) => startDraggingObjectVertex(e, obj.id, 1)}
 									/>
@@ -290,7 +347,7 @@ export default function SVGCanvas({
 								points={pointsStr}
 								fill={fillColor}
 								stroke={strokeColor}
-								strokeWidth={isSelected ? OBSTACLE_SELECTED_STROKE_WIDTH : OBSTACLE_STROKE_WIDTH}
+								strokeWidth={(isSelected ? OBSTACLE_SELECTED_STROKE_WIDTH : OBSTACLE_STROKE_WIDTH) * inv}
 								className={isPlacementStage ? "pointer-events-none" : "object-handle cursor-move pointer-events-auto"}
 								{...(isPlacementStage ? {} : {
 									onMouseDown: (e: React.MouseEvent) => startDraggingObject(e, obj.id),
@@ -304,10 +361,10 @@ export default function SVGCanvas({
 										key={idx}
 										cx={(p[0] / widthMeters) * 100}
 										cy={(p[1] / heightMeters) * 100}
-										r={WALL_VERTEX_RADIUS}
+										r={WALL_VERTEX_RADIUS * inv}
 										fill="#ffffff"
 										stroke="#000000"
-										strokeWidth={VERTEX_HANDLE_STROKE_WIDTH}
+										strokeWidth={VERTEX_HANDLE_STROKE_WIDTH * inv}
 										className="vertex-handle cursor-move pointer-events-auto"
 										onMouseDown={(e) => startDraggingObjectVertex(e, obj.id, idx)}
 									/>
@@ -331,7 +388,7 @@ export default function SVGCanvas({
 						points={currentPoints
 							.map((p) => `${(p[0] / widthMeters) * 100},${(p[1] / heightMeters) * 100}`)
 							.join(" ")}
-						fill="rgba(34,197,94,0.07)"
+						fill="rgba(167, 206, 56, 0.3)"
 						stroke="none"
 					/>
 					{/* Thin, straight connected borders */}
@@ -340,8 +397,8 @@ export default function SVGCanvas({
 							.map((p) => `${(p[0] / widthMeters) * 100},${(p[1] / heightMeters) * 100}`)
 							.join(" ")}
 						fill="none"
-						stroke="#ffffff"
-						strokeWidth={DRAFT_LINE_STROKE_WIDTH}
+						stroke="#a7ce38"
+						strokeWidth={DRAFT_LINE_STROKE_WIDTH * inv}
 					/>
 					{/* Dotted cursor tracking guide to mouse */}
 					{mousePosMeters && (
@@ -350,9 +407,9 @@ export default function SVGCanvas({
 							y1={(currentPoints[currentPoints.length - 1][1] / heightMeters) * 100}
 							x2={(mousePosMeters[0] / widthMeters) * 100}
 							y2={(mousePosMeters[1] / heightMeters) * 100}
-							stroke="rgba(255,255,255,0.7)"
-							strokeWidth={DRAFT_GUIDE_LINE_STROKE_WIDTH}
-							strokeDasharray="1.2,1.2"
+							stroke="rgba(167, 206, 56, 0.7)"
+							strokeWidth={DRAFT_GUIDE_LINE_STROKE_WIDTH * inv}
+							strokeDasharray={`${1.2 * inv},${1.2 * inv}`}
 						/>
 					)}
 					{/* Plotted draft node dots */}
@@ -361,10 +418,10 @@ export default function SVGCanvas({
 							key={idx}
 							cx={(p[0] / widthMeters) * 100}
 							cy={(p[1] / heightMeters) * 100}
-							r={ROOF_VERTEX_RADIUS}
-							fill="#ffffff"
-							stroke="#000000"
-							strokeWidth={DRAFT_VERTEX_STROKE_WIDTH}
+							r={ROOF_VERTEX_RADIUS * inv}
+							fill={idx === 0 ? "#ffffff" : "#a7ce38"}
+							stroke={idx === 0 ? "#a7ce38" : "#ffffff"}
+							strokeWidth={DRAFT_VERTEX_STROKE_WIDTH * inv}
 						/>
 					))}
 				</g>
@@ -379,16 +436,16 @@ export default function SVGCanvas({
 						x2={(mousePosMeters[0] / widthMeters) * 100}
 						y2={(mousePosMeters[1] / heightMeters) * 100}
 						stroke="#a7ce38"
-						strokeWidth={DRAFT_WALL_GUIDE_STROKE_WIDTH}
-						strokeDasharray="1.5,1.5"
+						strokeWidth={DRAFT_WALL_GUIDE_STROKE_WIDTH * inv}
+						strokeDasharray={`${1.5 * inv},${1.5 * inv}`}
 					/>
 					<circle
 						cx={(wallStartPoint[0] / widthMeters) * 100}
 						cy={(wallStartPoint[1] / heightMeters) * 100}
-						r={WALL_VERTEX_RADIUS}
+						r={WALL_VERTEX_RADIUS * inv}
 						fill="#a7ce38"
 						stroke="#000000"
-						strokeWidth={DRAFT_VERTEX_STROKE_WIDTH}
+						strokeWidth={DRAFT_VERTEX_STROKE_WIDTH * inv}
 					/>
 				</g>
 			)}
@@ -402,7 +459,7 @@ export default function SVGCanvas({
 							.join(" ")}
 						fill="none"
 						stroke="#a7ce38"
-						strokeWidth={DRAFT_POLYGON_STROKE_WIDTH}
+						strokeWidth={DRAFT_POLYGON_STROKE_WIDTH * inv}
 					/>
 					{mousePosMeters && (
 						<line
@@ -411,8 +468,8 @@ export default function SVGCanvas({
 							x2={(mousePosMeters[0] / widthMeters) * 100}
 							y2={(mousePosMeters[1] / heightMeters) * 100}
 							stroke="rgba(167,206,56,0.7)"
-							strokeWidth={DRAFT_GUIDE_LINE_STROKE_WIDTH}
-							strokeDasharray="1.2,1.2"
+							strokeWidth={DRAFT_GUIDE_LINE_STROKE_WIDTH * inv}
+							strokeDasharray={`${1.2 * inv},${1.2 * inv}`}
 						/>
 					)}
 					{currentPoints.map((p, idx) => (
@@ -420,10 +477,10 @@ export default function SVGCanvas({
 							key={idx}
 							cx={(p[0] / widthMeters) * 100}
 							cy={(p[1] / heightMeters) * 100}
-							r={ROOF_VERTEX_RADIUS}
+							r={ROOF_VERTEX_RADIUS * inv}
 							fill={idx === 0 ? "#a7ce38" : "rgba(167,206,56,0.8)"}
 							stroke="#000000"
-							strokeWidth={DRAFT_VERTEX_STROKE_WIDTH}
+							strokeWidth={DRAFT_VERTEX_STROKE_WIDTH * inv}
 						/>
 					))}
 				</g>
@@ -467,7 +524,7 @@ export default function SVGCanvas({
 										transform={`rotate(${g.table_angle || 0}, ${xPx}, ${yPx})`}
 										fill={isSelected ? "rgba(167,206,56,0.35)" : "rgba(34,197,94,0.22)"}
 										stroke={isSelected ? "#a7ce38" : "#22c55e"}
-										strokeWidth={isSelected ? 0.3 : 0.2}
+										strokeWidth={isSelected ? 0.3 * inv : 0.2 * inv}
 									/>
 									<line
 										x1={xPx - wPx / 2}
@@ -476,7 +533,7 @@ export default function SVGCanvas({
 										y2={yPx}
 										transform={`rotate(${g.table_angle || 0}, ${xPx}, ${yPx})`}
 										stroke="rgba(255,255,255,0.12)"
-										strokeWidth={0.1}
+										strokeWidth={0.1 * inv}
 									/>
 									<line
 										x1={xPx}
@@ -485,7 +542,7 @@ export default function SVGCanvas({
 										y2={yPx + hPx / 2}
 										transform={`rotate(${g.table_angle || 0}, ${xPx}, ${yPx})`}
 										stroke="rgba(255,255,255,0.12)"
-										strokeWidth={0.1}
+										strokeWidth={0.1 * inv}
 									/>
 								</g>
 							);

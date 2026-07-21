@@ -123,6 +123,7 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({
 				<SVGCanvas
 					widthMeters={widthMeters}
 					heightMeters={heightMeters}
+					scale={scale}
 					stage={stage}
 					roofs={roofs}
 					selectedRoofId={selectedRoofId}

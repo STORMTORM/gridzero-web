@@ -9,6 +9,7 @@ import type { LocalObject } from "../../utils/design/types";
 import { useProject } from "../../features/shared/hooks/useProject";
 import { useDesign } from "../../features/shared/hooks/useDesign";
 import { calculateArea } from "../../utils/design/coords";
+import { UnitProvider } from "../../features/shared/contexts/UnitContext";
 
 interface UndoRedoHandlers {
 	undo: () => void;
@@ -300,45 +301,47 @@ export default function DesignWorkspace() {
 	};
 
 	return (
-		<div className="flex flex-col h-screen w-screen bg-background overflow-hidden text-text font-sans select-none">
-			
-			{/* Project Workspace header */}
-			<ProjectTopbar
-				projectName={projectName}
-				currentStage={currentStageNumber}
-				saving={_saving}
-				onOpenSettings={() => setIsSettingsOpen(true)}
-				undoRedo={undoRedo || undefined}
-			/>
-
-			{/* Main Split Layout Panel */}
-			<div className="flex-grow w-full flex flex-col md:flex-row overflow-hidden relative">
-				<UnifiedDesignStep
-					sitevisitId={id!}
-					widthMeters={widthMeters}
-					heightMeters={heightMeters}
-					imageUrl={imageUrl}
-					initialRoofs={initialRoofs}
-					initialObjects={initialObjects}
-					initialPanelGroups={initialPanelGroups}
-					stage={stage}
-					onSaveStatusChange={setSaving}
-					sceneData={designData}
-					onContinue={handleContinue}
-					layoutMode={layoutMode}
-					activeViewport={activeViewport}
-					setActiveViewport={setActiveViewport}
-					onRegisterUndoRedo={setUndoRedo}
+		<UnitProvider>
+			<div className="flex flex-col h-screen w-screen bg-background overflow-hidden text-text font-sans select-none">
+				
+				{/* Project Workspace header */}
+				<ProjectTopbar
+					projectName={projectName}
+					currentStage={currentStageNumber}
+					saving={_saving}
+					onOpenSettings={() => setIsSettingsOpen(true)}
+					undoRedo={undoRedo || undefined}
 				/>
+
+				{/* Main Split Layout Panel */}
+				<div className="flex-grow w-full flex flex-col md:flex-row overflow-hidden relative">
+					<UnifiedDesignStep
+						sitevisitId={id!}
+						widthMeters={widthMeters}
+						heightMeters={heightMeters}
+						imageUrl={imageUrl}
+						initialRoofs={initialRoofs}
+						initialObjects={initialObjects}
+						initialPanelGroups={initialPanelGroups}
+						stage={stage}
+						onSaveStatusChange={setSaving}
+						sceneData={designData}
+						onContinue={handleContinue}
+						layoutMode={layoutMode}
+						activeViewport={activeViewport}
+						setActiveViewport={setActiveViewport}
+						onRegisterUndoRedo={setUndoRedo}
+					/>
+				</div>
+
+				<WorkspaceSettingsModal
+					isOpen={isSettingsOpen}
+					onClose={() => setIsSettingsOpen(false)}
+					layoutMode={layoutMode}
+					setLayoutMode={handleSetLayoutMode}
+				/>
+
 			</div>
-
-			<WorkspaceSettingsModal
-				isOpen={isSettingsOpen}
-				onClose={() => setIsSettingsOpen(false)}
-				layoutMode={layoutMode}
-				setLayoutMode={handleSetLayoutMode}
-			/>
-
-		</div>
+		</UnitProvider>
 	);
 }

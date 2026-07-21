@@ -4,7 +4,10 @@ import { generateUUID } from "../../../utils/design/coords";
 
 interface ObjectEditorParams {
 	objects: LocalObject[];
-	setObjects: React.Dispatch<React.SetStateAction<LocalObject[]>>;
+	setObjects: (
+		val: LocalObject[] | ((prev: LocalObject[]) => LocalObject[]),
+		options?: boolean | { overwrite?: boolean; forcePush?: boolean }
+	) => void;
 	selectedObjectId: string | null;
 	setSelectedObjectId: (id: string | null) => void;
 	saveObjectsDesign: (list: LocalObject[]) => void;
@@ -25,7 +28,7 @@ export function useObjectEditor({
 	const deleteSelectedObject = useCallback(() => {
 		if (!selectedObjectId) return;
 		const updated = objects.filter((o) => o.id !== selectedObjectId);
-		setObjects(updated);
+		setObjects(updated, { forcePush: true });
 		setSelectedObjectId(null);
 		saveObjectsDesign(updated);
 	}, [objects, selectedObjectId, setSelectedObjectId, setObjects, saveObjectsDesign]);
@@ -52,7 +55,7 @@ export function useObjectEditor({
 			} : {}),
 		};
 		const updated = [...objects, duplicate];
-		setObjects(updated);
+		setObjects(updated, { forcePush: true });
 		setSelectedObjectId(duplicate.id);
 		saveObjectsDesign(updated);
 	}, [objects, selectedObjectId, setObjects, setSelectedObjectId, saveObjectsDesign]);

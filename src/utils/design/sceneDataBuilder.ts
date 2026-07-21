@@ -167,7 +167,7 @@ export function buildLiveSceneData(
 			polygon: payloadPolygons,
 			tree: payloadTrees,
 		},
-		panel_placements: stage === "placement" ? placements : (sceneData.panel_placements || []),
-		panel_groups: stage === "placement" ? groupsRecord : (sceneData.panel_groups || {}),
+		panel_placements: stage === "placement" ? placements : (stage === "roof" ? [] : (sceneData.panel_placements || [])),
+		panel_groups: stage === "placement" ? groupsRecord : (stage === "roof" ? {} : (sceneData.panel_groups || {})),
 	};
 }

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { DesignStage } from "../enums";
 import RoofMappingStep from "../../roof/components/RoofMappingStep";
 import ObstructionMappingStep from "../../obstructions/components/ObstructionMappingStep";
@@ -89,25 +89,34 @@ export default function UnifiedDesignStep({
 	const panelGroups = docState.panelGroups;
 
 	// Setter adapters to maintain compatibility
-	const setRoofs = useCallback((newRoofs: RoofData[] | ((prev: RoofData[]) => RoofData[])) => {
+	const setRoofs = useCallback((
+		newRoofs: RoofData[] | ((prev: RoofData[]) => RoofData[]),
+		options?: boolean | { overwrite?: boolean; forcePush?: boolean }
+	) => {
 		setDocState((prev) => ({
 			...prev,
 			roofs: typeof newRoofs === "function" ? newRoofs(prev.roofs) : newRoofs,
-		}));
+		}), options);
 	}, [setDocState]);
 
-	const setObjects = useCallback((newObjects: LocalObject[] | ((prev: LocalObject[]) => LocalObject[])) => {
+	const setObjects = useCallback((
+		newObjects: LocalObject[] | ((prev: LocalObject[]) => LocalObject[]),
+		options?: boolean | { overwrite?: boolean; forcePush?: boolean }
+	) => {
 		setDocState((prev) => ({
 			...prev,
 			objects: typeof newObjects === "function" ? newObjects(prev.objects) : newObjects,
-		}));
+		}), options);
 	}, [setDocState]);
 
-	const setPanelGroups = useCallback((newGroups: PlacedPanelGroup[] | ((prev: PlacedPanelGroup[]) => PlacedPanelGroup[])) => {
+	const setPanelGroups = useCallback((
+		newGroups: PlacedPanelGroup[] | ((prev: PlacedPanelGroup[]) => PlacedPanelGroup[]),
+		options?: boolean | { overwrite?: boolean; forcePush?: boolean }
+	) => {
 		setDocState((prev) => ({
 			...prev,
 			panelGroups: typeof newGroups === "function" ? newGroups(prev.panelGroups) : newGroups,
-		}));
+		}), options);
 	}, [setDocState]);
 
 	const [loadedSitevisitId, setLoadedSitevisitId] = useState<string | null>(null);
@@ -176,6 +185,29 @@ export default function UnifiedDesignStep({
 			setRoofs(list);
 			autoSave.saveRoofDesignDebounced(list);
 		},
+		onRoofDeleted: (deletedRoofId) => {
+			const deletedRoof = roofs.find((r) => r.id === deletedRoofId);
+			
+			const updatedObjects = objects.filter((obj) => {
+				const matchesId = obj.roof_id === deletedRoofId;
+				const isInside = deletedRoof ? isPointInPolygon([obj.center_x, obj.center_y], deletedRoof.points) : false;
+				return !matchesId && !isInside;
+			});
+			
+			const updatedPanelGroups = panelGroups.filter((g) => {
+				const isInside = deletedRoof ? isPointInPolygon([g.center_x, g.center_y], deletedRoof.points) : false;
+				return !isInside;
+			});
+
+			if (updatedObjects.length !== objects.length) {
+				setObjects(updatedObjects);
+				autoSave.saveObjectsDesign(updatedObjects);
+			}
+			if (updatedPanelGroups.length !== panelGroups.length) {
+				setPanelGroups(updatedPanelGroups);
+				autoSave.savePanelsDesign(updatedPanelGroups);
+			}
+		}
 	});
 
 	// 6. Object/Obstruction Hook
@@ -234,16 +266,49 @@ export default function UnifiedDesignStep({
 		autoSave,
 	});
 
+	const autoSaveRef = useRef(autoSave);
+	useEffect(() => {
+		autoSaveRef.current = autoSave;
+	}, [autoSave]);
+
+	const handleUndo = useCallback(() => {
+		undoDoc((newState) => {
+			autoSaveRef.current.saveRoofDesign(newState.roofs);
+			autoSaveRef.current.saveObjectsDesign(newState.objects);
+			autoSaveRef.current.savePanelsDesign(newState.panelGroups);
+		});
+	}, [undoDoc]);
+
+	const handleRedo = useCallback(() => {
+		redoDoc((newState) => {
+			autoSaveRef.current.saveRoofDesign(newState.roofs);
+			autoSaveRef.current.saveObjectsDesign(newState.objects);
+			autoSaveRef.current.savePanelsDesign(newState.panelGroups);
+		});
+	}, [redoDoc]);
+
+	const lastRegisteredRef = useRef<{
+		undo: any;
+		redo: any;
+		canUndo: boolean;
+		canRedo: boolean;
+	} | null>(null);
+
 	// Expose Undo/Redo handlers to parent workspace
 	useEffect(() => {
 		if (onRegisterUndoRedo) {
 			const isDrawingActive = roofEditor.isDrawingRoofs || objectEditor.objectDrawingMode === "polygon";
-			onRegisterUndoRedo({
-				undo: isDrawingActive ? roofEditor.undoLastRoofPoint : undoDoc,
-				redo: isDrawingActive ? roofEditor.redoLastRoofPoint : redoDoc,
-				canUndo: isDrawingActive ? roofEditor.canUndoPoint : canUndoDoc,
-				canRedo: isDrawingActive ? roofEditor.canRedoPoint : canRedoDoc,
-			});
+			const undo = isDrawingActive ? roofEditor.undoLastRoofPoint : handleUndo;
+			const redo = isDrawingActive ? roofEditor.redoLastRoofPoint : handleRedo;
+			const canUndo = isDrawingActive ? roofEditor.canUndoPoint : canUndoDoc;
+			const canRedo = isDrawingActive ? roofEditor.canRedoPoint : canRedoDoc;
+
+			const last = lastRegisteredRef.current;
+			if (!last || last.undo !== undo || last.redo !== redo || last.canUndo !== canUndo || last.canRedo !== canRedo) {
+				const nextState = { undo, redo, canUndo, canRedo };
+				lastRegisteredRef.current = nextState;
+				onRegisterUndoRedo(nextState);
+			}
 		}
 	}, [
 		onRegisterUndoRedo,
@@ -253,8 +318,8 @@ export default function UnifiedDesignStep({
 		roofEditor.redoLastRoofPoint,
 		roofEditor.canUndoPoint,
 		roofEditor.canRedoPoint,
-		undoDoc,
-		redoDoc,
+		handleUndo,
+		handleRedo,
 		canUndoDoc,
 		canRedoDoc,
 	]);
@@ -421,7 +486,16 @@ export default function UnifiedDesignStep({
 				</div>
 			)}
 
-			{/* Column 1: 2D drawing canvas */}
+			{/* Column 1: 3D live preview container */}
+			{(layoutMode === "split" || activeViewport === "3d" || stage === DesignStage.Snapshot) && (
+				<ThreeDViewport
+					liveSceneData={liveSceneData}
+					stage={stage}
+					activeCaptureTarget={panelPlacement.activeCaptureTarget}
+				/>
+			)}
+
+			{/* Column 2: 2D drawing canvas */}
 			{stage !== DesignStage.Snapshot && (layoutMode === "split" || activeViewport === "2d") && (
 				<CanvasViewport
 					helperText={helperText}
@@ -447,7 +521,7 @@ export default function UnifiedDesignStep({
 					startDraggingRoofVertex={interaction.startDraggingRoofVertex}
 					startDraggingObject={interaction.startDraggingObject}
 					startDraggingObjectVertex={interaction.startDraggingObjectVertex}
-					panelGroups={panelGroups}
+					panelGroups={stage === "roof" ? [] : panelGroups}
 					selectedGroupId={selection.selectedGroupId}
 					setSelectedGroupId={selection.setSelectedGroupId}
 					startDraggingGroup={interaction.startDraggingGroup}
@@ -463,15 +537,6 @@ export default function UnifiedDesignStep({
 					handleCanvasClick={interaction.handleCanvasClick}
 					zoomIn2D={viewport.zoomIn2D}
 					zoomOut2D={viewport.zoomOut2D}
-				/>
-			)}
-
-			{/* Column 2: 3D live preview container */}
-			{(layoutMode === "split" || activeViewport === "3d" || stage === DesignStage.Snapshot) && (
-				<ThreeDViewport
-					liveSceneData={liveSceneData}
-					stage={stage}
-					activeCaptureTarget={panelPlacement.activeCaptureTarget}
 				/>
 			)}
 

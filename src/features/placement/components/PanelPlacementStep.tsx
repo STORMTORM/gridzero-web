@@ -1,5 +1,6 @@
 import { Trash2, Layers, Grid3X3, Copy } from "lucide-react";
 import type { PanelGroup, PanelSpec } from "../../../utils/design/types";
+import { useUnit } from "../../shared/contexts/UnitContext";
 
 interface PanelPlacementStepProps {
 	panelSpec: PanelSpec | null;
@@ -34,6 +35,7 @@ export default function PanelPlacementStep({
 	onContinue,
 	pendingDuplicateGroup,
 }: PanelPlacementStepProps) {
+	const { mToUnit, unitToM, unitLabel } = useUnit();
 	const overLimit = targetPanelCount > 0 && placedPanelCount > targetPanelCount;
 	const canContinue = !!panelSpec && placedPanelCount > 0 && !overLimit;
 
@@ -174,22 +176,22 @@ export default function PanelPlacementStep({
 								{/* Front & Back Pillar Heights */}
 								<div className="grid grid-cols-2 gap-3">
 									<label className="flex flex-col gap-1">
-										<span className="text-[9px] font-bold text-placeholder uppercase tracking-wider">Front Pillar (m)</span>
+										<span className="text-[9px] font-bold text-placeholder uppercase tracking-wider">Front Pillar ({unitLabel})</span>
 										<input
 											type="number"
-											step="0.01"
-											value={selectedGroup.front_pillar_height ?? 1.22}
-											onChange={(e) => updateSelectedGroup({ front_pillar_height: parseFloat(e.target.value) || 0 })}
+											step="any"
+											value={selectedGroup.front_pillar_height != null ? Number(mToUnit(selectedGroup.front_pillar_height).toFixed(2)) : 1.22}
+											onChange={(e) => updateSelectedGroup({ front_pillar_height: unitToM(parseFloat(e.target.value)) || 0 })}
 											className="bg-background border border-border rounded-xl px-2.5 py-1.5 text-xs text-text focus:outline-none focus:border-primary w-full"
 										/>
 									</label>
 									<label className="flex flex-col gap-1">
-										<span className="text-[9px] font-bold text-placeholder uppercase tracking-wider">Back Pillar (m)</span>
+										<span className="text-[9px] font-bold text-placeholder uppercase tracking-wider">Back Pillar ({unitLabel})</span>
 										<input
 											type="number"
-											step="0.01"
-											value={selectedGroup.back_pillar_height ?? 2.13}
-											onChange={(e) => updateSelectedGroup({ back_pillar_height: parseFloat(e.target.value) || 0 })}
+											step="any"
+											value={selectedGroup.back_pillar_height != null ? Number(mToUnit(selectedGroup.back_pillar_height).toFixed(2)) : 2.13}
+											onChange={(e) => updateSelectedGroup({ back_pillar_height: unitToM(parseFloat(e.target.value)) || 0 })}
 											className="bg-background border border-border rounded-xl px-2.5 py-1.5 text-xs text-text focus:outline-none focus:border-primary w-full"
 										/>
 									</label>
@@ -198,22 +200,22 @@ export default function PanelPlacementStep({
 								{/* Row Gap & Col Gap */}
 								<div className="grid grid-cols-2 gap-3">
 									<label className="flex flex-col gap-1">
-										<span className="text-[9px] font-bold text-placeholder uppercase tracking-wider">Row Gap N-S (m)</span>
+										<span className="text-[9px] font-bold text-placeholder uppercase tracking-wider">Row Gap N-S ({unitLabel})</span>
 										<input
 											type="number"
-											step="0.1"
-											value={selectedGroup.row_gap ?? 1.6}
-											onChange={(e) => updateSelectedGroup({ row_gap: parseFloat(e.target.value) || 0 })}
+											step="any"
+											value={selectedGroup.row_gap != null ? Number(mToUnit(selectedGroup.row_gap).toFixed(2)) : 1.6}
+											onChange={(e) => updateSelectedGroup({ row_gap: unitToM(parseFloat(e.target.value)) || 0 })}
 											className="bg-background border border-border rounded-xl px-2.5 py-1.5 text-xs text-text focus:outline-none focus:border-primary w-full"
 										/>
 									</label>
 									<label className="flex flex-col gap-1">
-										<span className="text-[9px] font-bold text-placeholder uppercase tracking-wider">Col Gap E-W (m)</span>
+										<span className="text-[9px] font-bold text-placeholder uppercase tracking-wider">Col Gap E-W ({unitLabel})</span>
 										<input
 											type="number"
-											step="0.1"
-											value={selectedGroup.col_gap ?? 0}
-											onChange={(e) => updateSelectedGroup({ col_gap: parseFloat(e.target.value) || 0 })}
+											step="any"
+											value={selectedGroup.col_gap != null ? Number(mToUnit(selectedGroup.col_gap).toFixed(2)) : 0}
+											onChange={(e) => updateSelectedGroup({ col_gap: unitToM(parseFloat(e.target.value)) || 0 })}
 											className="bg-background border border-border rounded-xl px-2.5 py-1.5 text-xs text-text focus:outline-none focus:border-primary w-full"
 										/>
 									</label>
@@ -222,22 +224,22 @@ export default function PanelPlacementStep({
 								{/* Rafter & Purlin Overhangs */}
 								<div className="grid grid-cols-2 gap-3">
 									<label className="flex flex-col gap-1">
-										<span className="text-[9px] font-bold text-placeholder uppercase tracking-wider">Rafter Overhang (m)</span>
+										<span className="text-[9px] font-bold text-placeholder uppercase tracking-wider">Rafter Overhang ({unitLabel})</span>
 										<input
 											type="number"
-											step="0.01"
-											value={selectedGroup.rafter_overhang ?? 0.1}
-											onChange={(e) => updateSelectedGroup({ rafter_overhang: parseFloat(e.target.value) || 0 })}
+											step="any"
+											value={selectedGroup.rafter_overhang != null ? Number(mToUnit(selectedGroup.rafter_overhang).toFixed(2)) : 0.1}
+											onChange={(e) => updateSelectedGroup({ rafter_overhang: unitToM(parseFloat(e.target.value)) || 0 })}
 											className="bg-background border border-border rounded-xl px-2.5 py-1.5 text-xs text-text focus:outline-none focus:border-primary w-full"
 										/>
 									</label>
 									<label className="flex flex-col gap-1">
-										<span className="text-[9px] font-bold text-placeholder uppercase tracking-wider">Purlin Overhang (m)</span>
+										<span className="text-[9px] font-bold text-placeholder uppercase tracking-wider">Purlin Overhang ({unitLabel})</span>
 										<input
 											type="number"
-											step="0.01"
-											value={selectedGroup.purlin_overhang ?? 0.1}
-											onChange={(e) => updateSelectedGroup({ purlin_overhang: parseFloat(e.target.value) || 0 })}
+											step="any"
+											value={selectedGroup.purlin_overhang != null ? Number(mToUnit(selectedGroup.purlin_overhang).toFixed(2)) : 0.1}
+											onChange={(e) => updateSelectedGroup({ purlin_overhang: unitToM(parseFloat(e.target.value)) || 0 })}
 											className="bg-background border border-border rounded-xl px-2.5 py-1.5 text-xs text-text focus:outline-none focus:border-primary w-full"
 										/>
 									</label>
@@ -246,32 +248,32 @@ export default function PanelPlacementStep({
 								{/* Concrete Base Dimensions */}
 								<div className="grid grid-cols-3 gap-2">
 									<label className="flex flex-col gap-1">
-										<span className="text-[8px] font-bold text-placeholder uppercase tracking-wider">Base H (m)</span>
+										<span className="text-[8px] font-bold text-placeholder uppercase tracking-wider">Base H ({unitLabel})</span>
 										<input
 											type="number"
-											step="0.01"
-											value={selectedGroup.base_height ?? 0.3}
-											onChange={(e) => updateSelectedGroup({ base_height: parseFloat(e.target.value) || 0 })}
+											step="any"
+											value={selectedGroup.base_height != null ? Number(mToUnit(selectedGroup.base_height).toFixed(2)) : 0.3}
+											onChange={(e) => updateSelectedGroup({ base_height: unitToM(parseFloat(e.target.value)) || 0 })}
 											className="bg-background border border-border rounded-xl px-2 py-1.5 text-[11px] text-text focus:outline-none focus:border-primary w-full"
 										/>
 									</label>
 									<label className="flex flex-col gap-1">
-										<span className="text-[8px] font-bold text-placeholder uppercase tracking-wider">Base L (m)</span>
+										<span className="text-[8px] font-bold text-placeholder uppercase tracking-wider">Base L ({unitLabel})</span>
 										<input
 											type="number"
-											step="0.01"
-											value={selectedGroup.base_length ?? 0.3}
-											onChange={(e) => updateSelectedGroup({ base_length: parseFloat(e.target.value) || 0 })}
+											step="any"
+											value={selectedGroup.base_length != null ? Number(mToUnit(selectedGroup.base_length).toFixed(2)) : 0.3}
+											onChange={(e) => updateSelectedGroup({ base_length: unitToM(parseFloat(e.target.value)) || 0 })}
 											className="bg-background border border-border rounded-xl px-2 py-1.5 text-[11px] text-text focus:outline-none focus:border-primary w-full"
 										/>
 									</label>
 									<label className="flex flex-col gap-1">
-										<span className="text-[8px] font-bold text-placeholder uppercase tracking-wider">Base W (m)</span>
+										<span className="text-[8px] font-bold text-placeholder uppercase tracking-wider">Base W ({unitLabel})</span>
 										<input
 											type="number"
-											step="0.01"
-											value={selectedGroup.base_width ?? 0.3}
-											onChange={(e) => updateSelectedGroup({ base_width: parseFloat(e.target.value) || 0 })}
+											step="any"
+											value={selectedGroup.base_width != null ? Number(mToUnit(selectedGroup.base_width).toFixed(2)) : 0.3}
+											onChange={(e) => updateSelectedGroup({ base_width: unitToM(parseFloat(e.target.value)) || 0 })}
 											className="bg-background border border-border rounded-xl px-2 py-1.5 text-[11px] text-text focus:outline-none focus:border-primary w-full"
 										/>
 									</label>

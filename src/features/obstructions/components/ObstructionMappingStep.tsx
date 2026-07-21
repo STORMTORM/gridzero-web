@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Check, Trash2, Copy } from "lucide-react";
 import type { LocalObject } from "../../../utils/design/types";
 import type { RoofData } from "../../shared/types";
+import { useUnit } from "../../shared/contexts/UnitContext";
 
 interface ObstructionMappingStepProps {
 	roofs: RoofData[];
@@ -29,6 +30,7 @@ export default function ObstructionMappingStep({
 	onContinue,
 }: ObstructionMappingStepProps) {
 
+	const { unit, mToUnit, unitToM, formatVal } = useUnit();
 	const selectedObject = objects.find((o) => o.id === selectedObjectId);
 	const objHeight = selectedObject ? (selectedObject.z_end - selectedObject.z_init) : 0;
 
@@ -165,7 +167,7 @@ export default function ObstructionMappingStep({
 						<div className="flex flex-col gap-2 max-h-[140px] overflow-y-auto pr-1">
 							{objects.map((obj) => {
 								const isSelected = obj.id === selectedObjectId;
-								const dispH = (obj.z_end - obj.z_init).toFixed(1);
+								const dispH = obj.z_end - obj.z_init;
 								const subtype = obj.tag ? `${obj.tag}` : obj.type;
 
 								return (
@@ -181,7 +183,7 @@ export default function ObstructionMappingStep({
 										<div className="flex flex-col gap-0.5">
 											<span className="text-xs font-bold">{obj.name}</span>
 											<span className="text-[10px] text-placeholder capitalize">
-												Type: {subtype} · Height: {dispH}m
+												Type: {subtype} · Height: {formatVal(dispH, 1)}
 											</span>
 										</div>
 										{isSelected && <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />}
@@ -221,16 +223,16 @@ export default function ObstructionMappingStep({
 							<div className="flex flex-col gap-1.5">
 								<div className="flex justify-between items-center text-[11px] font-semibold text-placeholder">
 									<span>Height</span>
-									<span className="text-text font-bold">{objHeight.toFixed(1)}m</span>
+									<span className="text-text font-bold">{formatVal(objHeight, 1)}</span>
 								</div>
 								<input
 									type="range"
-									min="0.2"
-									max="15"
+									min={unit === "ft" ? 0.6 : 0.2}
+									max={unit === "ft" ? 50 : 15}
 									step="0.1"
-									value={objHeight}
+									value={Math.round(mToUnit(objHeight) * 10) / 10}
 									onChange={(e) => {
-										const h = parseFloat(e.target.value);
+										const h = unitToM(parseFloat(e.target.value));
 										updateSelectedObject({
 											z_end: selectedObject.z_init + h,
 										});
@@ -243,17 +245,17 @@ export default function ObstructionMappingStep({
 							<div className="flex flex-col gap-1.5">
 								<div className="flex justify-between items-center text-[11px] font-semibold text-placeholder">
 									<span>Base Elevation (z_init)</span>
-									<span className="text-text font-bold">{selectedObject.z_init.toFixed(1)}m</span>
+									<span className="text-text font-bold">{formatVal(selectedObject.z_init, 1)}</span>
 								</div>
 								<input
 									type="range"
 									min="0"
-									max="30"
+									max={unit === "ft" ? 100 : 30}
 									step="0.1"
-									value={selectedObject.z_init}
+									value={Math.round(mToUnit(selectedObject.z_init) * 10) / 10}
 									disabled={selectedObject.on_roof || selectedObject.type === "tree" || selectedObject.tag === "building"}
 									onChange={(e) => {
-										const z = parseFloat(e.target.value);
+										const z = unitToM(parseFloat(e.target.value));
 										const prevH = selectedObject.z_end - selectedObject.z_init;
 										updateSelectedObject({
 											z_init: z,
@@ -289,15 +291,15 @@ export default function ObstructionMappingStep({
 									<div className="flex flex-col gap-1.5">
 										<div className="flex justify-between items-center text-[11px] font-semibold text-placeholder">
 											<span>Length</span>
-											<span className="text-text font-bold">{selectedObject.length?.toFixed(1)}m</span>
+											<span className="text-text font-bold">{formatVal(selectedObject.length || 2, 1)}</span>
 										</div>
 										<input
 											type="range"
-											min="0.5"
-											max="20"
+											min={unit === "ft" ? 1.5 : 0.5}
+											max={unit === "ft" ? 65 : 20}
 											step="0.1"
-											value={selectedObject.length || 2}
-											onChange={(e) => updateSelectedObject({ length: parseFloat(e.target.value) })}
+											value={Math.round(mToUnit(selectedObject.length || 2) * 10) / 10}
+											onChange={(e) => updateSelectedObject({ length: unitToM(parseFloat(e.target.value)) })}
 											className="w-full accent-primary cursor-pointer"
 										/>
 									</div>
@@ -306,15 +308,15 @@ export default function ObstructionMappingStep({
 									<div className="flex flex-col gap-1.5">
 										<div className="flex justify-between items-center text-[11px] font-semibold text-placeholder">
 											<span>Width</span>
-											<span className="text-text font-bold">{selectedObject.width?.toFixed(1)}m</span>
+											<span className="text-text font-bold">{formatVal(selectedObject.width || 2, 1)}</span>
 										</div>
 										<input
 											type="range"
-											min="0.5"
-											max="20"
+											min={unit === "ft" ? 1.5 : 0.5}
+											max={unit === "ft" ? 65 : 20}
 											step="0.1"
-											value={selectedObject.width || 2}
-											onChange={(e) => updateSelectedObject({ width: parseFloat(e.target.value) })}
+											value={Math.round(mToUnit(selectedObject.width || 2) * 10) / 10}
+											onChange={(e) => updateSelectedObject({ width: unitToM(parseFloat(e.target.value)) })}
 											className="w-full accent-primary cursor-pointer"
 										/>
 									</div>
@@ -343,15 +345,15 @@ export default function ObstructionMappingStep({
 									<div className="flex flex-col gap-1.5">
 										<div className="flex justify-between items-center text-[11px] font-semibold text-placeholder">
 											<span>Radius</span>
-											<span className="text-text font-bold">{selectedObject.radius?.toFixed(1)}m</span>
+											<span className="text-text font-bold">{formatVal(selectedObject.radius || 1, 1)}</span>
 										</div>
 										<input
 											type="range"
-											min="0.3"
-											max="8"
+											min={unit === "ft" ? 1.0 : 0.3}
+											max={unit === "ft" ? 26.0 : 8.0}
 											step="0.1"
-											value={selectedObject.radius || 1}
-											onChange={(e) => updateSelectedObject({ radius: parseFloat(e.target.value) })}
+											value={Math.round(mToUnit(selectedObject.radius || 1) * 10) / 10}
+											onChange={(e) => updateSelectedObject({ radius: unitToM(parseFloat(e.target.value)) })}
 											className="w-full accent-primary cursor-pointer"
 										/>
 									</div>
@@ -397,15 +399,15 @@ export default function ObstructionMappingStep({
 									<div className="flex flex-col gap-1.5">
 										<div className="flex justify-between items-center text-[11px] font-semibold text-placeholder">
 											<span>Wall Thickness</span>
-											<span className="text-text font-bold">{selectedObject.thickness?.toFixed(2)}m</span>
+											<span className="text-text font-bold">{formatVal(selectedObject.thickness || 0.23, 2)}</span>
 										</div>
 										<input
 											type="range"
-											min="0.1"
-											max="1"
-											step="0.01"
-											value={selectedObject.thickness || 0.23}
-											onChange={(e) => updateSelectedObject({ thickness: parseFloat(e.target.value) })}
+											min={unit === "ft" ? 0.3 : 0.1}
+											max={unit === "ft" ? 3.3 : 1.0}
+											step={0.01}
+											value={Math.round(mToUnit(selectedObject.thickness || 0.23) * 100) / 100}
+											onChange={(e) => updateSelectedObject({ thickness: unitToM(parseFloat(e.target.value)) })}
 											className="w-full accent-primary cursor-pointer"
 										/>
 									</div>

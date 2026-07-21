@@ -4,11 +4,15 @@ import { useHistoryState } from "../../shared/hooks/useHistoryState";
 
 interface RoofEditorParams {
 	roofs: RoofData[];
-	setRoofs: React.Dispatch<React.SetStateAction<RoofData[]>>;
+	setRoofs: (
+		val: RoofData[] | ((prev: RoofData[]) => RoofData[]),
+		options?: boolean | { overwrite?: boolean; forcePush?: boolean }
+	) => void;
 	selectedRoofId: string | null;
 	setSelectedRoofId: (id: string | null) => void;
 	saveRoofDesign: (list: RoofData[]) => void;
 	saveRoofDesignDebounced: (list: RoofData[]) => void;
+	onRoofDeleted?: (deletedRoofId: string) => void;
 }
 
 export function useRoofEditor({
@@ -18,6 +22,7 @@ export function useRoofEditor({
 	setSelectedRoofId,
 	saveRoofDesign,
 	saveRoofDesignDebounced,
+	onRoofDeleted,
 }: RoofEditorParams) {
 	const {
 		state: currentPoints,
@@ -32,11 +37,15 @@ export function useRoofEditor({
 
 	const deleteSelectedRoof = useCallback(() => {
 		if (!selectedRoofId) return;
-		const updated = roofs.filter((r) => r.id !== selectedRoofId);
-		setRoofs(updated);
+		const deletedId = selectedRoofId;
+		const updated = roofs.filter((r) => r.id !== deletedId);
+		setRoofs(updated, { forcePush: true });
 		setSelectedRoofId(null);
 		saveRoofDesign(updated);
-	}, [roofs, selectedRoofId, setSelectedRoofId, setRoofs, saveRoofDesign]);
+		if (onRoofDeleted) {
+			onRoofDeleted(deletedId);
+		}
+	}, [roofs, selectedRoofId, setSelectedRoofId, setRoofs, saveRoofDesign, onRoofDeleted]);
 
 	const updateSelectedRoof = useCallback((updates: Partial<RoofData>) => {
 		if (!selectedRoofId) return;

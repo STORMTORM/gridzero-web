@@ -10,11 +10,20 @@ interface CanvasInteractionParams {
 	sitevisitId: string;
 	stage: string;
 	roofs: RoofData[];
-	setRoofs: React.Dispatch<React.SetStateAction<RoofData[]>>;
+	setRoofs: (
+		val: RoofData[] | ((prev: RoofData[]) => RoofData[]),
+		options?: boolean | { overwrite?: boolean; forcePush?: boolean }
+	) => void;
 	objects: LocalObject[];
-	setObjects: React.Dispatch<React.SetStateAction<LocalObject[]>>;
+	setObjects: (
+		val: LocalObject[] | ((prev: LocalObject[]) => LocalObject[]),
+		options?: boolean | { overwrite?: boolean; forcePush?: boolean }
+	) => void;
 	panelGroups: PlacedPanelGroup[];
-	setPanelGroups: React.Dispatch<React.SetStateAction<PlacedPanelGroup[]>>;
+	setPanelGroups: (
+		val: PlacedPanelGroup[] | ((prev: PlacedPanelGroup[]) => PlacedPanelGroup[]),
+		options?: boolean | { overwrite?: boolean; forcePush?: boolean }
+	) => void;
 	activeDrag: DragState | null;
 	setActiveDrag: React.Dispatch<React.SetStateAction<DragState | null>>;
 	setToastMessage: (msg: string | null) => void;
@@ -280,7 +289,7 @@ export function useCanvasInteraction({
 				return;
 			}
 			const updated = [...panelGroups, placed];
-			setPanelGroups(updated);
+			setPanelGroups(updated, { forcePush: true });
 			selection.setSelectedGroupId(placed.id);
 			panelPlacement.setIsPlacingGroup(false);
 			panelPlacement.setPendingDuplicateGroup(null);
@@ -319,7 +328,7 @@ export function useCanvasInteraction({
 			return;
 		}
 		const updated = [...panelGroups, newGroup];
-		setPanelGroups(updated);
+		setPanelGroups(updated, { forcePush: true });
 		selection.setSelectedGroupId(newGroupId);
 		panelPlacement.setIsPlacingGroup(false);
 		autoSave.savePanelsDesign(updated);
@@ -349,7 +358,7 @@ export function useCanvasInteraction({
 				})),
 			};
 			const updated = [...roofs, newRoof];
-			setRoofs(updated);
+			setRoofs(updated, { forcePush: true });
 			selection.setSelectedRoofId(newRoof.id);
 			roofEditor.setCurrentPoints([]);
 			roofEditor.setIsDrawingRoofs(false);
@@ -403,7 +412,7 @@ export function useCanvasInteraction({
 				polygon: undefined,
 			};
 			const updated = [...objects, newObj];
-			setObjects(updated);
+			setObjects(updated, { forcePush: true });
 			selection.setSelectedObjectId(newObj.id);
 			objectEditor.setObjectDrawingMode("none");
 			autoSave.saveObjectsDesign(updated);
@@ -442,7 +451,7 @@ export function useCanvasInteraction({
 					polygon: undefined,
 				};
 				const updated = [...objects, newWall];
-				setObjects(updated);
+				setObjects(updated, { forcePush: true });
 				selection.setSelectedObjectId(newWall.id);
 				objectEditor.setWallStartPoint(null);
 				objectEditor.setObjectDrawingMode("none");
@@ -486,7 +495,7 @@ export function useCanvasInteraction({
 					polygon: roofEditor.currentPoints,
 				};
 				const updated = [...objects, newPoly];
-				setObjects(updated);
+				setObjects(updated, { forcePush: true });
 				selection.setSelectedObjectId(newPoly.id);
 				roofEditor.setCurrentPoints([]);
 				objectEditor.setObjectDrawingMode("none");
