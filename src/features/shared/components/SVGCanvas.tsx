@@ -203,7 +203,7 @@ export default function SVGCanvas({
 			 ────────────────────────────────────────────────────────────────── */}
 			{objects.map((obj) => {
 				// In placement stage: objects are read-only (no interaction)
-				const isPlacementStage = stage === "placement";
+				const isPlacementStage = stage === "placement" || (stage === "obstruction" && objectDrawingMode !== "none");
 				const isOverlapping = overlappingObjectIds?.has(obj.id) ?? false;
 				const isSelected = !isPlacementStage && selectedObjectId === obj.id;
 

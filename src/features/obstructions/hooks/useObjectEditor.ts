@@ -25,17 +25,21 @@ export function useObjectEditor({
 	const [objectDrawingMode, setObjectDrawingMode] = useState<string>("none");
 	const [wallStartPoint, setWallStartPoint] = useState<[number, number] | null>(null);
 
-	const deleteSelectedObject = useCallback(() => {
-		if (!selectedObjectId) return;
-		const updated = objects.filter((o) => o.id !== selectedObjectId);
+	const deleteSelectedObject = useCallback((objId?: string) => {
+		const targetId = objId || selectedObjectId;
+		if (!targetId) return;
+		const updated = objects.filter((o) => o.id !== targetId);
 		setObjects(updated, { forcePush: true });
-		setSelectedObjectId(null);
+		if (selectedObjectId === targetId) {
+			setSelectedObjectId(null);
+		}
 		saveObjectsDesign(updated);
 	}, [objects, selectedObjectId, setSelectedObjectId, setObjects, saveObjectsDesign]);
 
-	const duplicateSelectedObject = useCallback(() => {
-		if (!selectedObjectId) return;
-		const original = objects.find((o) => o.id === selectedObjectId);
+	const duplicateSelectedObject = useCallback((objId?: string) => {
+		const targetId = objId || selectedObjectId;
+		if (!targetId) return;
+		const original = objects.find((o) => o.id === targetId);
 		if (!original) return;
 		const OFFSET = 1.0; // offset 1 metre so it doesn't stack on top
 		const duplicate: LocalObject = {

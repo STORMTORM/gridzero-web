@@ -20,7 +20,7 @@ interface ProjectTopbarProps {
 const STAGE_BREADCRUMBS: Record<number, string> = {
 	1: "Customer Details",
 	2: "Roof Mapping",
-	3: "Obstruction Mapping",
+	3: "Objects",
 	4: "System Sizing",
 	5: "2D Panel Placement",
 	6: "3D Visualisation",

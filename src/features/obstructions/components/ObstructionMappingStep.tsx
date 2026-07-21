@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Check, Trash2, Copy } from "lucide-react";
+import { Check, Trash2, Copy, Pen } from "lucide-react";
 import type { LocalObject } from "../../../utils/design/types";
 import type { RoofData } from "../../shared/types";
 import { useUnit } from "../../shared/contexts/UnitContext";
@@ -11,8 +11,8 @@ interface ObstructionMappingStepProps {
 	setSelectedObjectId: (id: string | null) => void;
 	objectDrawingMode: string;
 	setObjectDrawingMode: (mode: string) => void;
-	deleteSelectedObject: () => void;
-	duplicateSelectedObject: () => void;
+	deleteSelectedObject: (objId?: string) => void;
+	duplicateSelectedObject: (objId?: string) => void;
 	updateSelectedObject: (fields: Partial<LocalObject>) => void;
 	onContinue: () => void;
 }
@@ -36,6 +36,23 @@ export default function ObstructionMappingStep({
 
 	// Tabs: "on_roof" (snapped to roof height) and "off_roof" (on ground)
 	const [activeTab, setActiveTab] = useState<"on_roof" | "off_roof">("on_roof");
+
+	const [editingObjectId, setEditingObjectId] = useState<string | null>(null);
+	const [tempObjectName, setTempObjectName] = useState("");
+
+	const handleStartEdit = (e: React.MouseEvent, obj: LocalObject) => {
+		e.stopPropagation();
+		setSelectedObjectId(obj.id);
+		setEditingObjectId(obj.id);
+		setTempObjectName(obj.name);
+	};
+
+	const handleSaveName = (objId: string) => {
+		if (tempObjectName.trim()) {
+			updateSelectedObject({ name: tempObjectName.trim() });
+		}
+		setEditingObjectId(null);
+	};
 
 	const onRoofCategories = [
 		{ key: "ac_unit", label: "AC Unit" },
@@ -63,17 +80,14 @@ export default function ObstructionMappingStep({
 			<div className="flex flex-col gap-6 flex-grow overflow-y-auto pr-1 pb-4">
 				{/* Title */}
 				<div>
-					<h3 className="text-sm font-bold text-text flex items-center gap-2">
-						<span>Obstruction Mapping</span>
+					<h3 className="text-xl font-bold text-text flex items-center gap-2">
+						<span>Object Settings</span>
 					</h3>
-					<p className="text-[11px] text-placeholder font-medium mt-1">
-						Map building segments, water tanks, trees, AC units, and walls.
-					</p>
 				</div>
 
 				{/* Object Drawing buttons */}
 				<div className="flex flex-col gap-3">
-					<span className="text-[10px] font-bold text-placeholder uppercase tracking-wider">Add Obstruction</span>
+					<span className="text-[10px] font-bold text-placeholder uppercase tracking-wider">Add Objects</span>
 					
 					{roofs.length === 0 ? (
 						<div className="bg-rose-500/10 border border-rose-500/20 rounded-2xl p-4 flex flex-col gap-2 text-rose-350 select-text">
@@ -93,7 +107,7 @@ export default function ObstructionMappingStep({
 										setActiveTab("on_roof");
 										setObjectDrawingMode("none");
 									}}
-									className={`flex-1 py-1 text-center text-[10px] font-bold rounded-lg transition-all cursor-pointer ${
+									className={`flex-1 py-1 text-center text-xs font-bold rounded-lg transition-all cursor-pointer ${
 										activeTab === "on_roof"
 											? "bg-primary text-white shadow-sm"
 											: "text-placeholder hover:text-text"
@@ -106,13 +120,13 @@ export default function ObstructionMappingStep({
 										setActiveTab("off_roof");
 										setObjectDrawingMode("none");
 									}}
-									className={`flex-1 py-1 text-center text-[10px] font-bold rounded-lg transition-all cursor-pointer ${
+									className={`flex-1 py-1 text-center text-xs font-bold rounded-lg transition-all cursor-pointer ${
 										activeTab === "off_roof"
 											? "bg-primary text-white shadow-sm"
 											: "text-placeholder hover:text-text"
 									}`}
 								>
-									Off Roof (Ground)
+									Off Roof
 								</button>
 							</div>
 
@@ -158,13 +172,13 @@ export default function ObstructionMappingStep({
 
 				{/* Mapped Objects List */}
 				<div className="flex flex-col gap-2.5">
-					<span className="text-[10px] font-bold text-placeholder uppercase tracking-wider">Mapped Objects ({objects.length})</span>
+					<span className="text-[10px] font-bold text-placeholder uppercase tracking-wider">Placed Objects ({objects.length})</span>
 					{objects.length === 0 ? (
 						<div className="border border-dashed border-border rounded-2xl p-6 text-center text-xs text-placeholder">
 							No obstructions placed. Select a tool above to outline objects.
 						</div>
 					) : (
-						<div className="flex flex-col gap-2 max-h-[140px] overflow-y-auto pr-1">
+						<div className="flex flex-col gap-2 max-h-52 overflow-y-auto scrollbar-none bg-card p-2 border rounded-xl border-border">
 							{objects.map((obj) => {
 								const isSelected = obj.id === selectedObjectId;
 								const dispH = obj.z_end - obj.z_init;
@@ -174,19 +188,68 @@ export default function ObstructionMappingStep({
 									<div
 										key={obj.id}
 										onClick={() => setSelectedObjectId(obj.id)}
-										className={`p-3 rounded-xl border transition-all cursor-pointer flex items-center justify-between ${
+										className={`p-3 rounded-xl border transition-all cursor-pointer flex items-center justify-between group ${
 											isSelected
 												? "bg-primary/10 border-primary text-primary"
 												: "bg-card border-border/50 text-placeholder hover:border-border hover:text-text"
 										}`}
 									>
-										<div className="flex flex-col gap-0.5">
-											<span className="text-xs font-bold">{obj.name}</span>
+										<div className="flex-grow flex flex-col gap-0.5 min-w-0 pr-2">
+											{editingObjectId === obj.id ? (
+												<input
+													type="text"
+													value={tempObjectName}
+													onChange={(e) => setTempObjectName(e.target.value)}
+													onBlur={() => handleSaveName(obj.id)}
+													onKeyDown={(e) => {
+														if (e.key === "Enter") {
+															handleSaveName(obj.id);
+														} else if (e.key === "Escape") {
+															setEditingObjectId(null);
+														}
+													}}
+													className="bg-background border border-border rounded-lg px-2 py-0.5 text-xs font-bold text-text focus:outline-none focus:border-primary w-full animate-in fade-in duration-100"
+													autoFocus
+													onClick={(e) => e.stopPropagation()}
+												/>
+											) : (
+												<div className="flex items-center gap-1.5 group/title min-w-0">
+													<span className="text-xs font-bold truncate">{obj.name}</span>
+													<button
+														type="button"
+														onClick={(e) => handleStartEdit(e, obj)}
+														className="text-placeholder hover:text-text opacity-0 group-hover/title:opacity-100 transition-opacity cursor-pointer p-0.5 rounded hover:bg-background flex items-center justify-center border border-transparent hover:border-border"
+														title="Edit name"
+													>
+														<Pen className="w-2.5 h-2.5" />
+													</button>
+												</div>
+											)}
 											<span className="text-[10px] text-placeholder capitalize">
 												Type: {subtype} · Height: {formatVal(dispH, 1)}
 											</span>
 										</div>
-										{isSelected && <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />}
+										<div className="flex items-center gap-1.5 flex-shrink-0">
+											<div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
+												<button
+													type="button"
+													onClick={() => duplicateSelectedObject(obj.id)}
+													className="p-1 rounded-lg bg-background hover:bg-border text-placeholder hover:text-text border border-border transition-colors cursor-pointer flex items-center justify-center"
+													title="Duplicate object"
+												>
+													<Copy className="w-3.5 h-3.5" />
+												</button>
+												<button
+													type="button"
+													onClick={() => deleteSelectedObject(obj.id)}
+													className="p-1 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-455 border border-rose-500/10 transition-colors cursor-pointer flex items-center justify-center"
+													title="Delete object"
+												>
+													<Trash2 className="w-3.5 h-3.5" />
+												</button>
+											</div>
+											{isSelected && <div className="w-2 h-2 rounded-full bg-primary animate-pulse flex-shrink-0 group-hover:hidden ml-1" />}
+										</div>
 									</div>
 								);
 							})}
@@ -198,23 +261,7 @@ export default function ObstructionMappingStep({
 				{selectedObject && (
 					<div className="border-t border-border pt-5 flex flex-col gap-5 bg-transparent animate-in slide-in-from-bottom duration-250">
 						<div className="flex justify-between items-center">
-							<span className="text-[10px] font-bold text-placeholder uppercase tracking-wider">Object Parameters</span>
-							<div className="flex gap-1.5">
-								<button
-									onClick={duplicateSelectedObject}
-									className="p-1.5 rounded-lg bg-card hover:bg-background text-placeholder hover:text-text border border-border transition-colors cursor-pointer"
-									title="Duplicate object"
-								>
-									<Copy size={13} />
-								</button>
-								<button
-									onClick={deleteSelectedObject}
-									className="p-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-455 border border-rose-500/10 transition-colors cursor-pointer"
-									title="Delete selected object"
-								>
-									<Trash2 size={13} />
-								</button>
-							</div>
+							<span className="text-[10px] font-bold text-placeholder uppercase tracking-wider">Object Dimensions</span>
 						</div>
 
 						{/* Height parameters */}
@@ -241,51 +288,9 @@ export default function ObstructionMappingStep({
 								/>
 							</div>
 
-							{/* Base Elevation */}
-							<div className="flex flex-col gap-1.5">
-								<div className="flex justify-between items-center text-[11px] font-semibold text-placeholder">
-									<span>Base Elevation (z_init)</span>
-									<span className="text-text font-bold">{formatVal(selectedObject.z_init, 1)}</span>
-								</div>
-								<input
-									type="range"
-									min="0"
-									max={unit === "ft" ? 100 : 30}
-									step="0.1"
-									value={Math.round(mToUnit(selectedObject.z_init) * 10) / 10}
-									disabled={selectedObject.on_roof || selectedObject.type === "tree" || selectedObject.tag === "building"}
-									onChange={(e) => {
-										const z = unitToM(parseFloat(e.target.value));
-										const prevH = selectedObject.z_end - selectedObject.z_init;
-										updateSelectedObject({
-											z_init: z,
-											z_end: z + prevH,
-										});
-									}}
-									className="w-full accent-primary cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-								/>
-							</div>
-
 							{/* Dimensions based on object type */}
 							{selectedObject.type === "cuboid" && (
-								<div className="flex flex-col gap-4 border-t border-border pt-3">
-									<div className="flex flex-col gap-1.5">
-										<label className="text-[11px] font-semibold text-placeholder">Object Model Type</label>
-										<select
-											value={selectedObject.tag || ""}
-											onChange={(e) => updateSelectedObject({ tag: e.target.value || undefined })}
-											className="w-full bg-background border border-border rounded-xl px-3 py-2 text-xs font-bold text-text focus:outline-none focus:border-primary transition-colors"
-										>
-											<option value="">Basic Cuboid Block</option>
-											<option value="mumtee">Stair Cabin (Mumtee)</option>
-											<option value="rectangular_tank">Rectangular Water Tank</option>
-											<option value="chimney_box">Chimney Box</option>
-											<option value="skylight">Skylight Window</option>
-											<option value="elevated">Elevated Structure</option>
-											<option value="building">Adjacent Building</option>
-											<option value="tower">Utility Tower</option>
-										</select>
-									</div>
+								<div className="flex flex-col gap-4">
 
 									{/* Length */}
 									<div className="flex flex-col gap-1.5">
@@ -357,40 +362,6 @@ export default function ObstructionMappingStep({
 											className="w-full accent-primary cursor-pointer"
 										/>
 									</div>
-
-									{selectedObject.type === "cylinder" && (
-										<div className="flex flex-col gap-1.5">
-											<label className="text-[11px] font-semibold text-placeholder">Cylinder Model Type</label>
-											<select
-												value={selectedObject.tag || ""}
-												onChange={(e) => updateSelectedObject({ tag: e.target.value || undefined })}
-												className="w-full bg-background border border-border rounded-xl px-3 py-2 text-xs font-bold text-text focus:outline-none focus:border-primary transition-colors"
-											>
-												<option value="">Basic Cylinder Block</option>
-												<option value="chimney">Circular Chimney</option>
-												<option value="cylinder_tank">Vertical Cylinder Tank</option>
-												<option value="overhead_tank">Overhead Water Tank</option>
-												<option value="horizontal_tank">Horizontal Tank</option>
-												<option value="dish">Dish Antenna</option>
-											</select>
-										</div>
-									)}
-
-									{selectedObject.type === "tree" && (
-										<div className="flex flex-col gap-1.5">
-											<label className="text-[11px] font-semibold text-placeholder">Tree Species Model</label>
-											<select
-												value={selectedObject.tag || "mango"}
-												onChange={(e) => updateSelectedObject({ tag: e.target.value })}
-												className="w-full bg-background border border-border rounded-xl px-3 py-2 text-xs font-bold text-text focus:outline-none"
-											>
-												<option value="mango">Mango Tree</option>
-												<option value="coconut">Coconut Palm</option>
-												<option value="neem">Neem Tree</option>
-												<option value="pine">Pine Tree</option>
-											</select>
-										</div>
-									)}
 								</div>
 							)}
 
@@ -425,7 +396,7 @@ export default function ObstructionMappingStep({
 					className="flex-grow py-3 bg-primary text-white font-bold text-xs rounded-xl shadow-lg hover:opacity-90 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
 				>
 					<Check size={14} />
-					<span>Save & Continue</span>
+					<span>Next</span>
 				</button>
 			</div>
 		</div>

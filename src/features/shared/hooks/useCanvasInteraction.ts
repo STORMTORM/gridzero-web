@@ -6,6 +6,49 @@ import { panelService } from "../services/panelService";
 import { CATEGORY_DEFAULTS, DEFAULT_PREFERENCES } from "../constants";
 import { generateUUID, isPointInPolygon, calculateArea } from "../../../utils/design/coords";
 
+function isPointInCuboid(px: number, py: number, obj: LocalObject): boolean {
+	const dx = px - obj.center_x;
+	const dy = py - obj.center_y;
+	const angleRad = (-(obj.angle || 0) * Math.PI) / 180;
+	const rotX = dx * Math.cos(angleRad) - dy * Math.sin(angleRad);
+	const rotY = dx * Math.sin(angleRad) + dy * Math.cos(angleRad);
+	const halfLen = (obj.length || 2) / 2;
+	const halfWidth = (obj.width || 2) / 2;
+	return Math.abs(rotX) <= halfLen && Math.abs(rotY) <= halfWidth;
+}
+
+function isPointInCylinder(px: number, py: number, obj: LocalObject): boolean {
+	return Math.hypot(px - obj.center_x, py - obj.center_y) <= (obj.radius || 1);
+}
+
+function isPointNearWall(px: number, py: number, obj: LocalObject): boolean {
+	if (!obj.p1 || !obj.p2) return false;
+	const [x1, y1] = obj.p1;
+	const [x2, y2] = obj.p2;
+	const l2 = (x2 - x1) ** 2 + (y2 - y1) ** 2;
+	if (l2 === 0) return Math.hypot(px - x1, py - y1) <= (obj.thickness || 0.23) / 2;
+	let t = ((px - x1) * (x2 - x1) + (py - y1) * (y2 - y1)) / l2;
+	t = Math.max(0, Math.min(1, t));
+	const projX = x1 + t * (x2 - x1);
+	const projY = y1 + t * (y2 - y1);
+	return Math.hypot(px - projX, py - projY) <= (obj.thickness || 0.23) / 2 + 0.15;
+}
+
+function getOverlappingObject(px: number, py: number, objectsList: LocalObject[]): LocalObject | null {
+	for (const obj of objectsList) {
+		if (obj.type === "cuboid") {
+			if (isPointInCuboid(px, py, obj)) return obj;
+		} else if (obj.type === "cylinder" || obj.type === "tree") {
+			if (isPointInCylinder(px, py, obj)) return obj;
+		} else if (obj.type === "polygon" && obj.polygon) {
+			if (isPointInPolygon([px, py], obj.polygon)) return obj;
+		} else if (obj.type === "wall") {
+			if (isPointNearWall(px, py, obj)) return obj;
+		}
+	}
+	return null;
+}
+
 interface CanvasInteractionParams {
 	sitevisitId: string;
 	stage: string;
@@ -392,6 +435,11 @@ export function useCanvasInteraction({
 
 		const config = CATEGORY_DEFAULTS[objectEditor.objectDrawingMode];
 		if (config) {
+			const overlapping = getOverlappingObject(mx, my, objects);
+			if (overlapping) {
+				setToastMessage(`Cannot place an object on top of another object (${overlapping.name}).`);
+				return;
+			}
 			const snapRoof = roofs.find((r) => isPointInPolygon([mx, my], r.points));
 			if (config.on_roof && !snapRoof) {
 				setToastMessage(`This object (${config.name}) must be placed inside a mapped roof boundary.`);
@@ -431,6 +479,11 @@ export function useCanvasInteraction({
 			objectEditor.setObjectDrawingMode("none");
 			autoSave.saveObjectsDesign(updated);
 		} else if (objectEditor.objectDrawingMode === "wall") {
+			const overlapping = getOverlappingObject(mx, my, objects);
+			if (overlapping) {
+				setToastMessage(`Cannot place wall endpoints on top of another object (${overlapping.name}).`);
+				return;
+			}
 			if (!objectEditor.wallStartPoint) {
 				objectEditor.setWallStartPoint([mx, my]);
 			} else {
@@ -472,6 +525,11 @@ export function useCanvasInteraction({
 				autoSave.saveObjectsDesign(updated);
 			}
 		} else if (objectEditor.objectDrawingMode === "polygon") {
+			const overlapping = getOverlappingObject(mx, my, objects);
+			if (overlapping) {
+				setToastMessage(`Cannot place polygon vertices on top of another object (${overlapping.name}).`);
+				return;
+			}
 			const isFirstPoint = roofEditor.currentPoints.length > 0 &&
 				Math.hypot(mx - roofEditor.currentPoints[0][0], my - roofEditor.currentPoints[0][1]) < 0.8;
 
