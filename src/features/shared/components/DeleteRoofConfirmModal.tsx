@@ -17,7 +17,7 @@ export default function DeleteRoofConfirmModal({
 
 	return (
 		<div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-			<div className="bg-background border border-border w-full max-w-[420px] rounded-3xl overflow-hidden shadow-2xl flex flex-col transition-all transform animate-in zoom-in-95 duration-200">
+			<div className="bg-background border border-border w-full max-w-xl rounded-3xl overflow-hidden shadow-2xl flex flex-col transition-all transform animate-in zoom-in-95 duration-200">
 				
 				{/* Modal Header */}
 				<div className="px-6 py-4.5 border-b border-border flex justify-between items-center bg-background/[0.02]">

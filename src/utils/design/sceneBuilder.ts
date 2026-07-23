@@ -476,6 +476,7 @@ export function buildRoofs(data: SceneData, conv: CoordConverter): THREE.Group {
     const geo = new THREE.ExtrudeGeometry(shape, { depth: roof.height, bevelEnabled: true, bevelThickness: 0.02, bevelSize: 0.02, bevelSegments: 1 });
     geo.rotateX(-Math.PI / 2);
     const mesh = new THREE.Mesh(geo, MATS.roof);
+    mesh.position.y = roof.base_height || 0;
     mesh.castShadow = true;
     mesh.receiveShadow = true;
     mesh.userData = { isRoof: true, roofId: id };
@@ -510,7 +511,7 @@ export function buildRoofOverlays(data: SceneData, conv: CoordConverter, texture
     geo.setAttribute("uv", new THREE.BufferAttribute(uvs, 2));
     const mesh = new THREE.Mesh(geo, overlayMat);
     mesh.rotation.x = -Math.PI / 2;
-    mesh.position.y = roof.height + 0.05;
+    mesh.position.y = (roof.base_height || 0) + roof.height + 0.05;
     mesh.receiveShadow = true;
     mesh.visible = false;
     group.add(mesh);

@@ -859,13 +859,13 @@ export default function EquipmentSelection() {
 
   return (
     <div className="flex flex-col h-screen w-screen bg-background overflow-hidden text-text font-sans select-none relative">
-      
       {/* Premium Top Navigation Bar */}
       <ProjectTopbar
         projectName={projectName}
         currentStage={4} // Panel Selection
         saving={savingStep}
         onContinue={handleFinishSelection}
+        onBack={() => navigate(`/project/${id}/design?stage=obstruction`)}
       />
 
       {/* Main split-screen panel */}

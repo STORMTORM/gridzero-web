@@ -141,7 +141,7 @@ export function useCanvasInteraction({
 			} else if (activeDrag.type === "object-vertex" && activeDrag.vertexIndex !== undefined) {
 				const updatedObjs = objects.map((obj) => {
 					if (obj.id !== activeDrag.targetId) return obj;
-					return dragService.handleObjectVertexDrag(orig, mx, my, activeDrag.vertexIndex!, roofs);
+					return dragService.handleObjectVertexDrag(orig, mx, my, activeDrag.vertexIndex!, roofs, objects);
 				});
 				setObjects(updatedObjs);
 			} else if (activeDrag.type === "group") {
@@ -392,6 +392,12 @@ export function useCanvasInteraction({
 	}, [roofs, objects, panelPlacement, selection, autoSave, panelGroups, setPanelGroups, setToastMessage]);
 
 	const handleRoofClick = useCallback((mx: number, my: number) => {
+		const clickedOnOtherRoof = roofs.some((r) => isPointInPolygon([mx, my], r.points));
+		if (clickedOnOtherRoof) {
+			setToastMessage("Unable to create the roof. One or more roof edges overlap an existing roof.");
+			return;
+		}
+
 		const isFirstPointClose = roofEditor.currentPoints.length > 0 &&
 			Math.hypot(mx - roofEditor.currentPoints[0][0], my - roofEditor.currentPoints[0][1]) < 0.8;
 
@@ -423,7 +429,7 @@ export function useCanvasInteraction({
 		} else {
 			roofEditor.setCurrentPoints((prev: any) => [...prev, [mx, my]]);
 		}
-	}, [roofs, roofEditor, selection, autoSave, setRoofs]);
+	}, [roofs, roofEditor, selection, autoSave, setRoofs, setToastMessage]);
 
 	const handleObstructionClick = useCallback((mx: number, my: number) => {
 		if (roofs.length === 0) {
@@ -434,7 +440,7 @@ export function useCanvasInteraction({
 		}
 
 		const config = CATEGORY_DEFAULTS[objectEditor.objectDrawingMode];
-		if (config) {
+		if (config && config.type !== "polygon") {
 			const overlapping = getOverlappingObject(mx, my, objects);
 			if (overlapping) {
 				setToastMessage(`Cannot place an object on top of another object (${overlapping.name}).`);
@@ -524,7 +530,7 @@ export function useCanvasInteraction({
 				objectEditor.setObjectDrawingMode("none");
 				autoSave.saveObjectsDesign(updated);
 			}
-		} else if (objectEditor.objectDrawingMode === "polygon") {
+		} else if (objectEditor.objectDrawingMode === "polygon" || objectEditor.objectDrawingMode === "elevated" || (config && config.type === "polygon")) {
 			const overlapping = getOverlappingObject(mx, my, objects);
 			if (overlapping) {
 				setToastMessage(`Cannot place polygon vertices on top of another object (${overlapping.name}).`);
@@ -543,13 +549,13 @@ export function useCanvasInteraction({
 				const onRoof = !!snapRoof;
 				const roofId = snapRoof ? snapRoof.id : undefined;
 				const zInit = snapRoof ? snapRoof.height : 0;
-				const defaultHeight = 2.5;
+				const defaultHeight = config ? (config.z_end ?? 2.5) : 2.5;
 
 				const newPoly: LocalObject = {
 					id: generateUUID("obj"),
-					name: `Polygon ${count}`,
+					name: config ? `${config.name} ${count}` : `Polygon ${count}`,
 					type: "polygon",
-					tag: undefined,
+					tag: config ? config.tag : undefined,
 					roof_id: roofId,
 					on_roof: onRoof,
 					cast_shadow: true,
@@ -565,6 +571,7 @@ export function useCanvasInteraction({
 					p2: undefined,
 					thickness: 0,
 					polygon: roofEditor.currentPoints,
+					is_roof_on_roof: (config?.tag === "elevated") || objectEditor.objectDrawingMode === "elevated",
 				};
 				const updated = [...objects, newPoly];
 				setObjects(updated, { forcePush: true });

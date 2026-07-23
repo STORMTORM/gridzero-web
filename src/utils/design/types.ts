@@ -7,6 +7,7 @@ export interface RoofData {
   name?: string;
   height: number;
   roof: [number, number][];
+  base_height?: number;
 }
 
 export interface ObjectData {
@@ -21,6 +22,8 @@ export interface ObjectData {
   z_end: number;
   setback_type?: string;
   setback?: number;
+  is_roof_on_roof?: boolean;
+  support_surface_id?: string | null;
   // cuboid
   length?: number;
   width?: number;

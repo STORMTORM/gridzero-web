@@ -722,7 +722,6 @@ export default function UnifiedDesignStep({
 
 			{toastMessage && (
 				<div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-card border border-border rounded-2xl px-5 py-3 text-xs font-bold text-text shadow-2xl z-50 animate-in fade-in slide-in-from-bottom-4 duration-300 flex items-center gap-2 select-none">
-					<span className="text-amber-500">⚠️</span>
 					<span>{toastMessage}</span>
 					<button onClick={() => setToastMessage(null)} className="text-placeholder hover:text-text ml-2">✕</button>
 				</div>

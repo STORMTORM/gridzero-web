@@ -90,6 +90,14 @@ export default function SVGCanvas({
 
 	return (
 		<svg className="absolute inset-0 w-full h-full select-none z-10" viewBox="0 0 100 100" preserveAspectRatio="none">
+			<defs>
+				<radialGradient id="treeGradient" cx="50%" cy="50%" r="50%">
+					<stop offset="0%" stopColor="#8b5a2b" />
+					<stop offset="35%" stopColor="#8b5a2b" />
+					<stop offset="45%" stopColor="#2b5c2a" />
+					<stop offset="100%" stopColor="#4caf50" />
+				</radialGradient>
+			</defs>
 			
 			{/* ──────────────────────────────────────────────────────────────────
 					LAYER A: ROOF BOUNDARIES
@@ -110,7 +118,7 @@ export default function SVGCanvas({
 								fill={isSelected ? "rgba(167, 206, 56, 0.5)" : "rgba(167, 206, 56, 0.3)"}
 								stroke="#a7ce38"
 								strokeWidth={(isSelected ? ROOF_LINE_SELECTED_STROKE_WIDTH : ROOF_LINE_STROKE_WIDTH) * inv}
-								className="cursor-pointer pointer-events-auto"
+								className={isDrawingRoofs ? "pointer-events-none" : "cursor-pointer pointer-events-auto"}
 								onClick={(e) => {
 									e.stopPropagation();
 									if (!isDrawingRoofs) setSelectedRoofId(r.id);
@@ -207,13 +215,26 @@ export default function SVGCanvas({
 				const isOverlapping = overlappingObjectIds?.has(obj.id) ?? false;
 				const isSelected = !isPlacementStage && selectedObjectId === obj.id;
 
-				// Color logic: red if overlapping panel, else normal
-				const strokeColor = isOverlapping
-					? "rgba(239,68,68,0.9)"
-					: isSelected ? "#a7ce38" : "rgba(255,255,255,0.5)";
-				const fillColor = isOverlapping
-					? "rgba(239,68,68,0.55)"
-					: isSelected ? "rgba(255,255,255,1)" : "rgba(255,255,255,0.7)";
+				const useDeselectedStyle = stage === "placement" || !isSelected;
+
+				let strokeColor = "#ffffff";
+				let fillColor = "rgba(255, 255, 255, 0.25)";
+
+				if (isOverlapping) {
+					strokeColor = "rgba(239, 68, 68, 0.9)";
+					fillColor = "rgba(239, 68, 68, 0.55)";
+				} else if (!useDeselectedStyle) {
+					if (obj.type === "tree") {
+						strokeColor = "#8b5a2b";
+						fillColor = "url(#treeGradient)";
+					} else if (obj.on_roof) {
+						strokeColor = "#1e4620";
+						fillColor = "rgba(30, 70, 32, 0.3)";
+					} else {
+						strokeColor = "#ffd700";
+						fillColor = "rgba(250, 204, 21, 0.25)";
+					}
+				}
 
 				if (stage === "roof") {
 					return null;
@@ -235,8 +256,8 @@ export default function SVGCanvas({
 							height={hPx}
 							transform={`rotate(${obj.angle}, ${xPx}, ${yPx})`}
 							fill={fillColor}
-							stroke={isOverlapping ? strokeColor : undefined}
-							strokeWidth={isOverlapping ? OBSTACLE_STROKE_WIDTH * inv : undefined}
+							stroke={strokeColor}
+							strokeWidth={(isSelected ? OBSTACLE_SELECTED_STROKE_WIDTH : OBSTACLE_STROKE_WIDTH) * inv}
 							className={isPlacementStage ? "pointer-events-none" : "object-handle cursor-move pointer-events-auto"}
 							{...(isPlacementStage ? {} : {
 								onMouseDown: (e: React.MouseEvent) => startDraggingObject(e, obj.id),
@@ -251,21 +272,14 @@ export default function SVGCanvas({
 					const cy = (obj.center_y / heightMeters) * 100;
 					const rPx = (obj.radius! / widthMeters) * 100;
 
-					// Trees get special green tint unless overlapping
-					const circleFill = isOverlapping
-						? fillColor
-						: obj.type === "tree" ? "rgba(34,197,94,0.18)" : fillColor;
-					const circleStroke = isOverlapping
-						? strokeColor
-						: obj.type === "tree" ? (isSelected ? "#a7ce38" : "rgba(34,197,94,0.6)") : strokeColor;
 					return (
 						<circle
 							key={obj.id}
 							cx={cx}
 							cy={cy}
 							r={rPx}
-							fill={circleFill}
-							stroke={circleStroke}
+							fill={fillColor}
+							stroke={strokeColor}
 							strokeWidth={(isSelected ? OBSTACLE_SELECTED_STROKE_WIDTH : OBSTACLE_STROKE_WIDTH) * inv}
 							className={isPlacementStage ? "pointer-events-none" : "object-handle cursor-move pointer-events-auto"}
 							{...(isPlacementStage ? {} : {
@@ -369,6 +383,58 @@ export default function SVGCanvas({
 										onMouseDown={(e) => startDraggingObjectVertex(e, obj.id, idx)}
 									/>
 								))}
+							{/* Edge Length Labels (only when selected and is_roof_on_roof is true) */}
+							{isSelected && obj.is_roof_on_roof && obj.polygon.map((p, idx) => {
+								const nextIdx = (idx + 1) % obj.polygon!.length;
+								const nextP = obj.polygon![nextIdx];
+
+								const x1 = (p[0] / widthMeters) * 100;
+								const y1 = (p[1] / heightMeters) * 100;
+								const x2 = (nextP[0] / widthMeters) * 100;
+								const y2 = (nextP[1] / heightMeters) * 100;
+
+								const mx = (x1 + x2) / 2;
+								const my = (y1 + y2) / 2;
+
+								const len = Math.sqrt((nextP[0] - p[0]) ** 2 + (nextP[1] - p[1]) ** 2);
+								const labelText = formatVal(len, 1);
+
+								let angle = Math.atan2(y2 - y1, x2 - x1) * (180 / Math.PI);
+								if (angle > 90) angle -= 180;
+								if (angle < -90) angle += 180;
+
+								const fontSize = 1.7 * inv;
+								const bgHeight = 3 * inv;
+								const bgWidth = (labelText.length + 2) * inv;
+
+								return (
+									<g key={idx} transform={`translate(${mx}, ${my}) rotate(${angle})`}>
+										<rect
+											x={-bgWidth / 2}
+											y={-bgHeight / 2}
+											width={bgWidth}
+											height={bgHeight}
+											rx={0.5 * inv}
+											fill="#0f172a"
+											fillOpacity={0.9}
+											stroke="#a7ce38"
+											strokeWidth={0.18 * inv}
+										/>
+										<text
+											x={0}
+											y={0}
+											fill="#ffffff"
+											fontSize={fontSize}
+											fontWeight="bold"
+											textAnchor="middle"
+											dominantBaseline="central"
+											className="select-none pointer-events-none font-sans"
+										>
+											{labelText}
+										</text>
+									</g>
+								);
+							})}
 						</g>
 					);
 				}
@@ -451,15 +517,16 @@ export default function SVGCanvas({
 			)}
 
 			{/* Stage 3 custom polygon outline draft */}
-			{stage === "obstruction" && objectDrawingMode === "polygon" && currentPoints.length > 0 && (
+			{stage === "obstruction" && (objectDrawingMode === "polygon" || objectDrawingMode === "elevated") && currentPoints.length > 0 && (
 				<g>
 					<polyline
 						points={currentPoints
 							.map((p) => `${(p[0] / widthMeters) * 100},${(p[1] / heightMeters) * 100}`)
 							.join(" ")}
 						fill="none"
-						stroke="#a7ce38"
+						stroke="#1e4620"
 						strokeWidth={DRAFT_POLYGON_STROKE_WIDTH * inv}
+						strokeDasharray={`${3 * inv},${3 * inv}`}
 					/>
 					{mousePosMeters && (
 						<line
@@ -467,9 +534,9 @@ export default function SVGCanvas({
 							y1={(currentPoints[currentPoints.length - 1][1] / heightMeters) * 100}
 							x2={(mousePosMeters[0] / widthMeters) * 100}
 							y2={(mousePosMeters[1] / heightMeters) * 100}
-							stroke="rgba(167,206,56,0.7)"
+							stroke="#1e4620"
 							strokeWidth={DRAFT_GUIDE_LINE_STROKE_WIDTH * inv}
-							strokeDasharray={`${1.2 * inv},${1.2 * inv}`}
+							strokeDasharray={`${3 * inv},${3 * inv}`}
 						/>
 					)}
 					{currentPoints.map((p, idx) => (
@@ -478,8 +545,8 @@ export default function SVGCanvas({
 							cx={(p[0] / widthMeters) * 100}
 							cy={(p[1] / heightMeters) * 100}
 							r={ROOF_VERTEX_RADIUS * inv}
-							fill={idx === 0 ? "#a7ce38" : "rgba(167,206,56,0.8)"}
-							stroke="#000000"
+							fill="#1e4620"
+							stroke="#ffffff"
 							strokeWidth={DRAFT_VERTEX_STROKE_WIDTH * inv}
 						/>
 					))}

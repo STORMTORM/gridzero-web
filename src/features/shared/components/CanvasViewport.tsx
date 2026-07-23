@@ -106,8 +106,11 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({
 				style={{
 					transform: `translate(${panOffset.x}px, ${panOffset.y}px) scale(${scale})`,
 					transformOrigin: "center",
+					width: "min(100%, calc(100vh - 8rem))",
+					height: "auto",
+					aspectRatio: "1/1",
 				}}
-				className="relative w-full max-w-[70vh] aspect-square border border-border rounded-3xl overflow-hidden shadow-2xl bg-card select-none flex items-center justify-center transition-transform duration-75 ease-out"
+				className="relative border border-border rounded-3xl overflow-hidden shadow-2xl bg-card select-none flex items-center justify-center transition-transform duration-75 ease-out"
 			>
 				{/* Background Satellite snapshot */}
 				{imageUrl && (

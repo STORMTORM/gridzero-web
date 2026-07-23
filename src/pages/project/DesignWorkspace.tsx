@@ -9,7 +9,6 @@ import type { LocalObject } from "../../utils/design/types";
 import { useProject } from "../../features/shared/hooks/useProject";
 import { useDesign } from "../../features/shared/hooks/useDesign";
 import { calculateArea } from "../../utils/design/coords";
-import { UnitProvider } from "../../features/shared/contexts/UnitContext";
 
 interface UndoRedoHandlers {
 	undo: () => void;
@@ -90,8 +89,10 @@ export default function DesignWorkspace() {
 
 		if (!data.roofs) return [];
 
-		return Object.entries(data.roofs).map(([roofId, roofInfo]: [string, any]) => {
-			const rawCoords = roofInfo.roof || [];
+		return Object.entries(data.roofs)
+			.filter(([_, roofInfo]: [string, any]) => !roofInfo.parent_roof_id)
+			.map(([roofId, roofInfo]: [string, any]) => {
+				const rawCoords = roofInfo.roof || [];
 			
 			// Infer coordinate space (pixels vs meters)
 			let coordSpace: "meters" | "pixels" = "meters";
@@ -184,6 +185,10 @@ export default function DesignWorkspace() {
 	const initialObjects = useMemo<LocalObject[]>(() => {
 		if (!projectData) return [];
 		const data = projectData;
+		const wMeters = parseFloat(data.map_details?.width_meters || data.width_meters || 50);
+		const hMeters = parseFloat(data.map_details?.height_meters || data.height_meters || 50);
+		const naturalW = imageDimensions?.width || 1000;
+		const naturalH = imageDimensions?.height || 1000;
 
 		const parsedObjects: LocalObject[] = [];
 		if (data.objects) {
@@ -192,7 +197,7 @@ export default function DesignWorkspace() {
 				const catDict = data.objects[cat] || {};
 				Object.entries(catDict).forEach(([key, val]: [string, any]) => {
 					// Exclude parapet walls from draggable objects list
-					if (cat === "wall" && val.roof_id) {
+					if (cat === "wall" && (val.roof_id || (val.tag && val.tag.startsWith("__rorparapet__")))) {
 						const parentRoof = data.roofs?.[val.roof_id];
 						if (parentRoof) {
 							const pts = parentRoof.roof || [];
@@ -249,12 +254,104 @@ export default function DesignWorkspace() {
 						p2: val.p2 || undefined,
 						thickness: val.thickness ?? 0.23,
 						polygon: val.polygon || undefined,
+						support_surface_id: val.support_surface_id || null,
+						is_roof_on_roof: val.is_roof_on_roof || false,
 					});
 				});
 			});
 		}
+
+		// Rehydrate child roofs (roof-on-roofs) as polygon objects
+		const childRoofsMap = new Map<string, any>();
+		if (data.roofs) {
+			Object.entries(data.roofs).forEach(([id, r]: [string, any]) => {
+				if (r.parent_roof_id) {
+					childRoofsMap.set(id, { id, ...r });
+				}
+			});
+		}
+
+		const otherChildRoofs = Array.isArray(data.child_roofs)
+			? data.child_roofs
+			: data.child_roofs
+			? Object.entries(data.child_roofs).map(([id, val]: [string, any]) => ({ id, ...val }))
+			: Array.isArray(data.childRoofs)
+			? data.childRoofs
+			: data.childRoofs
+			? Object.entries(data.childRoofs).map(([id, val]: [string, any]) => ({ id, ...val }))
+			: [];
+
+		otherChildRoofs.forEach((cr: any) => {
+			const rId = cr.roofId || cr.id;
+			if (rId) {
+				childRoofsMap.set(rId, { ...cr, id: rId });
+			}
+		});
+
+		const childRoofsRaw = Array.from(childRoofsMap.values());
+
+		childRoofsRaw.forEach((cr: any) => {
+			const rId = cr.roofId || cr.id;
+			const pts = cr.roof || cr.points || [];
+			if (!rId || pts.length < 3) return;
+
+			// Infer coordinate space (pixels vs meters)
+			let coordSpace: "meters" | "pixels" = "meters";
+			if (pts.length > 0) {
+				const maxX = Math.max(...pts.map(([x]: number[]) => Math.abs(x)));
+				const maxY = Math.max(...pts.map(([_, y]: number[]) => Math.abs(y)));
+				const fitsMeters = maxX <= wMeters + 1 && maxY <= hMeters + 1;
+				coordSpace = fitsMeters ? "meters" : "pixels";
+			}
+
+			// Map coordinates to meters if they are stored in pixel coords
+			const polygon: [number, number][] = pts.map(([cx, cy]: number[]) => {
+				if (coordSpace === "pixels") {
+					return [
+						(cx / naturalW) * wMeters,
+						(cy / naturalH) * hMeters
+					];
+				}
+				return [cx, cy];
+			});
+
+			const polyCenter: [number, number] = [
+				polygon.reduce((acc, p) => acc + p[0], 0) / polygon.length,
+				polygon.reduce((acc, p) => acc + p[1], 0) / polygon.length,
+			];
+
+			const baseHeight = cr.base_height ?? cr.baseHeight ?? 3;
+			const height = cr.height ?? 1.5;
+
+			const parentRoofId = cr.parent_roof_id || cr.parentRoofId;
+
+			parsedObjects.push({
+				id: rId,
+				name: cr.name || cr._name || `Roof-on-roof ${parsedObjects.filter(o => o.is_roof_on_roof).length + 1}`,
+				type: "polygon",
+				tag: "elevated",
+				roof_id: parentRoofId || undefined,
+				on_roof: true,
+				cast_shadow: true,
+				center_x: polyCenter[0],
+				center_y: polyCenter[1],
+				z_init: baseHeight,
+				z_end: baseHeight + height,
+				length: 0,
+				width: 0,
+				angle: 0,
+				radius: 0,
+				p1: undefined,
+				p2: undefined,
+				thickness: 0,
+				polygon,
+				is_roof_on_roof: true,
+				support_surface_id: cr.support_surface_id || null,
+			});
+		});
+
 		return parsedObjects;
-	}, [projectData]);
+	}, [projectData, imageDimensions]);
 
 	const initialPanelGroups = useMemo<PlacedPanelGroup[]>(() => {
 		const groups: PlacedPanelGroup[] = [];
@@ -300,48 +397,59 @@ export default function DesignWorkspace() {
 		}
 	};
 
+	const handleBack = () => {
+		if (stage === "roof") {
+			navigate(`/project/${id}/details`);
+		} else if (stage === "obstruction") {
+			setStage("roof");
+		} else if (stage === "placement") {
+			navigate(`/project/${id}/equipment`);
+		} else if (stage === "snapshots") {
+			setStage("placement");
+		}
+	};
+
 	return (
-		<UnitProvider>
-			<div className="flex flex-col h-screen w-screen bg-background overflow-hidden text-text font-sans select-none">
-				
-				{/* Project Workspace header */}
-				<ProjectTopbar
-					projectName={projectName}
-					currentStage={currentStageNumber}
-					saving={_saving}
-					onOpenSettings={() => setIsSettingsOpen(true)}
-					undoRedo={undoRedo || undefined}
-				/>
+		<div className="flex flex-col h-screen w-screen bg-background overflow-hidden text-text font-sans select-none">
+			
+			{/* Project Workspace header */}
+			<ProjectTopbar
+				projectName={projectName}
+				currentStage={currentStageNumber}
+				saving={_saving}
+				onOpenSettings={() => setIsSettingsOpen(true)}
+				undoRedo={undoRedo || undefined}
+				onBack={handleBack}
+			/>
 
-				{/* Main Split Layout Panel */}
-				<div className="flex-grow w-full flex flex-col md:flex-row overflow-hidden relative">
-					<UnifiedDesignStep
-						sitevisitId={id!}
-						widthMeters={widthMeters}
-						heightMeters={heightMeters}
-						imageUrl={imageUrl}
-						initialRoofs={initialRoofs}
-						initialObjects={initialObjects}
-						initialPanelGroups={initialPanelGroups}
-						stage={stage}
-						onSaveStatusChange={setSaving}
-						sceneData={designData}
-						onContinue={handleContinue}
-						layoutMode={layoutMode}
-						activeViewport={activeViewport}
-						setActiveViewport={setActiveViewport}
-						onRegisterUndoRedo={setUndoRedo}
-					/>
-				</div>
-
-				<WorkspaceSettingsModal
-					isOpen={isSettingsOpen}
-					onClose={() => setIsSettingsOpen(false)}
+			{/* Main Split Layout Panel */}
+			<div className="flex-grow w-full flex flex-col md:flex-row overflow-hidden relative">
+				<UnifiedDesignStep
+					sitevisitId={id!}
+					widthMeters={widthMeters}
+					heightMeters={heightMeters}
+					imageUrl={imageUrl}
+					initialRoofs={initialRoofs}
+					initialObjects={initialObjects}
+					initialPanelGroups={initialPanelGroups}
+					stage={stage}
+					onSaveStatusChange={setSaving}
+					sceneData={designData}
+					onContinue={handleContinue}
 					layoutMode={layoutMode}
-					setLayoutMode={handleSetLayoutMode}
+					activeViewport={activeViewport}
+					setActiveViewport={setActiveViewport}
+					onRegisterUndoRedo={setUndoRedo}
 				/>
-
 			</div>
-		</UnitProvider>
+
+			<WorkspaceSettingsModal
+				isOpen={isSettingsOpen}
+				onClose={() => setIsSettingsOpen(false)}
+				layoutMode={layoutMode}
+				setLayoutMode={handleSetLayoutMode}
+			/>
+
+		</div>
 	);
 }

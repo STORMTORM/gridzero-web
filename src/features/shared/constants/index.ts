@@ -30,7 +30,7 @@ export const DEFAULT_PREFERENCES = {
 export const CATEGORY_DEFAULTS: Record<string, CategoryConfig> = {
 	ac_unit: { type: "cuboid", tag: "ac_unit", name: "AC Unit", on_roof: true, length: 1.2, width: 0.8, z_end: 1.0 },
 	water_tanker: { type: "cuboid", tag: "rectangular_tank", name: "Water Tank", on_roof: true, length: 2.0, width: 2.0, z_end: 2.0 },
-	elevated: { type: "cuboid", tag: "elevated", name: "Elevated Struct", on_roof: true, length: 3.0, width: 3.0, z_end: 2.5 },
+	elevated: { type: "polygon", tag: "elevated", name: "Elevated Struct", on_roof: true, z_end: 2.5 },
 	cuboid: { type: "cuboid", tag: undefined, name: "Cuboid", on_roof: true, length: 2.0, width: 2.0, z_end: 2.0 },
 	dish: { type: "cylinder", tag: "dish", name: "Dish Antenna", on_roof: true, radius: 0.6, z_end: 1.2 },
 	chimney: { type: "cylinder", tag: "chimney", name: "Circular Chimney", on_roof: true, radius: 0.4, z_end: 2.0 },

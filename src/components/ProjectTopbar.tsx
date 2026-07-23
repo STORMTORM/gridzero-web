@@ -15,6 +15,7 @@ interface ProjectTopbarProps {
 		canUndo: boolean;
 		canRedo: boolean;
 	};
+	onBack?: () => void;
 }
 
 const STAGE_BREADCRUMBS: Record<number, string> = {
@@ -36,6 +37,7 @@ export default function ProjectTopbar({
 	onContinue,
 	onOpenSettings,
 	undoRedo,
+	onBack,
 }: ProjectTopbarProps) {
 	const navigate = useNavigate();
 	const { unit, setUnit } = useUnit();
@@ -46,9 +48,15 @@ export default function ProjectTopbar({
 			{/* Breadcrumbs Left */}
 			<div className="flex items-center gap-3 min-w-0 flex-1">
 				<button
-					onClick={() => navigate("/")}
+					onClick={() => {
+						if (onBack) {
+							onBack();
+						} else {
+							navigate("/");
+						}
+					}}
 					className="text-placeholder hover:text-text p-1 rounded-lg hover:bg-background transition-colors cursor-pointer flex-shrink-0"
-					title="Back to Dashboard"
+					title="Back"
 				>
 					<ArrowLeft className="w-4.5 h-4.5" />
 				</button>

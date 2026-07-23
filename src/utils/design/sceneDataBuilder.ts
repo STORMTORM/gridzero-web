@@ -1,6 +1,6 @@
 import type { SceneData, LocalObject, PanelGroup, PanelSpec, PanelPlacement } from "./types";
 import type { RoofData } from "../../features/shared/types";
-import { getPanelsInGroup, isPointInPolygon } from "./coords";
+import { getPanelsInGroup, isPointInPolygon, calculateArea } from "./coords";
 
 /**
  * Builds the nested SceneData payload for the Three.js 3D Viewer.
@@ -23,14 +23,28 @@ export function buildLiveSceneData(
 	const payloadPolygons: Record<string, any> = {};
 	const payloadTrees: Record<string, any> = {};
 
-	// 1. Roofs and Parapets are structural foundations and are visible in all design stages
+	// 1. Base roofs and Parapets are structural foundations and are visible in all design stages
 	roofs.forEach((r) => {
 		payloadRoofs[r.id] = {
 			name: r.name,
 			height: r.height,
 			area: r.area,
 			roof: r.points,
+			base_height: 0,
 		};
+	});
+
+	// 2. Child roofs (roof-on-roof objects)
+	objects.forEach((obj) => {
+		if (obj.is_roof_on_roof && obj.polygon && obj.polygon.length >= 3) {
+			payloadRoofs[obj.id] = {
+				name: obj.name,
+				height: obj.z_end - obj.z_init,
+				base_height: obj.z_init,
+				roof: obj.polygon,
+				area: calculateArea(obj.polygon) || 0,
+			};
+		}
 	});
 
 	// Dynamically generate parapet wall segments so they render live in 3D
@@ -70,6 +84,8 @@ export function buildLiveSceneData(
 	// 2. Obstructions are visible in both Stage obstruction and placement
 	if (stage === "obstruction" || stage === "placement") {
 		objects.forEach((obj) => {
+			if (obj.is_roof_on_roof) return; // Already added as a roof!
+
 			const item = {
 				name: obj.name,
 				tag: obj.tag || undefined,
@@ -88,6 +104,7 @@ export function buildLiveSceneData(
 				p2: obj.p2 || undefined,
 				thickness: obj.thickness,
 				polygon: obj.polygon || undefined,
+				support_surface_id: obj.support_surface_id || null,
 			};
 
 			if (obj.type === "cuboid") payloadCuboids[obj.id] = item;
@@ -167,7 +184,7 @@ export function buildLiveSceneData(
 			polygon: payloadPolygons,
 			tree: payloadTrees,
 		},
-		panel_placements: stage === "placement" ? placements : (stage === "roof" ? [] : (sceneData.panel_placements || [])),
-		panel_groups: stage === "placement" ? groupsRecord : (stage === "roof" ? {} : (sceneData.panel_groups || {})),
+		panel_placements: (stage === "placement" || stage === "snapshots") ? (stage === "placement" ? placements : (sceneData.panel_placements || [])) : [],
+		panel_groups: (stage === "placement" || stage === "snapshots") ? (stage === "placement" ? groupsRecord : (sceneData.panel_groups || {})) : {},
 	};
 }

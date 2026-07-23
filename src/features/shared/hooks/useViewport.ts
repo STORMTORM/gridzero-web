@@ -6,7 +6,7 @@ interface ViewportParams {
 }
 
 export function useViewport({ widthMeters, heightMeters }: ViewportParams) {
-	const [scale, setScale] = useState(1);
+	const [scale, setScale] = useState(1.5);
 	const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
 	const [isPanning, setIsPanning] = useState(false);
 	const [mousePosMeters, setMousePosMeters] = useState<[number, number] | null>(null);

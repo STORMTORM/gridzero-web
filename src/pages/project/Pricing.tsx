@@ -240,12 +240,12 @@ export default function Pricing() {
 
 	return (
 		<div className="flex flex-col h-screen w-screen bg-background overflow-hidden text-text font-sans select-none">
-			
 			<ProjectTopbar
 				projectName={projectName}
 				currentStage={7}
 				saving={isAutoSaving}
 				savingStatus="Auto-saving pricing"
+				onBack={() => navigate(`/project/${id}/design?stage=snapshots`)}
 			/>
 
 			{/* Main content split viewport panels */}
@@ -743,11 +743,8 @@ export default function Pricing() {
 							)}
 						</button>
 					</div>
-
 				</div>
-
 			</div>
-
 		</div>
 	);
 }

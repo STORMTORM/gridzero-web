@@ -1,8 +1,7 @@
 import api from "./client";
-import { generateUUID } from "../utils/design/coords";
+import { generateUUID, getPanelsInGroup, isPointInPolygon, calculateArea } from "../utils/design/coords";
 import type { RoofData, PlacedPanelGroup } from "../features/shared/types";
 import type { LocalObject, PanelSpec } from "../utils/design/types";
-import { getPanelsInGroup, isPointInPolygon } from "../utils/design/coords";
 
 // ============================================================================
 // Dashboard Workflow
@@ -108,8 +107,24 @@ export async function saveRoof(sitevisitId: string, roofsList: RoofData[]) {
 
 export async function saveObjects(sitevisitId: string, objectsList: LocalObject[]) {
 	const objectsDict: Record<string, any> = {};
+	const childRoofsDict: Record<string, any> = {};
 
 	objectsList.forEach((obj) => {
+		if (obj.is_roof_on_roof) {
+			const parentId = obj.support_surface_id ?? obj.roof_id;
+			if (parentId && obj.polygon && obj.polygon.length >= 3) {
+				childRoofsDict[obj.id] = {
+					name: obj.name,
+					height: obj.z_end - obj.z_init,
+					roof: obj.polygon,
+					area: calculateArea(obj.polygon) || 0,
+					base_height: obj.z_init,
+					parent_roof_id: parentId,
+				};
+			}
+			return;
+		}
+
 		// Calculate area if applicable
 		let area: number | null = null;
 		if (obj.on_roof) {
@@ -147,16 +162,25 @@ export async function saveObjects(sitevisitId: string, objectsList: LocalObject[
 			polygon: obj.type === "polygon" ? (obj.polygon || null) : null,
 			setback_type: obj.setback_type || null,
 			setback: obj.setback ?? null,
+			support_surface_id: obj.support_surface_id || null,
 		};
 		objectsDict[obj.id] = item;
 	});
 
 	try {
-		const res = await api.post("/visit/objects/create", {
+		const promises: Promise<any>[] = [];
+		promises.push(api.post("/visit/objects/create", {
 			sitevisit_id: sitevisitId,
 			objects: objectsDict,
-		});
-		return res.data;
+		}));
+
+		promises.push(api.post("/visit/roof/child/sync", {
+			sitevisit_id: sitevisitId,
+			child_roofs: childRoofsDict,
+		}));
+
+		const results = await Promise.all(promises);
+		return results[0].data;
 	} catch (e: any) {
 		if (e.response?.data) {
 			console.error("saveObjects API error response:", JSON.stringify(e.response.data, null, 2));
